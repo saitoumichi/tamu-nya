@@ -1,103 +1,150 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState } from 'react';
+import { MainLayout } from '@/components/layout/main-layout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Plus, Target, Clock, CheckCircle } from 'lucide-react';
+import Link from 'next/link';
+
+export default function HomePage() {
+  const [completedMissions, setCompletedMissions] = useState<number[]>([]);
+
+  // サンプルデータ（実際のAPIから取得）
+  const todayMission = {
+    title: '今日のミッション',
+    description: '今日やるべきことを確認しましょう',
+    total: 2,
+    completed: completedMissions.length
+  };
+
+  const missions = [
+    {
+      id: 1,
+      title: 'カギの確認',
+      description: '鍵の確認',
+      completed: completedMissions.includes(1)
+    },
+    {
+      id: 2,
+      title: '薬の服用',
+      description: '薬の服用',
+      completed: completedMissions.includes(2)
+    }
+  ];
+
+  const recentItems = [
+    {
+      id: 1,
+      time: '今日 9:81',
+      title: '鍵を忘れた',
+      category: '🔑'
+    },
+    {
+      id: 2,
+      time: '昨日 9:10',
+      title: 'スマホを忘れた',
+      category: '📱'
+    }
+  ];
+
+  const handleMissionToggle = (missionId: number) => {
+    setCompletedMissions(prev => 
+      prev.includes(missionId)
+        ? prev.filter(id => id !== missionId)
+        : [...prev, missionId]
+    );
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <MainLayout>
+      <div className="space-y-6">
+        {/* 今日のミッション */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              {todayMission.title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4 text-gray-600">{todayMission.description}</p>
+            
+            {/* ミッションリスト */}
+            <div className="space-y-3 mb-4">
+              {missions.map((mission) => (
+                <div
+                  key={mission.id}
+                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer"
+                  onClick={() => handleMissionToggle(mission.id)}
+                >
+                  <div className="flex-shrink-0">
+                    {mission.completed ? (
+                      <CheckCircle className="h-6 w-6 text-primary" />
+                    ) : (
+                      <div className="h-6 w-6 rounded-full border-2 border-gray-300" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{mission.title}</h4>
+                    <p className="text-sm text-gray-500">{mission.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+            {/* 進捗バー */}
+            <Progress 
+              value={todayMission.completed} 
+              max={todayMission.total}
+              label="進捗"
+              showPercentage
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            
+            <div className="mt-4">
+              <Link href="/input">
+                <Button className="w-full">
+                  <Plus className="mr-2 h-4 w-4" />
+                  +忘れ物
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 最近の忘れ物 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              最近の忘れ物
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentItems.length > 0 ? (
+              <div className="space-y-3">
+                {recentItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50"
+                  >
+                    <span className="text-2xl">{item.category}</span>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{item.title}</h4>
+                      <p className="text-sm text-gray-500">{item.time}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                まずは忘れ物を1件登録しよう
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </MainLayout>
   );
 }
