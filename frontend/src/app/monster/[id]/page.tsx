@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { use } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,15 +10,17 @@ import { ArrowLeft, Search, Clock, Calendar, AlertTriangle } from 'lucide-react'
 import Link from 'next/link';
 
 interface MonsterDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
+  const { id } = use(params);
+
   // サンプルデータ（実際のAPIから取得）
   const monster = {
-    id: params.id,
+    id: id,
     name: 'カギモンスター',
     level: 3,
     category: 'key',
