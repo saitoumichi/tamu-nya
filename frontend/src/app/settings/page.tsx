@@ -5,7 +5,8 @@ import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
-import { Plus, Bell, Clock, Calendar, Settings } from 'lucide-react';
+import { Plus, Bell, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
   const [showNewAlertModal, setShowNewAlertModal] = useState(false);
@@ -224,6 +225,4 @@ export default function SettingsPage() {
   );
 }
 
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
-}
+

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { Badge, Rarity } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Search, Filter, Plus } from 'lucide-react';
+import { Filter, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EncyclopediaPage() {

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
 import { Chip } from '@/components/ui/chip';
 import { Progress } from '@/components/ui/progress';
 import { Calendar, TrendingUp, BarChart3, PieChart } from 'lucide-react';
@@ -162,7 +162,7 @@ export default function AnalysisPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {weeklyData.map((day, index) => (
+                              {weeklyData.map((day) => (
                 <div key={day.day} className="flex items-center gap-4">
                   <div className="w-12 text-sm font-medium text-gray-600">
                     {day.day}

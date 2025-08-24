@@ -5,7 +5,7 @@ import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Target, Clock, Check, CheckCircle } from 'lucide-react';
+import { Plus, Target, Clock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function HomePage() {
