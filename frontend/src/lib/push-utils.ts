@@ -27,9 +27,11 @@ export async function subscribe() {
     }
 
     // プッシュ購読を作成
+    const rawKey = urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC!);
+
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC!)
+      applicationServerKey: rawKey.buffer as ArrayBuffer, // ここを ArrayBuffer で渡す
     });
 
     // サーバーに購読情報を送信
@@ -46,7 +48,7 @@ export async function subscribe() {
     return { success: true, subscription: sub };
   } catch (error) {
     console.error('プッシュ通知の購読に失敗:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -70,7 +72,7 @@ export async function unsubscribe() {
     return { success: true };
   } catch (error) {
     console.error('プッシュ通知の購読解除に失敗:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
