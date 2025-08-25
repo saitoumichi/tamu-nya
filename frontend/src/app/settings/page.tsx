@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Plus, Bell, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 export default function SettingsPage() {
   const [showNewAlertModal, setShowNewAlertModal] = useState(false);
@@ -52,6 +53,12 @@ export default function SettingsPage() {
             <h1 className="text-2xl font-bold text-gray-900">通知・アラート設定</h1>
             <p className="text-gray-600">忘れ物防止のためのアラートを設定</p>
           </div>
+          <Link href="/notifications">
+            <Button variant="secondary">
+              <Bell className="mr-2 h-4 w-4" />
+              通知設定
+            </Button>
+          </Link>
         </div>
 
         {/* アラート一覧 */}

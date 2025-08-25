@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Plus, BookOpen, BarChart3, Settings } from 'lucide-react';
+import { Home, Plus, BookOpen, BarChart3, Settings, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Sidebar = () => {
@@ -31,6 +31,12 @@ const Sidebar = () => {
       href: '/analysis',
       icon: BarChart3,
       active: pathname === '/analysis'
+    },
+    {
+      name: '通知設定',
+      href: '/notifications',
+      icon: Bell,
+      active: pathname === '/notifications'
     },
     {
       name: '設定',
