@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Bell, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -8,13 +8,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ appName = '忘れ物図鑑' }) => {
-  const [notificationCount, setNotificationCount] = useState(3); // サンプル通知数
-
-  // 通知数を取得する処理（実際のAPIから取得）
-  useEffect(() => {
-    // ここで実際の通知数を取得
-    // fetch('/api/notifications/count').then(res => res.json()).then(data => setNotificationCount(data.count))
-  }, []);
+  const [notificationCount] = useState(3); // サンプル通知数
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -25,7 +19,7 @@ const Header: React.FC<HeaderProps> = ({ appName = '忘れ物図鑑' }) => {
         </div>
 
         {/* 右側のアクション */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           {/* 通知ベル */}
           <Link href="/notifications">
             <Button variant="ghost" size="sm" className="relative">

@@ -4,8 +4,7 @@ import React, { useState } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Chip } from '@/components/ui/chip';
-import { Bell, BellOff, Settings, Clock, Calendar, Plus, CheckCircle, AlertCircle } from 'lucide-react';
+import { Bell, Clock, Plus, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function NotificationsPage() {
@@ -95,11 +94,16 @@ export default function NotificationsPage() {
   };
 
   const getPermissionStatus = () => {
+    // クライアントサイドでのみ実行
+    if (typeof window === 'undefined') {
+      return { text: '読み込み中...', icon: <AlertCircle className="h-4 w-4 text-gray-500" />, color: 'text-gray-500' };
+    }
+    
     if (!('Notification' in window)) {
       return { text: 'サポートされていません', icon: <AlertCircle className="h-4 w-4 text-gray-500" />, color: 'text-gray-500' };
     }
     
-    switch (Notification.permission) {
+    switch (window.Notification.permission) {
       case 'granted':
         return { text: '許可済み', icon: <CheckCircle className="h-4 w-4 text-green-500" />, color: 'text-green-600' };
       case 'denied':
@@ -160,7 +164,7 @@ export default function NotificationsPage() {
                 </span>
               </div>
             </div>
-            {Notification.permission === 'default' && (
+            {typeof window !== 'undefined' && window.Notification?.permission === 'default' && (
               <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-700">
                   通知を有効にするには、ブラウザの通知許可を許可してください。
