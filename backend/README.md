@@ -59,3 +59,81 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+# Laravel Backend
+
+## WebPush設定
+
+このプロジェクトでは、WebPushを使用してプッシュ通知を実装しています。
+
+### 1. VAPIDキーの生成
+
+以下のコマンドでVAPIDキーを生成してください：
+
+```bash
+php artisan webpush:generate-vapid-keys
+```
+
+### 2. 環境変数の設定
+
+生成されたVAPIDキーを`.env`ファイルに追加してください：
+
+```env
+# WebPush設定
+VAPID_PUBLIC=your_generated_public_key
+VAPID_PRIVATE=your_generated_private_key
+
+# サポートメールアドレス
+APP_SUPPORT_EMAIL=support@example.com
+```
+
+### 3. データベースのセットアップ
+
+マイグレーションを実行してプッシュ通知用のテーブルを作成してください：
+
+```bash
+php artisan migrate
+```
+
+### 4. 使用方法
+
+#### プッシュ通知のサブスクリプション保存
+```bash
+POST /api/push/subscription
+{
+  "endpoint": "https://fcm.googleapis.com/fcm/send/...",
+  "p256dh": "public_key_here",
+  "auth": "auth_token_here",
+  "ua": "User-Agent"
+}
+```
+
+#### 忘れ物チェック通知の送信
+```bash
+POST /api/push/send-forget-item
+{
+  "user_id": 1  # オプション：特定のユーザーに送信
+}
+```
+
+#### カスタム通知の送信
+```bash
+POST /api/push/send-custom
+{
+  "title": "通知タイトル",
+  "body": "通知内容",
+  "user_id": 1,  # オプション
+  "icon": "/icon.png",
+  "badge": "/badge.png",
+  "url": "/redirect-url"
+}
+```
+
+### 5. フロントエンドとの連携
+
+フロントエンドでは、`/src/lib/push-utils.ts`を使用してプッシュ通知の購読・購読解除を行ってください。
+
+## セキュリティ
+
+- VAPID_PRIVATEキーは機密情報です。公開しないでください。
+- 本番環境では適切な認証・認可を実装してください。

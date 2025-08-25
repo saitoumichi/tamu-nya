@@ -123,4 +123,32 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Support Email
+    |--------------------------------------------------------------------------
+    |
+    | This email address is used for VAPID subject in WebPush notifications.
+    | It should be a valid email address that you control.
+    |
+    */
+
+    'support_email' => env('APP_SUPPORT_EMAIL', 'support@example.com'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Multiple Support Emails
+    |--------------------------------------------------------------------------
+    |
+    | Multiple email addresses for different purposes.
+    | You can use these for different types of notifications.
+    |
+    */
+
+    'support_emails' => [
+        'general' => env('APP_SUPPORT_EMAIL_GENERAL', 'support@example.com'),
+        'technical' => env('APP_SUPPORT_EMAIL_TECHNICAL', 'tech@example.com'),
+        'admin' => env('APP_SUPPORT_EMAIL_ADMIN', 'admin@example.com'),
+    ],
+
 ];
