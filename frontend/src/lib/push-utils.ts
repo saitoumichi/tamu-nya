@@ -31,7 +31,7 @@ export async function subscribe() {
 
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: rawKey.buffer as ArrayBuffer, // ここを ArrayBuffer で渡す
+      applicationServerKey: rawKey.buffer as unknown as ArrayBuffer, // 型キャストで解決
     });
 
     // サーバーに購読情報を送信
