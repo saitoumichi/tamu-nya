@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Plus, Bell, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PushNotification } from '@/components/push-notification';
 
 export default function SettingsPage() {
   const [showNewAlertModal, setShowNewAlertModal] = useState(false);
@@ -49,17 +50,20 @@ export default function SettingsPage() {
         {/* ヘッダー */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">通知・アラート設定</h1>
-            <p className="text-gray-600">忘れ物防止のためのアラートを設定</p>
+            <h1 className="text-2xl font-bold text-gray-900">設定</h1>
+            <p className="text-gray-600">アプリの設定と通知</p>
           </div>
         </div>
 
-        {/* アラート一覧 */}
+        {/* プッシュ通知設定 */}
+        <PushNotification />
+
+        {/* アラート設定 */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5 text-primary" />
-              設定済みアラート
+              アラート設定
             </CardTitle>
           </CardHeader>
           <CardContent>
