@@ -12,22 +12,20 @@ import { cn } from '@/lib/utils';
 export default function InputPage() {
   const [formData, setFormData] = useState({
     category: '',
-    title: '',
-    note: '',
+    forgottenItem: '',
+    details: '',
     difficulty: 3,
     situation: [] as string[],
-    location: ''
+    location: '',
+    datetime: new Date().toISOString().slice(0, 16)
   });
 
   const [showResultModal, setShowResultModal] = useState(false);
 
   const categories = [
-    { id: 'key', name: '鍵', emoji: '🔑' },
-    { id: 'medicine', name: '薬', emoji: '💊' },
-    { id: 'umbrella', name: '傘', emoji: '☔' },
-    { id: 'wallet', name: '財布', emoji: '👛' },
-    { id: 'smartphone', name: 'スマホ', emoji: '📱' },
-    { id: 'other', name: 'その他', emoji: '📦' }
+    { id: 'forget_things', name: '物忘れ', emoji: '🔍' },
+    { id: 'forget_schedule', name: '予定忘れ', emoji: '📅' },
+    { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰' }
   ];
 
   const situations = [
@@ -93,22 +91,22 @@ export default function InputPage() {
                 </div>
               </div>
 
-              {/* タイトル/内容（任意） */}
+              {/* 忘れたもの（必須） */}
               <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                  タイトル/内容
+                <label htmlFor="forgottenItem" className="block text-sm font-medium text-gray-700 mb-2">
+                  忘れたもの <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  id="forgottenItem"
+                  value={formData.forgottenItem}
+                  onChange={(e) => setFormData(prev => ({ ...prev, forgottenItem: e.target.value }))}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="忘れ物の詳細を入力"
+                  placeholder="忘れたものを入力"
                   maxLength={120}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {formData.title.length}/120文字
+                  {formData.forgottenItem.length}/120文字
                 </p>
               </div>
 
@@ -162,22 +160,22 @@ export default function InputPage() {
                 </p>
               </div>
 
-              {/* メモ */}
+              {/* 内容・詳細 */}
               <div>
-                <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-2">
-                  メモ
+                <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-2">
+                  内容・詳細
                 </label>
                 <textarea
-                  id="note"
-                  value={formData.note}
-                  onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+                  id="details"
+                  value={formData.details}
+                  onChange={(e) => setFormData(prev => ({ ...prev, details: e.target.value }))}
                   rows={3}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="詳細や思い出などを記録"
+                  placeholder="詳細や状況などを記録"
                   maxLength={2000}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {formData.note.length}/2000文字
+                  {formData.details.length}/2000文字
                 </p>
               </div>
 
@@ -196,19 +194,22 @@ export default function InputPage() {
                 />
               </div>
 
-              {/* 日時表示 */}
-              <div className="text-sm text-gray-500">
-                {new Date().toLocaleString('ja-JP', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
+              {/* 日時入力 */}
+              <div>
+                <label htmlFor="datetime" className="block text-sm font-medium text-gray-700 mb-2">
+                  日時
+                </label>
+                <input
+                  type="datetime-local"
+                  id="datetime"
+                  value={formData.datetime}
+                  onChange={(e) => setFormData(prev => ({ ...prev, datetime: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
               </div>
 
               {/* 送信ボタン */}
-              <Button type="submit" className="w-full" disabled={!formData.category}>
+              <Button type="submit" className="w-full" disabled={!formData.category || !formData.forgottenItem}>
                 <Save className="mr-2 h-4 w-4" />
                 送信
               </Button>
