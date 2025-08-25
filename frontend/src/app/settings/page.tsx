@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Plus, Bell, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PushNotification } from '@/components/push-notification';
 import Link from 'next/link';
 
 export default function SettingsPage() {
@@ -61,9 +60,6 @@ export default function SettingsPage() {
             </Button>
           </Link>
         </div>
-
-        {/* プッシュ通知設定 */}
-        <PushNotification />
 
         {/* アラート設定 */}
         <Card>
