@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -8,6 +8,14 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ appName = '忘れ物図鑑' }) => {
+  const [notificationCount, setNotificationCount] = useState(3); // サンプル通知数
+
+  // 通知数を取得する処理（実際のAPIから取得）
+  useEffect(() => {
+    // ここで実際の通知数を取得
+    // fetch('/api/notifications/count').then(res => res.json()).then(data => setNotificationCount(data.count))
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container flex h-16 items-center justify-between px-4">
@@ -23,7 +31,11 @@ const Header: React.FC<HeaderProps> = ({ appName = '忘れ物図鑑' }) => {
             <Button variant="ghost" size="sm" className="relative">
               <Bell className="h-5 w-5" />
               {/* 通知バッジ */}
-              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500" />
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-medium">
+                  {notificationCount > 9 ? '9+' : notificationCount}
+                </span>
+              )}
             </Button>
           </Link>
 
