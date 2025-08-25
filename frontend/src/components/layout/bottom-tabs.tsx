@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Plus, BookOpen, BarChart3 } from 'lucide-react';
+import { Home, Plus, BookOpen, BarChart3, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const BottomTabs = () => {
@@ -31,6 +31,12 @@ const BottomTabs = () => {
       href: '/analysis',
       icon: BarChart3,
       active: pathname === '/analysis'
+    },
+    {
+      name: '通知',
+      href: '/notifications',
+      icon: Bell,
+      active: pathname === '/notifications'
     }
   ];
 

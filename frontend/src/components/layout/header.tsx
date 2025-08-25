@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bell, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 interface HeaderProps {
   appName?: string;
@@ -18,11 +19,13 @@ const Header: React.FC<HeaderProps> = ({ appName = '忘れ物図鑑' }) => {
         {/* 右側のアクション */}
         <div className="flex items-center space-x-2">
           {/* 通知ベル */}
-          <Button variant="ghost" size="sm" className="relative">
-            <Bell className="h-5 w-5" />
-            {/* 通知バッジ */}
-            <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500" />
-          </Button>
+          <Link href="/notifications">
+            <Button variant="ghost" size="sm" className="relative">
+              <Bell className="h-5 w-5" />
+              {/* 通知バッジ */}
+              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500" />
+            </Button>
+          </Link>
 
           {/* プロフィール */}
           <Button variant="ghost" size="sm">

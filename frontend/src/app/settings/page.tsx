@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/modal';
 import { Plus, Bell, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PushNotification } from '@/components/push-notification';
+import Link from 'next/link';
 
 export default function SettingsPage() {
   const [showNewAlertModal, setShowNewAlertModal] = useState(false);
@@ -53,6 +54,12 @@ export default function SettingsPage() {
             <h1 className="text-2xl font-bold text-gray-900">設定</h1>
             <p className="text-gray-600">アプリの設定と通知</p>
           </div>
+          <Link href="/notifications">
+            <Button variant="secondary">
+              <Bell className="mr-2 h-4 w-4" />
+              通知設定
+            </Button>
+          </Link>
         </div>
 
         {/* プッシュ通知設定 */}
