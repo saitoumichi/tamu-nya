@@ -2,10 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  trailingSlash: false,
-  experimental: {
-    appDir: true
-  }
+  trailingSlash: false
 };
 
 export default nextConfig;
