@@ -2,5 +2,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "functions": {
+    "app/monster/[id]/page.tsx": {
+      "maxDuration": 30
+    }
+  }
 }
