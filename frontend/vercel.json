@@ -3,6 +3,12 @@
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "framework": "nextjs",
+  "rewrites": [
+    {
+      "source": "/monster/:id*",
+      "destination": "/monster/[id]"
+    }
+  ],
   "functions": {
     "app/monster/[id]/page.tsx": {
       "maxDuration": 30

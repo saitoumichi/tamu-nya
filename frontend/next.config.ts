@@ -13,7 +13,13 @@ const nextConfig: NextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true
-  }
+  },
+  // Vercelでのルーティング問題を解決
+  experimental: {
+    appDir: true
+  },
+  // 静的生成を無効化してSSRを有効化
+  staticPageGenerationTimeout: 0
 };
 
 export default nextConfig;
