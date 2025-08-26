@@ -17,30 +17,83 @@ interface MonsterDetailPageProps {
 
 export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
   const { id } = use(params);
+  const [monster, setMonster] = React.useState<{
+    id: string;
+    name: string;
+    category: string;
+    categoryEmoji: string;
+    rarity: Rarity;
+    firstSeen: string;
+    lastSeen: string;
+    encounterCount: number;
+    intimacyLevel: number;
+    evolutionCondition: string;
+    evolutionProgress: number;
+    evolutionTarget: number;
+    lastLevelUp: string;
+    recommendation: string;
+    imageUrl: string;
+  } | null>(null);
 
-  // サンプルデータ（実際のAPIから取得）
-  const monster = {
-    id: id,
-    name: id === '1' ? 'カギモンスター' : id === '2' ? '傘の守護者' : '財布の精霊',
-    level: id === '1' ? 3 : id === '2' ? 2 : 1,
-    category: id === '1' ? 'key' : id === '2' ? 'umbrella' : 'wallet',
-    categoryEmoji: id === '1' ? '🔑' : id === '2' ? '☔' : '👛',
-    rarity: id === '1' ? 'common' : id === '2' ? 'rare' : 'epic' as Rarity,
-    firstSeen: '2024/04/10',
-    lastSeen: '2024/04/24',
-    encounterCount: id === '1' ? 5 : id === '2' ? 3 : 1,
-    intimacyLevel: id === '1' ? 75 : id === '2' ? 45 : 20,
-    evolutionCondition: id === '1' ? 'カギ忘れ5回' : id === '2' ? '傘忘れ3回' : '財布忘れ1回',
-    evolutionProgress: id === '1' ? 5 : id === '2' ? 2 : 1,
-    evolutionTarget: id === '1' ? 5 : id === '2' ? 3 : 1,
-    lastLevelUp: '2024/04/24 04:24',
-    recommendation: id === '1' ? '明日7:50にカギをお忘れなく!' : id === '2' ? '雨の日は傘をお忘れなく!' : '財布を持ってお出かけください!',
-    imageUrl: (id === '1' 
-      ? '/monsters/key-monsters/key-monster-1.jpg' 
-      : id === '2'
-      ? '/monsters/umbrella_monsters/umbrella-monster-1.jpg'
-      : '/monsters/wallet_monsters/wallet-monster.jpg') as string
-  };
+  // LocalStorageからthingsデータを読み込んでモンスター情報を生成
+  React.useEffect(() => {
+    console.log('モンスター詳細ページ - ID:', id);
+    const thingsRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
+    console.log('LocalStorageから読み込まれたthingsRecords:', thingsRecords);
+    
+    // 指定されたIDのモンスターを検索
+    const targetRecords = thingsRecords.filter((record: { thingId: string; thingType: string; createdAt: string }) => record.thingId === id);
+    console.log('検索されたtargetRecords:', targetRecords);
+    console.log('検索条件のID:', id);
+    
+    if (targetRecords.length > 0) {
+      const encounterCount = targetRecords.length;
+      const intimacyLevel = encounterCount;
+      
+      // rarityを計算（図鑑と同じロジック）
+      let rarity: Rarity = 'common';
+      if (intimacyLevel > 5) rarity = 'uncommon';
+      if (intimacyLevel > 10) rarity = 'rare';
+      if (intimacyLevel > 15) rarity = 'epic';
+      if (intimacyLevel > 20) rarity = 'legendary';
+      
+      // 画像パスを生成
+      let imageUrl = '/monsters/things/things-monster.jpg'; // デフォルト
+      if (id === 'key') {
+        imageUrl = `/monsters/key/key-monster-${Math.min(Math.ceil(intimacyLevel / 5), 5)}.jpg`;
+      } else if (id === 'umbrella') {
+        imageUrl = `/monsters/umbrella/umbrella-monster-${Math.min(Math.ceil(intimacyLevel / 5), 5)}.jpg`;
+      } else if (id === 'wallet') {
+        imageUrl = `/monsters/wallet/wallet-monster${intimacyLevel > 5 ? `-${Math.min(Math.ceil(intimacyLevel / 5), 5)}` : ''}.jpg`;
+      } else if (id === 'medicine') {
+        imageUrl = `/monsters/medicine/medicine-monster-${Math.min(Math.ceil(intimacyLevel / 5), 5)}.jpg`;
+      } else if (id === 'smartphone') {
+        imageUrl = `/monsters/phone/phone_monsters${intimacyLevel > 5 ? Math.min(Math.ceil(intimacyLevel / 5), 5) : ''}.jpg`;
+      } else if (id === 'homework') {
+        imageUrl = `/monsters/homework/homework_monsters${intimacyLevel > 5 ? Math.min(Math.ceil(intimacyLevel / 5), 5) : ''}.jpg`;
+      }
+      
+      const monsterData = {
+        id: id,
+        name: targetRecords[0].thingType || '忘れ物',
+        category: id,
+        categoryEmoji: '🧠',
+        rarity: rarity,
+        firstSeen: targetRecords[targetRecords.length - 1]?.createdAt || '',
+        lastSeen: targetRecords[0]?.createdAt || '',
+        encounterCount: encounterCount,
+        intimacyLevel: intimacyLevel,
+        evolutionCondition: `${targetRecords[0].thingType || '忘れ物'}を${Math.ceil(intimacyLevel / 5) * 5}回入力`,
+        evolutionProgress: encounterCount,
+        evolutionTarget: Math.ceil(intimacyLevel / 5) * 5,
+        lastLevelUp: targetRecords[0]?.createdAt || '',
+        recommendation: `${targetRecords[0].thingType || '忘れ物'}をお忘れなく!`,
+        imageUrl: imageUrl
+      };
+      
+      setMonster(monsterData);
+    }
+  }, [id]);
 
   const history = [
     {
@@ -59,6 +112,20 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
     }
   ];
 
+  // モンスターが読み込まれていない場合はローディング表示
+  if (!monster) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="text-4xl mb-4">🔄</div>
+            <p className="text-gray-600">モンスター情報を読み込み中...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -72,7 +139,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
           </Link>
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">{monster.name}</h1>
-            <p className="text-gray-600">レベル {monster.level}回</p>
+            <p className="text-gray-600">入力回数 {monster.encounterCount}回</p>
           </div>
           <Button variant="ghost" size="sm">
             <Search className="h-4 w-4" />
@@ -140,7 +207,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
               showPercentage
             />
             <div className="flex justify-between text-sm text-gray-600">
-              <span>レベルアップ: {monster.evolutionProgress}回</span>
+              <span>レベルアップまであと{monster.evolutionProgress}回</span>
               <span>{monster.lastLevelUp}</span>
             </div>
           </CardContent>
