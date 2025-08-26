@@ -18,6 +18,7 @@ const Chip: React.FC<ChipProps> = ({
 }) => {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={cn(
         'inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all',

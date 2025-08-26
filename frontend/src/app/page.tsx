@@ -63,8 +63,8 @@ export default function HomePage() {
         {/* 今日のミッション */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" />
+            <CardTitle className="flex items-center gap-2 text-black">
+              <Target className="h-5 w-5  text-primary" />
               {todayMission.title}
             </CardTitle>
           </CardHeader>
@@ -116,7 +116,7 @@ export default function HomePage() {
         {/* 最近の忘れ物 */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-black">
               <Clock className="h-5 w-5 text-primary" />
               最近の忘れ物
             </CardTitle>
