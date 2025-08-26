@@ -150,5 +150,4 @@ return [
         'technical' => env('APP_SUPPORT_EMAIL_TECHNICAL', 'tech@example.com'),
         'admin' => env('APP_SUPPORT_EMAIL_ADMIN', 'admin@example.com'),
     ],
-
 ];

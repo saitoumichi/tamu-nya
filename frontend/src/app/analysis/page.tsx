@@ -24,7 +24,10 @@ export default function AnalysisPage() {
     { id: 'medicine', name: '薬', emoji: '💊' },
     { id: 'umbrella', name: '傘', emoji: '☔' },
     { id: 'wallet', name: '財布', emoji: '👛' },
-    { id: 'smartphone', name: 'スマホ', emoji: '📱' }
+    { id: 'smartphone', name: 'スマホ', emoji: '📱' },
+    { id: 'forget', name: '物忘れ', emoji: '🧠' },
+    { id: 'schedule', name: '予定忘れ', emoji: '🗓️' },   
+    { id: 'late', name: '寝坊・遅刻', emoji: '⏰' }
   ];
 
   const weeklyData = [

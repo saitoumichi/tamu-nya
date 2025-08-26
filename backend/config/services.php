@@ -39,5 +39,4 @@ return [
         'vapid_public' => env('VAPID_PUBLIC'),
         'vapid_private' => env('VAPID_PRIVATE'),
     ],
-
 ];

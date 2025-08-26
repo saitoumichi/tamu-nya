@@ -50,23 +50,17 @@ export default function SettingsPage() {
         {/* ヘッダー */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">設定</h1>
-            <p className="text-gray-600">アプリの設定と通知</p>
+            <h1 className="text-2xl font-bold text-gray-900">通知・アラート設定</h1>
+            <p className="text-gray-600">忘れ物防止のためのアラートを設定</p>
           </div>
-          <Link href="/notifications">
-            <Button variant="secondary">
-              <Bell className="mr-2 h-4 w-4" />
-              通知設定
-            </Button>
-          </Link>
         </div>
 
-        {/* アラート設定 */}
+        {/* アラート一覧 */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5 text-primary" />
-              アラート設定
+              設定済みアラート
             </CardTitle>
           </CardHeader>
           <CardContent>

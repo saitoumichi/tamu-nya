@@ -21,20 +21,25 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
   // サンプルデータ（実際のAPIから取得）
   const monster = {
     id: id,
-    name: 'カギモンスター',
-    level: 3,
-    category: 'key',
-    categoryEmoji: '🔑',
-    rarity: 'common' as Rarity,
+    name: id === '1' ? 'カギモンスター' : id === '2' ? '傘の守護者' : '財布の精霊',
+    level: id === '1' ? 3 : id === '2' ? 2 : 1,
+    category: id === '1' ? 'key' : id === '2' ? 'umbrella' : 'wallet',
+    categoryEmoji: id === '1' ? '🔑' : id === '2' ? '☔' : '👛',
+    rarity: id === '1' ? 'common' : id === '2' ? 'rare' : 'epic' as Rarity,
     firstSeen: '2024/04/10',
     lastSeen: '2024/04/24',
-    encounterCount: 5,
-    intimacyLevel: 75,
-    evolutionCondition: 'カギ忘れ5回',
-    evolutionProgress: 5,
-    evolutionTarget: 5,
+    encounterCount: id === '1' ? 5 : id === '2' ? 3 : 1,
+    intimacyLevel: id === '1' ? 75 : id === '2' ? 45 : 20,
+    evolutionCondition: id === '1' ? 'カギ忘れ5回' : id === '2' ? '傘忘れ3回' : '財布忘れ1回',
+    evolutionProgress: id === '1' ? 5 : id === '2' ? 2 : 1,
+    evolutionTarget: id === '1' ? 5 : id === '2' ? 3 : 1,
     lastLevelUp: '2024/04/24 04:24',
-    recommendation: '明日7:50にカギをお忘れなく!'
+    recommendation: id === '1' ? '明日7:50にカギをお忘れなく!' : id === '2' ? '雨の日は傘をお忘れなく!' : '財布を持ってお出かけください!',
+    imageUrl: (id === '1' 
+      ? '/monsters/key-monsters/key-monster-1.jpg' 
+      : id === '2'
+      ? '/monsters/umbrella_monsters/umbrella-monster-1.jpg'
+      : '/monsters/wallet_monsters/wallet-monster.jpg') as string
   };
 
   const history = [
@@ -79,7 +84,22 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
           <CardContent className="p-6">
             <div className="flex items-start gap-6">
               {/* モンスターイラスト */}
-              <div className="text-8xl">{monster.categoryEmoji}</div>
+              <div className="w-32 h-32 flex-shrink-0">
+                <img 
+                  src={monster.imageUrl} 
+                  alt={monster.name}
+                  className="w-full h-full object-cover rounded-lg"
+                  onError={(e) => {
+                    // 画像読み込みエラー時は絵文字を表示
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const fallback = document.createElement('div');
+                    fallback.className = 'text-8xl flex items-center justify-center w-full h-full';
+                    fallback.textContent = monster.categoryEmoji;
+                    target.parentNode?.appendChild(fallback);
+                  }}
+                />
+              </div>
               
               {/* 基本情報 */}
               <div className="flex-1 space-y-4">
@@ -155,13 +175,28 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
                     key={item.id}
                     className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{monster.categoryEmoji}</span>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{item.title}</h4>
-                        <p className="text-sm text-gray-500">{item.location}</p>
-                      </div>
+                                      <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 flex-shrink-0">
+                      <img 
+                        src={monster.imageUrl} 
+                        alt={monster.name}
+                        className="w-full h-full object-cover rounded"
+                        onError={(e) => {
+                          // 画像読み込みエラー時は絵文字を表示
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallback = document.createElement('div');
+                          fallback.className = 'text-2xl flex items-center justify-center w-full h-full';
+                          fallback.textContent = monster.categoryEmoji;
+                          target.parentNode?.appendChild(fallback);
+                        }}
+                      />
                     </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">{item.title}</h4>
+                      <p className="text-sm text-gray-500">{item.location}</p>
+                    </div>
+                  </div>
                     <div className="text-right text-sm text-gray-500">
                       <div>{item.date}</div>
                       <div>{item.time}</div>
