@@ -62,6 +62,108 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 
 # Laravel Backend
 
+## データベース設計
+
+### 既存の設計（前の人が作成）
+
+#### users（ユーザーテーブル）
+```sql
+CREATE TABLE users (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  email_verified_at TIMESTAMP NULL,
+  password VARCHAR(255) NOT NULL,
+  remember_token VARCHAR(100) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+#### push_subscriptions（プッシュ通知サブスクリプションテーブル）
+```sql
+CREATE TABLE push_subscriptions (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NULL,
+  endpoint TEXT NOT NULL,
+  p256dh VARCHAR(255) NOT NULL,
+  auth VARCHAR(255) NOT NULL,
+  ua VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_endpoint (endpoint(191)),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+```
+
+#### forgotten_items（忘れ物テーブル）
+```sql
+CREATE TABLE forgotten_items (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  content TEXT NULL,
+  forgotten_item VARCHAR(255) NOT NULL,
+  details TEXT NULL,
+  difficulty TINYINT NOT NULL DEFAULT 3,
+  situation JSON NULL,
+  location VARCHAR(255) NULL,
+  datetime DATETIME NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_user_category (user_id, category),
+  INDEX idx_datetime (datetime)
+);
+```
+
+#### monsters（モンスターテーブル）
+```sql
+CREATE TABLE monsters (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  type VARCHAR(50) NOT NULL,
+  level INT NOT NULL DEFAULT 1,
+  experience INT NOT NULL DEFAULT 0,
+  rarity VARCHAR(20) NOT NULL DEFAULT 'common',
+  encounter_count INT NOT NULL DEFAULT 0,
+  affection INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_user_type (user_id, type)
+);
+```
+
+### リレーション
+
+- **users** ←→ **push_subscriptions** (1対多)
+- **users** ←→ **forgotten_items** (1対多)
+- **users** ←→ **monsters** (1対多)
+
+### インデックス戦略
+
+- ユーザーID + カテゴリでの検索最適化
+- 日時での並び替え最適化
+- モンスタータイプでの検索最適化
+
+### 新しい設計案（参考・提案）
+
+> **注意**: 以下の設計は参考用です。既存の設計を変更する場合は、チーム内で十分な議論が必要です。
+
+#### 提案された設計の特徴
+- よりシンプルな構造
+- ENUM型の活用
+- 個体データと図鑑データの分離
+
+#### 実装時の考慮事項
+1. **既存データの移行**が必要
+2. **APIの変更**が必要
+3. **フロントエンドの修正**が必要
+4. **チーム内での合意**が必要
+
 ## WebPush設定
 
 このプロジェクトでは、WebPushを使用してプッシュ通知を実装しています。
