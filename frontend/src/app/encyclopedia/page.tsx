@@ -25,7 +25,7 @@ export default function EncyclopediaPage() {
       rarity: 'common' as Rarity,
       intimacyLevel: 15,
       lastSeenAt: '2時間前',
-      thumbUrl: '🔑'
+      thumbUrl: '/monsters/key-monsters/key-monster-1.jpg'
     },
     {
       id: 2,
@@ -36,7 +36,7 @@ export default function EncyclopediaPage() {
       rarity: 'rare' as Rarity,
       intimacyLevel: 8,
       lastSeenAt: '1日前',
-      thumbUrl: '☔'
+      thumbUrl: '/monsters/umbrella_monsters/umbrella-monster-1.jpg'
     },
     {
       id: 3,
@@ -47,7 +47,7 @@ export default function EncyclopediaPage() {
       rarity: 'epic' as Rarity,
       intimacyLevel: 25,
       lastSeenAt: '3日前',
-      thumbUrl: '👛'
+      thumbUrl: '/monsters/wallet_monsters/wallet-monster.jpg'
     }
   ];
 
@@ -145,7 +145,22 @@ export default function EncyclopediaPage() {
                 <Card className="hover:shadow-md transition-shadow cursor-pointer">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <div className="text-4xl">{monster.thumbUrl}</div>
+                      <div className="w-16 h-16 flex-shrink-0">
+                        <img 
+                          src={monster.thumbUrl} 
+                          alt={monster.name}
+                          className="w-full h-full object-cover rounded-lg"
+                          onError={(e) => {
+                            // 画像読み込みエラー時は絵文字を表示
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const fallback = document.createElement('div');
+                            fallback.className = 'text-4xl flex items-center justify-center w-full h-full';
+                            fallback.textContent = monster.categoryEmoji;
+                            target.parentNode?.appendChild(fallback);
+                          }}
+                        />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-gray-900 truncate">{monster.name}</h3>
