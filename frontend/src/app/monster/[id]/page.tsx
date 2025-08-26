@@ -37,14 +37,24 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
 
   // LocalStorageからthingsデータを読み込んでモンスター情報を生成
   React.useEffect(() => {
-    console.log('モンスター詳細ページ - ID:', id);
-    const thingsRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
-    console.log('LocalStorageから読み込まれたthingsRecords:', thingsRecords);
-    
-    // 指定されたIDのモンスターを検索
-    const targetRecords = thingsRecords.filter((record: { thingId: string; thingType: string; createdAt: string }) => record.thingId === id);
-    console.log('検索されたtargetRecords:', targetRecords);
-    console.log('検索条件のID:', id);
+    try {
+      console.log('モンスター詳細ページ - ID:', id);
+      console.log('IDの型:', typeof id);
+      console.log('IDの値:', id);
+      
+      const thingsRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
+      console.log('LocalStorageから読み込まれたthingsRecords:', thingsRecords);
+      console.log('thingsRecordsの長さ:', thingsRecords.length);
+      
+      // 指定されたIDのモンスターを検索
+      const targetRecords = thingsRecords.filter((record: { thingId: string; thingType: string; createdAt: string }) => {
+        console.log('検索中のrecord:', record);
+        console.log('record.thingId:', record.thingId);
+        console.log('検索条件のID:', id);
+        console.log('一致するか:', record.thingId === id);
+        return record.thingId === id;
+      });
+      console.log('検索されたtargetRecords:', targetRecords);
     
     if (targetRecords.length > 0) {
       const encounterCount = targetRecords.length;
@@ -92,6 +102,9 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
       };
       
       setMonster(monsterData);
+    }
+    } catch (error) {
+      console.error('モンスター詳細ページでエラーが発生:', error);
     }
   }, [id]);
 
