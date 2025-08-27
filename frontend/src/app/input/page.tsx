@@ -119,6 +119,9 @@ export default function InputPage() {
       
       console.log('図鑑用データが保存されました:', thingsRecord);
       console.log('モンスター情報:', { encounterCount, intimacyLevel, rarity });
+      
+      // 分析ページにデータ更新を通知
+      window.dispatchEvent(new CustomEvent('thingsRecordsChanged'));
     }
     
     // 成長リザルトモーダルを表示
