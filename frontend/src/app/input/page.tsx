@@ -268,7 +268,7 @@ export default function InputPage() {
               {/* 内容・詳細 */}
               <div>
                 <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-2">
-                  内容・詳細
+                  メモ
                 </label>
                 <textarea
                   id="details"
@@ -276,7 +276,7 @@ export default function InputPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, details: e.target.value }))}
                   rows={3}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="詳細や状況などを記録"
+                  placeholder="詳細や思い出などを記録"
                   maxLength={2000}
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -294,38 +294,9 @@ export default function InputPage() {
                   minute: '2-digit'
                 })}
               </div>
-              
-              {/* 場所 */}
-              <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                  場所
-                </label>
-                <input
-                  type="text"
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="忘れ物をした場所"
-                />
-              </div>
-
-              {/* 日時入力 */}
-              <div>
-                <label htmlFor="datetime" className="block text-sm font-medium text-gray-700 mb-2">
-                  日時
-                </label>
-                <input
-                  type="datetime-local"
-                  id="datetime"
-                  value={formData.datetime}
-                  onChange={(e) => setFormData(prev => ({ ...prev, datetime: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
 
               {/* 状況 */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   状況
                 </label>
@@ -340,7 +311,7 @@ export default function InputPage() {
                     />
                   ))}
                 </div>
-              </div>
+              </div> */}
 
               {/* 送信ボタン */}
               <Button type="button" onClick={handleSubmit} className="w-full">
