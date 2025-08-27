@@ -267,6 +267,7 @@ export default function EncyclopediaPage() {
   const rarities: { value: Rarity | ''; label: string }[] = [
     { value: '', label: 'すべて' },
     { value: 'common', label: 'Common' },
+    { value: 'uncommon', label: 'Uncommon' },
     { value: 'rare', label: 'Rare' },
     { value: 'epic', label: 'Epic' },
     { value: 'legendary', label: 'Legendary' }
