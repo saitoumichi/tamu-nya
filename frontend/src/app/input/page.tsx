@@ -295,24 +295,6 @@ export default function InputPage() {
                 })}
               </div>
 
-              {/* 状況 */}
-              {/* <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  状況
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {situations.map((category) => (
-                    <Chip
-                      key={category.id}
-                      label={category.name}
-                      emoji={category.emoji}
-                      selected={formData.category === category.id}
-                      onClick={() => handleCategorySelect(category.id)}
-                    />
-                  ))}
-                </div>
-              </div> */}
-
               {/* 送信ボタン */}
               <Button type="button" onClick={handleSubmit} className="w-full">
                 <Save className="mr-2 h-4 w-4" />
