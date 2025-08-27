@@ -187,25 +187,6 @@ export default function InputPage() {
                 </div>
               </div>
 
-              {/* タイトル */}
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                  タイトル
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="忘れ物のタイトル"
-                  maxLength={120}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.title.length}/120文字
-                </p>
-              </div>
-
               {/* 忘れたもの */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -223,6 +204,27 @@ export default function InputPage() {
                   ))}
                 </div>
               </div>
+
+              {/* タイトル */}
+              <div>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                  モンスターの名前
+                </label>
+                <input
+                  type="text"
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="忘れ物のタイトル"
+                  maxLength={120}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.title.length}/120文字
+                </p>
+              </div>
+
+
 
               {/* 困った度 */}
               <div>
@@ -256,38 +258,8 @@ export default function InputPage() {
               </div>
 
               {/* 追加：状況ブロック（日時・場所・どんな状況） */}
-              <div className="rounded-xl border border-gray-200 p-4">
+              <div>
                 <h4 className="text-sm font-semibold text-gray-800 mb-3">状況</h4>
-
-                {/* 日時 */}
-                <div className="mb-4">
-                  <label htmlFor="datetime" className="block text-sm font-medium text-gray-700 mb-2">
-                    日時
-                  </label>
-                  <input
-                    id="datetime"
-                    type="datetime-local"
-                    value={formData.datetime}
-                    onChange={(e) => setFormData(prev => ({ ...prev, datetime: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-
-                {/* 場所 */}
-                <div className="mb-4">
-                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                    場所
-                  </label>
-                  <input
-                    id="location"
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    placeholder="例）自宅／駅の改札／学校の教室"
-                    maxLength={120}
-                  />
-                </div>
 
                 {/* シチュエーション（タグ選択） */}
                 <div className="mb-4">
@@ -310,62 +282,6 @@ export default function InputPage() {
                   </p>
                 </div>
 
-                {/* どのような状況だったか（自由記述） */}
-                <div>
-                  <label htmlFor="situationNote" className="block text-sm font-medium text-gray-700 mb-2">
-                    どのような状況だったか
-                  </label>
-                  <textarea
-                    id="situationNote"
-                    rows={3}
-                    value={formData.situationNote}
-                    onChange={(e) => setFormData(prev => ({ ...prev, situationNote: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    placeholder="例）朝急いで家を出た／雨で視界が悪かった など"
-                    maxLength={500}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {formData.situationNote.length}/500文字
-                  </p>
-                </div>
-              </div>
-
-              {/* 内容 */}
-              <div>
-                <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
-                  内容
-                </label>
-                <input
-                  type="text"
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="忘れ物の内容"
-                  maxLength={120}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.content.length}/120文字
-                </p>
-              </div>
-
-              {/* メモ（自由記述） */}
-              <div>
-                <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-2">
-                  メモ
-                </label>
-                <textarea
-                  id="details"
-                  value={formData.details}
-                  onChange={(e) => setFormData(prev => ({ ...prev, details: e.target.value }))}
-                  rows={3}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="詳細や思い出などを記録"
-                  maxLength={2000}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.details.length}/2000文字
-                </p>
               </div>
 
               {/* 送信ボタン */}
