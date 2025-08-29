@@ -1,11 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-// ✅ Fix: MainLayout は **default export** を想定してインポート
-//    以前は `{ MainLayout }` の名前付きインポートだったため undefined になっていました。
 import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 import { Chip } from "@/components/ui/chip";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -17,9 +14,9 @@ import {
 
 interface ThingsRecord {
   id: string;
-  category: string; // 例: "key" | "medicine" | "umbrella" | "wallet" | "smartphone"
-  thingType: string; // 例: "家の鍵" / "常備薬" / "折りたたみ傘" など
-  thingId: string; // 既存データ互換: "key" 等が入っている可能性あり
+  category: string;
+  thingType: string;
+  thingId: string;
   title: string;
   content: string;
   details: string;
@@ -27,7 +24,7 @@ interface ThingsRecord {
   location: string;
   datetime: string;
   createdAt: string;
-  situation?: string; // 追加: シチュエーション（下の候補から）
+  situation?: string;
 }
 
 type TimeRange = "week" | "month";
@@ -40,13 +37,11 @@ export default function AnalysisPage() {
   const [thingsRecords, setThingsRecords] = useState<ThingsRecord[]>([]);
   const [baseFiltered, setBaseFiltered] = useState<ThingsRecord[]>([]);
 
-  // ---- 定義: 期間 / カテゴリ / シチュエーション -------------------------
   const timeRanges = [
     { id: "week", name: "週間", emoji: "📅" },
     { id: "month", name: "月間", emoji: "📆" },
   ];
 
-  // 要望: カテゴリから「物忘れ/予定忘れ/寝坊・遅刻」を削除
   const categories = [
     { id: "", name: "すべて", emoji: "🌟" },
     { id: "key", name: "鍵", emoji: "🔑" },
@@ -56,7 +51,6 @@ export default function AnalysisPage() {
     { id: "smartphone", name: "スマホ", emoji: "📱" },
   ];
 
-  // 追加: シチュエーション（要望リストを反映）
   const situations = [
     { id: "", name: "すべて", emoji: "🌟" },
     { id: "morning", name: "朝", emoji: "🌅" },
@@ -66,18 +60,15 @@ export default function AnalysisPage() {
     { id: "rain", name: "雨", emoji: "🌧️" },
     { id: "work", name: "仕事", emoji: "💼" },
     { id: "school", name: "学校", emoji: "🎒" },
-    // 以下は「カテゴリからは消したが状況としては使いたい」項目
     { id: "forget", name: "物忘れ", emoji: "🎒" },
     { id: "schedule-miss", name: "予定忘れ", emoji: "🗓️" },
     { id: "late", name: "寝坊・遅刻", emoji: "⏰" },
     { id: "other", name: "その他", emoji: "😊" },
   ];
 
-  // ---- LocalStorageの読込＆同期 ----------------------------------------
   useEffect(() => {
     const loadRecords = () => {
       const raw = localStorage.getItem("thingsRecords");
-      // ガード: JSON 破損時に落ちないように try/catch
       try {
         const records = raw ? (JSON.parse(raw) as ThingsRecord[]) : [];
         setThingsRecords(Array.isArray(records) ? records : []);
@@ -104,23 +95,19 @@ export default function AnalysisPage() {
     };
   }, []);
 
-  // ---- フィルタ（カテゴリ / 種類 / 状況） -------------------------------
   useEffect(() => {
     let filtered = [...thingsRecords];
 
-    // カテゴリ（category or thingId のいずれかに一致させる：既存データ互換）
     if (selectedCategory !== "") {
       filtered = filtered.filter(
         (r) => r.category === selectedCategory || r.thingId === selectedCategory
       );
     }
 
-    // 忘れたもの種類（thingType）
     if (selectedThingType !== "") {
       filtered = filtered.filter((r) => r.thingType === selectedThingType);
     }
 
-    // シチュエーション（situation）
     if (selectedSituation !== "") {
       filtered = filtered.filter((r) => (r.situation || "") === selectedSituation);
     }
@@ -128,7 +115,6 @@ export default function AnalysisPage() {
     setBaseFiltered(filtered);
   }, [selectedCategory, selectedThingType, selectedSituation, thingsRecords]);
 
-  // ---- 期間フィルタ ------------------------------------------------------
   const timeFilteredRecords = useMemo(() => {
     const now = new Date();
     const lower = new Date(
@@ -137,7 +123,6 @@ export default function AnalysisPage() {
     return baseFiltered.filter((r) => new Date(r.createdAt) >= lower);
   }, [baseFiltered, timeRange]);
 
-  // ---- 週間データ（プログレスバー） -------------------------------------
   const weeklyData = useMemo(() => {
     const days = ["日", "月", "火", "水", "木", "金", "土"] as const;
     const arr = days.map((day) => ({ day, count: 0 }));
@@ -148,13 +133,11 @@ export default function AnalysisPage() {
     return arr;
   }, [timeFilteredRecords]);
 
-  // Progress は 0-100 を渡す前提。最大値に対する割合に正規化
   const weeklyMaxCount = useMemo(
     () => Math.max(1, ...weeklyData.map((x) => x.count)),
     [weeklyData]
   );
 
-  // ---- カテゴリの集計（円グラフ用） --------------------------------------
   const categoryStats = useMemo(() => {
     const map = new Map<string, number>();
     timeFilteredRecords.forEach((r) => {
@@ -171,18 +154,15 @@ export default function AnalysisPage() {
       return { id, name, emoji, count, pct };
     });
 
-    // 表示は件数順
     return stats.sort((a, b) => b.count - a.count);
-  }, [timeFilteredRecords]);
+  }, [timeFilteredRecords, categories]);
 
-  // ---- 1日平均・総数 -----------------------------------------------------
   const totalCount = timeFilteredRecords.length;
   const averagePerDay =
     timeRange === "week"
       ? (totalCount / 7).toFixed(1)
       : (totalCount / 30).toFixed(1);
 
-  // ---- 月間カレンダー ----------------------------------------------------
   const monthGrid = useMemo(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -205,7 +185,6 @@ export default function AnalysisPage() {
       (r) => new Date(r.createdAt).toISOString().slice(0, 10) === date
     ).length;
 
-  // ---- 円グラフ（シンプルSVG） -------------------------------------------
   const PieChart = ({
     data,
     size = 220,
@@ -220,19 +199,18 @@ export default function AnalysisPage() {
     const cx = r;
     const cy = r;
 
-    // カラーパレット（必要に応じて増やせます）
     const colors = [
-      "#60a5fa", // blue-400
-      "#34d399", // emerald-400
-      "#fbbf24", // amber-400
-      "#f472b6", // pink-400
-      "#a78bfa", // violet-400
-      "#f87171", // red-400
-      "#22d3ee", // cyan-400
-      "#fb923c", // orange-400
+      "#60a5fa",
+      "#34d399",
+      "#fbbf24",
+      "#f472b6",
+      "#a78bfa",
+      "#f87171",
+      "#22d3ee",
+      "#fb923c",
     ];
 
-    let angle = -Math.PI / 2; // 12時から開始
+    let angle = -Math.PI / 2;
     return (
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         {total === 0 ? (
@@ -259,17 +237,15 @@ export default function AnalysisPage() {
     );
   };
 
-  // ---- 「忘れたもの種類」の候補をデータから抽出 ---------------------------
   const thingTypeOptions = useMemo(() => {
     const set = new Set<string>();
     thingsRecords.forEach((r) => r.thingType && set.add(r.thingType));
-    return ["", ...Array.from(set)]; // 先頭は「すべて」
+    return ["", ...Array.from(set)];
   }, [thingsRecords]);
 
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* ヘッダー */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">分析</h1>
@@ -277,7 +253,6 @@ export default function AnalysisPage() {
           </div>
         </div>
 
-        {/* フィルター */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-gray-900">
@@ -286,7 +261,6 @@ export default function AnalysisPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* 期間 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 期間
@@ -304,7 +278,6 @@ export default function AnalysisPage() {
               </div>
             </div>
 
-            {/* カテゴリ */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 カテゴリ
@@ -322,7 +295,6 @@ export default function AnalysisPage() {
               </div>
             </div>
 
-            {/* 忘れたもの種類（thingType） */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 忘れたもの種類
@@ -340,7 +312,6 @@ export default function AnalysisPage() {
               </div>
             </div>
 
-            {/* 追加: シチュエーション */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 状況（シチュエーション）
@@ -360,7 +331,6 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
 
-        {/* サマリー統計（要望により「カテゴリ数」は削除） */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardContent className="p-6">
@@ -391,7 +361,6 @@ export default function AnalysisPage() {
           </Card>
         </div>
 
-        {/* 期間別トレンド */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-gray-900">
@@ -408,7 +377,7 @@ export default function AnalysisPage() {
                     <div key={d.day} className="flex items-center gap-4">
                       <div className="w-12 text-sm font-medium text-gray-600">{d.day}</div>
                       <div className="flex-1">
-                        {/* Progress は 0-100 を受け取る前提で正規化 */}
+
                         <Progress value={pct} max={100} />
                       </div>
                       <div className="w-16 text-right text-sm font-medium text-gray-900">
@@ -455,7 +424,6 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
 
-        {/* カテゴリ別（円グラフ） */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-gray-900">
@@ -494,73 +462,3 @@ export default function AnalysisPage() {
     </MainLayout>
   );
 }
-
-/*
-====================================
-🧪 Suggested Tests (Vitest + RTL)
-====================================
-// ファイル名例: AnalysisPage.test.tsx
-// @vitest-environment jsdom
-import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
-// MainLayout が外部依存のため最低限モック
-vi.mock("@/components/layout/main-layout", () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div data-testid="layout">{children}</div>,
-}));
-vi.mock("@/components/ui/card", () => ({
-  Card: ({ children }: any) => <div>{children}</div>,
-  CardContent: ({ children }: any) => <div>{children}</div>,
-  CardHeader: ({ children }: any) => <div>{children}</div>,
-  CardTitle: ({ children }: any) => <div>{children}</div>,
-}));
-vi.mock("@/components/ui/chip", () => ({ Chip: ({ label, onClick }: any) => <button onClick={onClick}>{label}</button> }));
-vi.mock("@/components/ui/progress", () => ({ Progress: ({ value }: any) => <div aria-label="progress" data-value={value} /> }));
-
-import AnalysisPage from "./AnalysisPage"; // 実ファイル名に合わせて変更
-
-beforeEach(() => {
-  localStorage.clear();
-});
-
-describe("AnalysisPage", () => {
-  it("renders without crashing and shows layout", () => {
-    render(<AnalysisPage />);
-    expect(screen.getByTestId("layout")).toBeInTheDocument();
-    expect(screen.getByText("分析")).toBeInTheDocument();
-  });
-
-  it("shows 'データがありません。' when no records", () => {
-    render(<AnalysisPage />);
-    expect(screen.getByText("データがありません。")).toBeInTheDocument();
-  });
-
-  it("normalizes weekly progress value to 0-100", () => {
-    const now = Date.now();
-    const records = [
-      { id: "1", category: "key", thingType: "家の鍵", thingId: "key", title: "", content: "", details: "", difficulty: 1, location: "", datetime: "", createdAt: new Date(now).toISOString() },
-      { id: "2", category: "key", thingType: "家の鍵", thingId: "key", title: "", content: "", details: "", difficulty: 1, location: "", datetime: "", createdAt: new Date(now).toISOString() },
-    ];
-    localStorage.setItem("thingsRecords", JSON.stringify(records));
-    render(<AnalysisPage />);
-    // 最大件数に対して 100 になるバーが最低 1 本はあるはず
-    const bars = screen.getAllByLabelText("progress");
-    expect(bars.some((b) => Number(b.getAttribute("data-value")) === 100)).toBe(true);
-  });
-
-  it("filters by category when a category chip is clicked", async () => {
-    const now = Date.now();
-    const records = [
-      { id: "1", category: "key", thingType: "家の鍵", thingId: "key", title: "", content: "", details: "", difficulty: 1, location: "", datetime: "", createdAt: new Date(now).toISOString() },
-      { id: "2", category: "wallet", thingType: "財布", thingId: "wallet", title: "", content: "", details: "", difficulty: 1, location: "", datetime: "", createdAt: new Date(now).toISOString() },
-    ];
-    localStorage.setItem("thingsRecords", JSON.stringify(records));
-    render(<AnalysisPage />);
-    // カテゴリ chip をクリック（例: 鍵）
-    const keyBtn = screen.getByRole("button", { name: "鍵" });
-    keyBtn.click();
-    // 円グラフの凡例に鍵が出る（財布の比率が 0 になる）想定
-    expect(screen.getByText("鍵")).toBeInTheDocument();
-  });
-});
-*/

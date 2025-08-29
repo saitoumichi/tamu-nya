@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState,useEffect } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,6 +53,77 @@ export default function NotificationsPage() {
   const [showQuickSetup, setShowQuickSetup] = useState(false);
 
   // LocalStorageから通知設定を読み込み
+
+
+
+  useEffect(() => {
+
+
+    const loadNotificationSettings = () => {
+
+
+      const savedSettings = JSON.parse(localStorage.getItem('notificationSettings') || '[]');
+
+
+      if (savedSettings.length > 0) {
+
+
+        // 既存のサンプルデータと新しい設定を結合
+
+
+        const combinedSettings = [...reminderSettings, ...savedSettings];
+
+
+        setReminderSettings(combinedSettings);
+
+
+      }
+
+
+    };
+
+
+
+
+
+    loadNotificationSettings();
+
+
+
+
+
+    // LocalStorageの変更を監視
+
+
+    const handleStorageChange = () => {
+
+
+      loadNotificationSettings();
+
+
+    };
+
+
+
+
+
+    window.addEventListener('notificationSettingsChanged', handleStorageChange);
+
+
+    return () => {
+
+
+      window.removeEventListener('notificationSettingsChanged', handleStorageChange);
+
+
+    };
+
+
+  }, []);
+
+
+
+
   useEffect(() => {
     const loadNotificationSettings = () => {
       const savedSettings = JSON.parse(localStorage.getItem('notificationSettings') || '[]');
@@ -118,27 +189,49 @@ export default function NotificationsPage() {
     setShowQuickSetup(false);
   };
 
-  const getPermissionStatus = () => {
-    // クライアントサイドでのみ実行
-    if (typeof window === 'undefined') {
-      return { text: '読み込み中...', icon: <AlertCircle className="h-4 w-4 text-gray-500" />, color: 'text-gray-500' };
-    }
-    
-    if (!('Notification' in window)) {
-      return { text: 'サポートされていません', icon: <AlertCircle className="h-4 w-4 text-gray-500" />, color: 'text-gray-500' };
-    }
-    
-    switch (window.Notification.permission) {
-      case 'granted':
-        return { text: '許可済み', icon: <CheckCircle className="h-4 w-4 text-green-500" />, color: 'text-green-600' };
-      case 'denied':
-        return { text: '拒否', icon: <AlertCircle className="h-4 w-4 text-red-500" />, color: 'text-red-600' };
-      default:
-        return { text: '未設定', icon: <AlertCircle className="h-4 w-4 text-yellow-500" />, color: 'text-yellow-600' };
-    }
-  };
+  const [permissionStatus, setPermissionStatus] = useState({
+    text: '読み込み中...',
+    icon: <AlertCircle className="h-4 w-4 text-gray-500" />,
+    color: 'text-gray-500'
+  });
 
-  const permissionStatus = getPermissionStatus();
+  useEffect(() => {
+    const updatePermissionStatus = () => {
+      if (!('Notification' in window)) {
+        setPermissionStatus({
+          text: 'サポートされていません',
+          icon: <AlertCircle className="h-4 w-4 text-gray-500" />,
+          color: 'text-gray-500'
+        });
+        return;
+      }
+      
+      switch (window.Notification.permission) {
+        case 'granted':
+          setPermissionStatus({
+            text: '許可済み',
+            icon: <CheckCircle className="h-4 w-4 text-green-500" />,
+            color: 'text-green-600'
+          });
+          break;
+        case 'denied':
+          setPermissionStatus({
+            text: '拒否',
+            icon: <AlertCircle className="h-4 w-4 text-red-500" />,
+            color: 'text-red-600'
+          });
+          break;
+        default:
+          setPermissionStatus({
+            text: '未設定',
+            icon: <AlertCircle className="h-4 w-4 text-yellow-500" />,
+            color: 'text-yellow-600'
+          });
+      }
+    };
+
+    updatePermissionStatus();
+  }, []);
 
   return (
     <MainLayout>
