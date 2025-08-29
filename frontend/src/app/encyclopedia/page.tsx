@@ -1,20 +1,20 @@
 "use client";
 export const dynamic = 'force-dynamic';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // 型定義
 interface ThingsRecord {
   id: string;
   category: string;
+  categoryName?: string;
+  categoryEmoji?: string;
   thingType: string;
   thingId: string; // 例: 'key' | 'umbrella' | 'wallet' | 'medicine' | 'smartphone' | 'homework' | 'schedule' | 'time'
-  title: string;
-  content: string;
-  details: string;
+  title?: string;
   difficulty: number; // 1〜10想定（難易度でランク判定）
-  location: string;
-  datetime: string;
+  situation?: string[];
   createdAt: string;
+  didForget: boolean;
 }
 
 // ランク定義（SSランク、Sランク、Aランク、Bランク、Cランク）
@@ -112,19 +112,19 @@ export default function EncyclopediaPage() {
     return 'C';
   };
 
-  // 元の thingId を新しい3カテゴリへマッピング
+  // 元の thingId を新しいカテゴリへマッピング
   // 物忘れ: key/umbrella/wallet/medicine/smartphone/homework など
   // 予定忘れ: schedule
   // 寝坊・遅刻: time
-  const NEW_CATEGORY_MAP: Record<string, 'misplacement' | 'missed_schedule' | 'overslept'> = {
-    key: 'misplacement',
-    umbrella: 'misplacement',
-    wallet: 'misplacement',
-    medicine: 'misplacement',
-    smartphone: 'misplacement',
-    homework: 'misplacement',
-    schedule: 'missed_schedule',
-    time: 'overslept',
+  const NEW_CATEGORY_MAP: Record<string, 'forget_things' | 'forget_schedule' | 'oversleep_late'> = {
+    key: 'forget_things',
+    umbrella: 'forget_things',
+    wallet: 'forget_things',
+    medicine: 'forget_things',
+    smartphone: 'forget_things',
+    homework: 'forget_things',
+    schedule: 'forget_schedule',
+    time: 'oversleep_late',
   };
 
   // 表示用カテゴリ一覧（UIのフィルタ）
@@ -137,7 +137,7 @@ export default function EncyclopediaPage() {
   ]);
 
   // カスタムカテゴリを読み込み
-  React.useEffect(() => {
+  useEffect(() => {
     const loadCustomCategories = () => {
       const saved = localStorage.getItem('customCards');
       if (saved) {
@@ -186,7 +186,7 @@ export default function EncyclopediaPage() {
   ];
 
   // ------- データ生成 -------
-  React.useEffect(() => {
+  const generateMonsters = () => {
     // 既存のサンプル（固定）
     const baseMonsters: Monster[] = [
       {
@@ -229,11 +229,13 @@ export default function EncyclopediaPage() {
     const byThingId = new Map<string, { latestAt: string; maxDifficulty: number; sample: ThingsRecord }>();
 
     for (const rec of thingsRecords) {
+      // didForget === true の記録のみを対象とする
+      if (rec.didForget !== true) continue;
+      
       const prev = byThingId.get(rec.thingId);
       if (!prev) {
         byThingId.set(rec.thingId, { latestAt: rec.createdAt, maxDifficulty: rec.difficulty ?? 3, sample: rec });
       } else {
-
         const latestAt = new Date(rec.createdAt) > new Date(prev.latestAt) ? rec.createdAt : prev.latestAt;
         const maxDifficulty = Math.max(prev.maxDifficulty, rec.difficulty ?? 3);
         byThingId.set(rec.thingId, { latestAt, maxDifficulty, sample: rec });
@@ -243,7 +245,10 @@ export default function EncyclopediaPage() {
     const thingsMonsters: Monster[] = Array.from(byThingId.entries()).map(([thingId, info], index) => {
       const sample = info.sample;
       const displayName = sample.thingType || '忘れ物';
-      const emoji =
+      
+      // カスタムカテゴリの情報があれば使用、なければデフォルト
+      const categoryName = sample.categoryName || displayName;
+      const categoryEmoji = sample.categoryEmoji || (
         thingId === 'key' ? '🔑' :
         thingId === 'umbrella' ? '☔' :
         thingId === 'wallet' ? '👛' :
@@ -251,22 +256,38 @@ export default function EncyclopediaPage() {
         thingId === 'smartphone' ? '📱' :
         thingId === 'homework' ? '📄' :
         thingId === 'schedule' ? '📅' :
-        thingId === 'time' ? '⏰' : '😊';
+        thingId === 'time' ? '⏰' : '😊'
+      );
 
       return {
         id: 1000 + index,
         name: displayName,
         category: thingId,
-        categoryName: displayName,
-        categoryEmoji: emoji,
-        rank: getRankByEncounterCount(thingsRecords.filter(r => r.thingId === thingId).length),
+        categoryName: categoryName,
+        categoryEmoji: categoryEmoji,
+        rank: getRankByEncounterCount(thingsRecords.filter(r => r.thingId === thingId && r.didForget === true).length),
         lastSeenAt: getTimeAgo(info.latestAt),
         thumbUrl: getImagePathByThingId(thingId),
       };
     });
 
-
     setMonsters([...baseMonsters, ...thingsMonsters]);
+  };
+
+  useEffect(() => {
+    generateMonsters();
+  }, []);
+
+  // LocalStorageの変更を監視
+  useEffect(() => {
+    const handleStorageChange = () => generateMonsters();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('thingsRecordsChanged', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('thingsRecordsChanged', handleStorageChange);
+    };
   }, []);
 
   // ------- フィルタ処理 -------
