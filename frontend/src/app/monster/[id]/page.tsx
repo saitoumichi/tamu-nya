@@ -143,7 +143,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
     <MainLayout>
       <div className="space-y-6">
         {/* ヘッダー */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 text-gray-900">
           <Link href="/encyclopedia">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -182,18 +182,18 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
               </div>
               
               {/* 基本情報 */}
-              <div className="flex-1 space-y-4">
-                <div className="flex items-center gap-3">
+              <div className="flex-1 space-y-4 text-gray-900">
+                <div className="flex items-center gap-3 text-gray-900">
                   <h2 className="text-xl font-semibold">{monster.name}</h2>
                   <Badge rarity={monster.rarity} />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 text-gray-600">
                     <Calendar className="h-4 w-4 text-gray-500" />
                     <span>初出日: {monster.firstSeen}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 text-gray-600">
                     <Clock className="h-4 w-4 text-gray-500" />
                     <span>最終出現日: {monster.lastSeen}</span>
                   </div>
@@ -208,6 +208,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
         </Card>
 
         {/* 進化条件 */}
+        <div className="text-gray-900">
         <Card>
           <CardHeader>
             <CardTitle>進化条件 {monster.evolutionCondition}</CardTitle>
@@ -225,6 +226,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
             </div>
           </CardContent>
         </Card>
+        </div>
 
         {/* 推奨対策 */}
         <Card>

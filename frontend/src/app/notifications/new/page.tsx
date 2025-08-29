@@ -5,7 +5,7 @@ import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
-import { ArrowLeft, Save, Clock, Calendar } from 'lucide-react';
+import { ArrowLeft, Save, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -99,12 +99,11 @@ export default function NewNotificationPage() {
         {/* フォーム */}
         <Card>
           <CardHeader>
-          <div className="text-black">
-            <CardTitle className="flex items-center gap-2">
-
-              <Clock className="h-5 w-5 text-primary" />
-              通知設定
-            </CardTitle>
+            <div className="text-black">
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                通知設定
+              </CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -119,8 +118,7 @@ export default function NewNotificationPage() {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary
-                  text-gray-700"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-gray-700"
                   placeholder="例: 鍵の確認"
                   maxLength={50}
                 />
@@ -141,8 +139,7 @@ export default function NewNotificationPage() {
                     id="time"
                     value={formData.time}
                     onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
-                    className="rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary
-                    text-gray-400"
+                    className="rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-gray-400"
                   />
                 </div>
               </div>
