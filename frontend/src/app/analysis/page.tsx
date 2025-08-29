@@ -527,8 +527,7 @@ const difficultyRanking = useMemo(() => {
   </div>
 </div>
 
-                    </div>
-                  </div>
+                  
                 ))}
               </div>
             )}
