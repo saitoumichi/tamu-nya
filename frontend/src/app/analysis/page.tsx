@@ -160,19 +160,33 @@ export default function AnalysisPage() {
 // ---- 困った度ランキング --------------------------------------------------
 const difficultyRanking = useMemo(() => {
   const map = new Map<string, { sum: number; count: number }>();
+
   timeFilteredRecords.forEach((r) => {
     const key = r.category || r.thingId || "other";
     const difficulty = typeof r.difficulty === "number" ? r.difficulty : 0;
     const prev = map.get(key) || { sum: 0, count: 0 };
     map.set(key, { sum: prev.sum + difficulty, count: prev.count + 1 });
   });
-  return Array.from(map.entries())
+
+  const ranking = Array.from(map.entries())
     .map(([id, { sum, count }]) => {
       const cat = categories.find((c) => c.id === id);
-      return { id, name: cat?.name ?? "その他", emoji: cat?.emoji ?? "📦", sum, count };
+      const name = cat?.name ?? "その他";
+      const emoji = cat?.emoji ?? "📦";
+      const avg = count > 0 ? sum / count : 0;
+
+      // 互換目的：sum（main）とtotal（feature）の両方を持たせる
+      return { id, name, emoji, sum, total: sum, count, avg };
     })
-    .filter(x => x.sum > 0)
-    .sort((a, b) => b.sum - a.sum || b.count - a.count || a.name.localeCompare(b.name, "ja"));
+    .filter((x) => x.sum > 0)
+    .sort(
+      (a, b) =>
+        b.sum - a.sum ||        // 合計困った度が大きい順
+        b.count - a.count ||    // 件数が多い順
+        a.name.localeCompare(b.name, "ja")
+    );
+
+  return ranking;
 }, [timeFilteredRecords, categories]);
 
   const totalCount = timeFilteredRecords.length;
@@ -477,7 +491,10 @@ const difficultyRanking = useMemo(() => {
           </CardContent>
         </Card>
 
+
+
         {/* 困った度ランキング */}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-gray-900">
@@ -491,26 +508,25 @@ const difficultyRanking = useMemo(() => {
             ) : (
               <div className="space-y-3">
                 {difficultyRanking.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between border rounded-lg px-3 py-2"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 text-sm font-medium text-gray-600">
-                        {index + 1}位
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{item.emoji}</span>
-                        <span className="text-sm font-medium text-gray-900">{item.name}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 text-right">
-                      <div className="text-sm font-medium text-gray-900">
-                        合計{item.sum}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {item.count}件
-                      </div>
+<div
+  key={item.id}
+  className="flex items-center justify-between border rounded-lg px-3 py-2"
+>
+  <div className="flex items-center gap-3">
+    <div className="w-8 text-sm font-medium text-gray-600">
+      {index + 1}位
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="text-lg">{item.emoji}</span>
+      <span className="text-sm font-medium text-gray-900">{item.name}</span>
+    </div>
+  </div>
+  <div className="text-right">
+    <div className="text-sm font-medium text-gray-900">合計{item.sum}点</div>
+    <div className="text-xs text-gray-500">{item.count}件</div>
+  </div>
+</div>
+
                     </div>
                   </div>
                 ))}
