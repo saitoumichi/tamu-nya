@@ -70,7 +70,7 @@ export default function EncyclopediaPage() {
     // 最大レベルは5枚目の画像まで
     imageNumber = Math.min(imageNumber, 5);
     
-    let imagePath = '/monsters/wallet/wallet-monster.jpg'; // デフォルトを財布の画像に変更
+    let imagePath = '/monsters/things/things-monster.jpg'; // デフォルト
     
     if (thingId === 'key') {
       imagePath = `/monsters/key/key-monster-${imageNumber}.jpg`;
@@ -84,8 +84,6 @@ export default function EncyclopediaPage() {
       imagePath = `/monsters/phone/phone_monsters${imageNumber > 1 ? imageNumber : ''}.jpg`;
     } else if (thingId === 'homework') {
       imagePath = `/monsters/homework/homework_monsters${imageNumber > 1 ? imageNumber : ''}.jpg`;
-    } else if (thingId === 'schedule') {
-      imagePath = `/monsters/schedule/schedule_monsters${imageNumber > 1 ? imageNumber : ''}.png`;
     }
     
     console.log(`${thingId}の親密度${intimacyLevel}、画像${imageNumber}枚目:`, imagePath);
@@ -115,7 +113,7 @@ export default function EncyclopediaPage() {
         rarity: 'common' as Rarity,
         intimacyLevel: 15,
         lastSeenAt: '2時間前',
-        thumbUrl: '/monsters/key/key-monster-1.jpg'
+        thumbUrl: '/monsters/key-monsters/key-monster-1.jpg'
       },
       {
         id: 2,
@@ -126,7 +124,7 @@ export default function EncyclopediaPage() {
         rarity: 'rare' as Rarity,
         intimacyLevel: 8,
         lastSeenAt: '1日前',
-        thumbUrl: '/monsters/umbrella/umbrella-monster-1.jpg'
+        thumbUrl: '/monsters/umbrella_monsters/umbrella-monster-1.jpg'
       },
       {
         id: 3,
@@ -137,7 +135,7 @@ export default function EncyclopediaPage() {
         rarity: 'epic' as Rarity,
         intimacyLevel: 25,
         lastSeenAt: '3日前',
-        thumbUrl: '/monsters/wallet/wallet-monster.jpg'
+        thumbUrl: '/monsters/wallet_monsters/wallet-monster.jpg'
       }
     ];
 
@@ -168,7 +166,7 @@ export default function EncyclopediaPage() {
       } else {
         // 新しいモンスターを作成
         // 忘れ物の種類に応じて適切な画像パスを生成（親密度1用）
-        let imagePath = '/monsters/wallet/wallet-monster.jpg'; // デフォルトを財布の画像に変更
+        let imagePath = '/monsters/things/things-monster.jpg'; // デフォルト
         
         if (record.thingId === 'key') {
           imagePath = '/monsters/key/key-monster-1.jpg';
@@ -188,9 +186,6 @@ export default function EncyclopediaPage() {
         } else if (record.thingId === 'homework') {
           imagePath = '/monsters/homework/homework_monsters.jpg';
           console.log('宿題のモンスター用画像パス:', imagePath);
-        } else if (record.thingId === 'schedule') {
-          imagePath = '/monsters/schedule/schedule_monsters.png';
-          console.log('予定のモンスター用画像パス:', imagePath);
         } else {
           console.log('該当する画像が見つからないthingId:', record.thingId);
         }
@@ -266,17 +261,12 @@ export default function EncyclopediaPage() {
     { id: 'medicine', name: '薬', emoji: '💊' },
     { id: 'umbrella', name: '傘', emoji: '☔' },
     { id: 'wallet', name: '財布', emoji: '👛' },
-    { id: 'smartphone', name: 'スマホ', emoji: '📱' },
-    { id: 'schedule', name: '予定', emoji: '📅' },
-    { id: 'time', name: '遅刻', emoji: '⏰' },
-    { id: 'homework', name: '宿題', emoji: '📄' },
-    { id: 'another', name: 'その他', emoji: '😊' },
+    { id: 'smartphone', name: 'スマホ', emoji: '📱' }
   ];
 
   const rarities: { value: Rarity | ''; label: string }[] = [
     { value: '', label: 'すべて' },
     { value: 'common', label: 'Common' },
-    { value: 'uncommon', label: 'Uncommon' },
     { value: 'rare', label: 'Rare' },
     { value: 'epic', label: 'Epic' },
     { value: 'legendary', label: 'Legendary' }
