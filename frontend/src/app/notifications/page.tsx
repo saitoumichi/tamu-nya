@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Bell, Clock, Plus, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 export default function NotificationsPage() {
   const [notificationSettings, setNotificationSettings] = useState({
@@ -50,6 +51,30 @@ export default function NotificationsPage() {
   ]);
 
   const [showQuickSetup, setShowQuickSetup] = useState(false);
+
+  // LocalStorageから通知設定を読み込み
+  useEffect(() => {
+    const loadNotificationSettings = () => {
+      const savedSettings = JSON.parse(localStorage.getItem('notificationSettings') || '[]');
+      if (savedSettings.length > 0) {
+        // 既存のサンプルデータと新しい設定を結合
+        const combinedSettings = [...reminderSettings, ...savedSettings];
+        setReminderSettings(combinedSettings);
+      }
+    };
+
+    loadNotificationSettings();
+
+    // LocalStorageの変更を監視
+    const handleStorageChange = () => {
+      loadNotificationSettings();
+    };
+
+    window.addEventListener('notificationSettingsChanged', handleStorageChange);
+    return () => {
+      window.removeEventListener('notificationSettingsChanged', handleStorageChange);
+    };
+  }, []);
 
   const handleToggleSetting = (key: keyof typeof notificationSettings) => {
     setNotificationSettings(prev => ({
@@ -124,32 +149,12 @@ export default function NotificationsPage() {
             <h1 className="text-2xl font-bold text-gray-900">通知設定</h1>
             <p className="text-gray-600">プッシュ通知とリマインダーの設定</p>
           </div>
-          <Button onClick={() => setShowQuickSetup(true)} variant="secondary">
-            <Bell className="mr-2 h-4 w-4" />
-            クイック設定
-          </Button>
         </div>
-
-        {/* 簡単な設定ガイド */}
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <Bell className="h-5 w-5 text-blue-600 mt-0.5" />
-              <div>
-                <h3 className="font-medium text-blue-900 mb-1">ベルマークから簡単設定！</h3>
-                <p className="text-sm text-blue-700">
-                  ヘッダーの🔔ベルマークをクリックすると、いつでもこの画面にアクセスできます。
-                  クイック設定ボタンで基本的な通知を一発で有効化できます。
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* 通知許可の状態 */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-black">
               <Bell className="h-5 w-5 text-primary" />
               通知許可の状態
             </CardTitle>
@@ -174,68 +179,12 @@ export default function NotificationsPage() {
           </CardContent>
         </Card>
 
-        {/* 通知の種類設定 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" />
-              通知の種類
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {Object.entries(notificationSettings).map(([key, value]) => {
-              const labels = {
-                pushNotifications: 'プッシュ通知',
-                emailNotifications: 'メール通知',
-                reminderNotifications: 'リマインダー通知',
-                achievementNotifications: '実績通知',
-                soundNotifications: '通知音'
-              };
-
-              const descriptions = {
-                pushNotifications: '忘れ物のリマインダーや新しいモンスターの出現をお知らせ',
-                emailNotifications: '重要な通知をメールでも受け取る',
-                reminderNotifications: '設定した時間に忘れ物防止のアラートを表示',
-                achievementNotifications: 'モンスターの成長や進化をお知らせ',
-                soundNotifications: '通知時に音を鳴らす'
-              };
-
-              return (
-                <div key={key} className="flex items-start justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-gray-900">{labels[key as keyof typeof notificationSettings]}</span>
-                      {value && <CheckCircle className="h-4 w-4 text-green-500" />}
-                    </div>
-                    <p className="text-xs text-gray-500">{descriptions[key as keyof typeof notificationSettings]}</p>
-                  </div>
-                  <button
-                    onClick={() => handleToggleSetting(key as keyof typeof notificationSettings)}
-                    className={cn(
-                      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors ml-4',
-                      value ? 'bg-primary' : 'bg-gray-200'
-                    )}
-                    aria-label={`${labels[key as keyof typeof notificationSettings]}を${value ? '無効' : '有効'}にする`}
-                  >
-                    <span
-                      className={cn(
-                        'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                        value ? 'translate-x-6' : 'translate-x-1'
-                      )}
-                    />
-                  </button>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-
         {/* リマインダー設定 */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-black">
               <Clock className="h-5 w-5 text-primary" />
-              リマインダー設定
+              設定されている通知
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -253,7 +202,6 @@ export default function NotificationsPage() {
                       <span className="text-2xl">{reminder.categoryEmoji}</span>
                       <div>
                         <h4 className="font-medium text-gray-900">{reminder.name}</h4>
-                        <p className="text-sm text-gray-600 mb-1">{reminder.description}</p>
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Clock className="h-4 w-4" />
                           <span>{reminder.time}</span>
@@ -304,24 +252,13 @@ export default function NotificationsPage() {
 
         {/* 新規リマインダー追加ボタン */}
         <div className="flex justify-center">
-          <Button size="lg" className="px-8">
-            <Plus className="mr-2 h-5 w-5" />
-            新規リマインダー
-          </Button>
+          <Link href="/notifications/new">
+            <Button size="lg" className="px-8">
+              <Plus className="mr-2 h-5 w-5" />
+              新規登録
+            </Button>
+          </Link>
         </div>
-
-        {/* 通知の説明 */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-sm text-gray-600 space-y-2">
-              <h4 className="font-medium text-gray-900 mb-3">通知について</h4>
-              <p>• プッシュ通知: 忘れ物のリマインダーや新しいモンスターの出現をお知らせ</p>
-              <p>• リマインダー: 設定した時間に忘れ物防止のアラートを表示</p>
-              <p>• 実績通知: モンスターの成長や進化をお知らせ</p>
-              <p>• 設定はいつでも変更できます</p>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* クイック設定モーダル */}
         {showQuickSetup && (
