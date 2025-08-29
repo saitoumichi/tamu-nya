@@ -524,8 +524,6 @@ const difficultyRanking = useMemo(() => {
   <div className="text-right">
     <div className="text-sm font-medium text-gray-900">合計{item.sum}点</div>
     <div className="text-xs text-gray-500">{item.count}件</div>
-  </div>
-</div>
 
                     </div>
                   </div>
