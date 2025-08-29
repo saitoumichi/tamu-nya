@@ -148,7 +148,7 @@ export default function EncyclopediaPage() {
         categoryEmoji: '☔',
         rank: 'A',
         lastSeenAt: '1日前',
-        thumbUrl: '/monsters/umbrella/umbrella-monster-1.jpg',
+        thumbUrl: '/monsters/umbrella/umbrella-monster-1.jpg'
       },
       {
         id: 3,
@@ -174,6 +174,7 @@ export default function EncyclopediaPage() {
       if (!prev) {
         byThingId.set(rec.thingId, { latestAt: rec.createdAt, maxDifficulty: rec.difficulty ?? 3, sample: rec });
       } else {
+
         const latestAt = new Date(rec.createdAt) > new Date(prev.latestAt) ? rec.createdAt : prev.latestAt;
         const maxDifficulty = Math.max(prev.maxDifficulty, rec.difficulty ?? 3);
         byThingId.set(rec.thingId, { latestAt, maxDifficulty, sample: rec });
@@ -204,6 +205,7 @@ export default function EncyclopediaPage() {
         thumbUrl: getImagePathByThingId(thingId),
       };
     });
+
 
     setMonsters([...baseMonsters, ...thingsMonsters]);
   }, []);

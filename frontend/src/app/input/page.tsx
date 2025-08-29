@@ -10,13 +10,6 @@ import { Plus, Save, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-// 追加: ローカル時刻を <input type="datetime-local"> 用に整形
-const getLocalDatetime = () => {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:mm"
-};
-
 export default function InputPage() {
   const [formData, setFormData] = useState({
     category: '',
@@ -26,10 +19,9 @@ export default function InputPage() {
     forgottenItem: '',
     details: '',
     difficulty: 3,
-    situation: [] as string[],           // 選択したシチュエーションタグ
-    situationNote: '',                   // 追加: どのような状況だったか（自由記述）
-    location: '',                        // 場所
-    datetime: getLocalDatetime(),        // 入力用に整形済みの現在時刻
+    situation: [] as string[],
+    location: '',
+    datetime: new Date().toISOString().slice(0, 16)
   });
 
   const [showResultModal, setShowResultModal] = useState(false);
@@ -77,12 +69,13 @@ export default function InputPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('handleSubmit called');
-
+    
+    // 選択された「忘れたもの」の情報を図鑑に送る
     if (formData.forgottenItem) {
       const selectedThing = things.find(thing => thing.id === formData.forgottenItem);
       console.log('選択された忘れ物:', selectedThing);
-
-      // 保存データ（図鑑で読み込む）
+      
+      // LocalStorageに保存（図鑑で読み込むため）
       const thingsRecord = {
         id: Date.now().toString(),
         category: formData.category,
@@ -92,42 +85,40 @@ export default function InputPage() {
         content: formData.content,
         details: formData.details,
         difficulty: formData.difficulty,
-        // 追加保存: 状況ブロックの情報
-        situation: formData.situation,          // 選択タグの配列
-        situationNote: formData.situationNote,  // 自由記述
-        location: formData.location,            // 場所
-        datetime: formData.datetime,            // 日時（ローカル）
-        createdAt: new Date().toISOString(),
+        location: formData.location,
+        datetime: formData.datetime,
+        createdAt: new Date().toISOString()
       };
-
+      
+      // 既存のデータを取得して追加
       const existingRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
       existingRecords.push(thingsRecord);
       localStorage.setItem('thingsRecords', JSON.stringify(existingRecords));
-
+      
+      // モンスター情報を計算
       const sameThingRecords = existingRecords.filter((record: { thingId: string }) => record.thingId === formData.forgottenItem);
       const encounterCount = sameThingRecords.length;
       const intimacyLevel = encounterCount;
-
+      
+      // rarityを計算（図鑑と同じロジック）
       let rarity = 'common';
       if (intimacyLevel > 5) rarity = 'uncommon';
       if (intimacyLevel > 10) rarity = 'rare';
       if (intimacyLevel > 15) rarity = 'epic';
       if (intimacyLevel > 20) rarity = 'legendary';
-
+      
       setMonsterInfo({
         name: selectedThing?.name || '忘れ物',
         encounterCount,
         intimacyLevel,
         rarity
       });
-
+      
       console.log('図鑑用データが保存されました:', thingsRecord);
       console.log('モンスター情報:', { encounterCount, intimacyLevel, rarity });
-      
-      // 分析ページにデータ更新を通知
-      window.dispatchEvent(new CustomEvent('thingsRecordsChanged'));
     }
-
+    
+    // 成長リザルトモーダルを表示
     setShowResultModal(true);
   };
 
@@ -184,6 +175,25 @@ export default function InputPage() {
                 </div>
               </div>
 
+              {/* タイトル */}
+              <div>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                  タイトル
+                </label>
+                <input
+                  type="text"
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="忘れ物のタイトル"
+                  maxLength={120}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.title.length}/120文字
+                </p>
+              </div>
+
               {/* 忘れたもの */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -202,26 +212,24 @@ export default function InputPage() {
                 </div>
               </div>
 
-              {/* タイトル */}
+              {/* 内容 */}
               <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                  モンスターの名前
+                <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
+                  内容
                 </label>
                 <input
                   type="text"
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  id="content"
+                  value={formData.content}
+                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="忘れ物のタイトル"
+                  placeholder="忘れ物の内容"
                   maxLength={120}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {formData.title.length}/120文字
+                  {formData.content.length}/120文字
                 </p>
               </div>
-
-
 
               {/* 困った度 */}
               <div>
@@ -254,31 +262,81 @@ export default function InputPage() {
                 </p>
               </div>
 
-              {/* 追加：状況ブロック（日時・場所・どんな状況） */}
+              {/* 内容・詳細 */}
               <div>
-                <h4 className="text-sm font-semibold text-gray-800 mb-3">状況</h4>
+                <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-2">
+                  内容・詳細
+                </label>
+                <textarea
+                  id="details"
+                  value={formData.details}
+                  onChange={(e) => setFormData(prev => ({ ...prev, details: e.target.value }))}
+                  rows={3}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="詳細や状況などを記録"
+                  maxLength={2000}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.details.length}/2000文字
+                </p>
+              </div>
 
-                {/* シチュエーション（タグ選択） */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    シチュエーション
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {situations.map((s) => (
-                      <Chip
-                        key={s.id}
-                        label={s.name}
-                        emoji={s.emoji}
-                        selected={formData.situation.includes(s.id)}
-                        onClick={() => handleSituationToggle(s.id)}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    複数選択できます
-                  </p>
+              {/* 日時表示 */}
+              <div className="text-sm text-gray-500">
+                {new Date().toLocaleString('ja-JP', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
+              
+              {/* 場所 */}
+              <div>
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+                  場所
+                </label>
+                <input
+                  type="text"
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="忘れ物をした場所"
+                />
+              </div>
+
+              {/* 日時入力 */}
+              <div>
+                <label htmlFor="datetime" className="block text-sm font-medium text-gray-700 mb-2">
+                  日時
+                </label>
+                <input
+                  type="datetime-local"
+                  id="datetime"
+                  value={formData.datetime}
+                  onChange={(e) => setFormData(prev => ({ ...prev, datetime: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              {/* 状況 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  状況
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {situations.map((category) => (
+                    <Chip
+                      key={category.id}
+                      label={category.name}
+                      emoji={category.emoji}
+                      selected={formData.category === category.id}
+                      onClick={() => handleCategorySelect(category.id)}
+                    />
+                  ))}
                 </div>
-
               </div>
 
               {/* 送信ボタン */}
