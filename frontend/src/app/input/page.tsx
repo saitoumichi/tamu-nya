@@ -63,9 +63,6 @@ export default function InputPage() {
     { id: 'rain', name: '雨', emoji: '🌧️' },
     { id: 'work', name: '仕事', emoji: '💼' },
     { id: 'school', name: '学校', emoji: '🎒' },
-    { id: 'memory',  name: '物忘れ',   emoji: '🎒' },
-    { id: 'schedule',name: '予定忘れ', emoji: '🗓️' },
-    { id: 'late',    name: '寝坊・遅刻', emoji: '⏰' },
     { id: 'another', name: 'その他', emoji: '😊' },
   ];
 

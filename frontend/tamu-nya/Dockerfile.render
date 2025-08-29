@@ -1,0 +1,40 @@
+FROM php:8.2-apache
+
+# 必要なパッケージをインストール
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip
+
+# PHP拡張をインストール
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+
+# Composerをインストール
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# 作業ディレクトリを設定
+WORKDIR /var/www/html
+
+# バックエンドディレクトリをコピー
+COPY backend/ /var/www/html/
+
+# 依存関係をインストール
+RUN composer install --no-dev --optimize-autoloader
+
+# 権限を設定
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
+
+# Apache設定
+RUN a2enmod rewrite
+
+# ポート80を公開
+EXPOSE 80
+
+# Apacheを起動
+CMD ["apache2-foreground"]
