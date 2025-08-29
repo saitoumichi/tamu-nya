@@ -224,6 +224,7 @@ export default function EncyclopediaPage() {
     // LocalStorage から things を読み込む
     const thingsRecords: ThingsRecord[] = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
     console.log('図鑑で読み込まれたthingsデータ:', thingsRecords);
+    console.log('didForget === true の記録数:', thingsRecords.filter(r => r.didForget === true).length);
 
     // thingId ごとに 1 体生成（最新の記録時間、最大難易度 で代表化）
     const byThingId = new Map<string, { latestAt: string; maxDifficulty: number; sample: ThingsRecord }>();
@@ -241,6 +242,9 @@ export default function EncyclopediaPage() {
         byThingId.set(rec.thingId, { latestAt, maxDifficulty, sample: rec });
       }
     }
+
+    console.log('byThingId のサイズ:', byThingId.size);
+    console.log('生成されるモンスター数:', byThingId.size);
 
     const thingsMonsters: Monster[] = Array.from(byThingId.entries()).map(([thingId, info], index) => {
       const sample = info.sample;
@@ -271,7 +275,10 @@ export default function EncyclopediaPage() {
       };
     });
 
-    setMonsters([...baseMonsters, ...thingsMonsters]);
+    const finalMonsters = [...baseMonsters, ...thingsMonsters];
+    console.log('最終的なモンスター数:', finalMonsters.length);
+    console.log('baseMonsters:', baseMonsters.length, 'thingsMonsters:', thingsMonsters.length);
+    setMonsters(finalMonsters);
   };
 
   useEffect(() => {
@@ -308,6 +315,13 @@ export default function EncyclopediaPage() {
   console.log('フィルター後のモンスター数:', filteredMonsters.length);
   console.log('選択中のカテゴリ(新3分類):', selectedCategory);
   console.log('選択中のランク:', selectedRank);
+  console.log('フィルタリング詳細:', {
+    totalMonsters: monsters.length,
+    filteredCount: filteredMonsters.length,
+    selectedCategory,
+    selectedRank,
+    monsters: monsters.map(m => ({ name: m.name, category: m.category, rank: m.rank }))
+  });
 
   return (
     <MainLayout>

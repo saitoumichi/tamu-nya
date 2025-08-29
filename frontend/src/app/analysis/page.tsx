@@ -42,16 +42,16 @@ export default function AnalysisPage() {
     { id: "month", name: "月間", emoji: "📆" },
   ];
 
-  const categories = [
+  const categories = useMemo(() => [
     { id: "", name: "すべて", emoji: "🌟" },
     { id: "key", name: "鍵", emoji: "🔑" },
     { id: "medicine", name: "薬", emoji: "💊" },
     { id: "umbrella", name: "傘", emoji: "☔" },
     { id: "wallet", name: "財布", emoji: "👛" },
     { id: "smartphone", name: "スマホ", emoji: "📱" },
-  ];
+  ], []);
 
-  const situations = [
+  const situations = useMemo(() => [
     { id: "", name: "すべて", emoji: "🌟" },
     { id: "morning", name: "朝", emoji: "🌅" },
     { id: "home", name: "家", emoji: "🏠" },
@@ -64,7 +64,7 @@ export default function AnalysisPage() {
     { id: "schedule-miss", name: "予定忘れ", emoji: "🗓️" },
     { id: "late", name: "寝坊・遅刻", emoji: "⏰" },
     { id: "other", name: "その他", emoji: "😊" },
-  ];
+  ], []);
 
   useEffect(() => {
     const loadRecords = () => {
