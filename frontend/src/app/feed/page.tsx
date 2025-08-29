@@ -29,6 +29,12 @@ export default function FeedPage() {
   }>>([]);
   const [screenWidth, setScreenWidth] = useState(1024);
   const [fireflies, setFireflies] = useState<Array<{id: number; left: number; top: number; delay: number; duration: number}>>([]);
+  const [selectedFairy, setSelectedFairy] = useState<{
+    thingId: string;
+    thingType: string;
+    stage: number;
+    fedCount: number;
+  } | null>(null);
 
   // ユーティリティ関数
   const readFeedInventory = (): number => {
@@ -90,6 +96,16 @@ export default function FeedPage() {
     }));
     
     setMonsters(monstersWithStage);
+  };
+
+  const handleShowFairyStatus = (monster: typeof monsters[0]) => {
+    const fedCount = monsterFeed[monster.thingId]?.fed || 0;
+    setSelectedFairy({
+      thingId: monster.thingId,
+      thingType: monster.thingType,
+      stage: monster.stage,
+      fedCount: fedCount
+    });
   };
 
   const handleFeedMonster = (thingId: string) => {
@@ -222,13 +238,18 @@ export default function FeedPage() {
                     '--wander-y': `${wanderRadius * 0.6}px`,
                     '--fairy-index': index
                   } as React.CSSProperties}
-                  onClick={() => handleFeedMonster(monster.thingId)}
               >
                 {/* 妖精の軌跡エフェクト */}
                 <div className="fairy-trail"></div>
                 <div className="fairy-glow"></div>
-                <div className="fairy-body">
-                  <div className="text-2xl">
+                <div 
+                  className="fairy-body"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShowFairyStatus(monster);
+                  }}
+                >
+                  <div className="text-4xl">
                     {THING_EMOJI_MAP[monster.thingId] || '🧚‍♀️'}
                   </div>
                   <div className="fairy-wings">✨</div>
@@ -241,11 +262,9 @@ export default function FeedPage() {
                     Lv.{monster.stage}
                   </div>
                 </div>
-                {feedInventory > 0 && (
-                  <div className="feed-hint">
-                    🌰 クリックしてえさをあげる
-                  </div>
-                )}
+                <div className="feed-hint">
+                  🧚‍♀️ クリックで詳細表示
+                </div>
               </div>
               );
             })}
@@ -279,6 +298,79 @@ export default function FeedPage() {
             </div>
           )}
         </div>
+
+        {/* 妖精ステータスモーダル */}
+        {selectedFairy && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={() => setSelectedFairy(null)}
+          >
+            <div 
+              className="glass-card p-6 m-4 max-w-sm w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <div className="text-4xl mb-4">
+                  {THING_EMOJI_MAP[selectedFairy.thingId] || '🧚‍♀️'}
+                </div>
+                <h3 className="text-xl font-bold text-emerald-800 mb-4">
+                  妖精の詳細
+                </h3>
+                
+                <div className="space-y-3 text-left">
+                  <div className="flex justify-between items-center">
+                    <span className="text-emerald-700 font-medium">名前:</span>
+                    <span className="text-emerald-900">{selectedFairy.thingType}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-emerald-700 font-medium">ランク:</span>
+                    <span className="text-emerald-900">Lv.{selectedFairy.stage}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-emerald-700 font-medium">えさ回数:</span>
+                    <span className="text-emerald-900">{selectedFairy.fedCount}回</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-emerald-700 font-medium">次の成長まで:</span>
+                    <span className="text-emerald-900">
+                      {15 - (selectedFairy.fedCount % 15)}回
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="mt-6 space-y-3">
+                  <Button
+                    onClick={() => {
+                      handleFeedMonster(selectedFairy.thingId);
+                      // ステータスを更新
+                      const newFedCount = (monsterFeed[selectedFairy.thingId]?.fed || 0) + 1;
+                      setSelectedFairy({
+                        ...selectedFairy,
+                        fedCount: newFedCount,
+                        stage: Math.floor(newFedCount / 15)
+                      });
+                    }}
+                    disabled={feedInventory <= 0}
+                    className="w-full"
+                  >
+                    🌰 えさをあげる ({feedInventory})
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedFairy(null)}
+                    className="w-full"
+                  >
+                    閉じる
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <style jsx>{`
           .forest-background {
@@ -348,7 +440,7 @@ export default function FeedPage() {
             position: absolute;
             cursor: pointer;
             transition: transform 0.3s ease;
-            animation: fairy-wander 8s ease-in-out infinite;
+            animation: fairy-wander 16s ease-in-out infinite;
             z-index: 5;
           }
           
@@ -384,10 +476,16 @@ export default function FeedPage() {
             position: relative;
             text-align: center;
             padding: 10px;
-            background: rgba(255, 255, 255, 0.9);
+            background: transparent;
             border-radius: 50%;
-            border: 2px solid rgba(147, 197, 114, 0.6);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: none;
+            box-shadow: none;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+          }
+          
+          .fairy-body:hover {
+            transform: scale(1.1);
           }
           
           .fairy-wings {
