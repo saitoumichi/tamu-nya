@@ -7,42 +7,45 @@ interface ThingsRecord {
   id: string;
   category: string;
   thingType: string;
-  thingId: string;
+  thingId: string; // 例: 'key' | 'umbrella' | 'wallet' | 'medicine' | 'smartphone' | 'homework' | 'schedule' | 'time'
   title: string;
   content: string;
   details: string;
-  difficulty: number;
+  difficulty: number; // 1〜10想定（難易度でランク判定）
   location: string;
   datetime: string;
   createdAt: string;
 }
 
+// ランク定義（Aランク、Bランクなど）
+type Rank = 'S' | 'A' | 'B' | 'C';
+
 interface Monster {
   id: number;
   name: string;
-  category: string;
-  categoryName: string;
+  category: string; // 元の thingId（例: 'wallet'）
+  categoryName: string; // 表示名
   categoryEmoji: string;
-  rarity: Rarity;
-  intimacyLevel: number;
+  rank: Rank; // ← 親密度ではなくランク
   lastSeenAt: string;
   thumbUrl: string;
 }
+
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
-import { Badge, Rarity } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Filter, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EncyclopediaPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedRarity, setSelectedRarity] = useState<Rarity | ''>('');
+  const [selectedRank, setSelectedRank] = useState<Rank | ''>('');
   const [monsters, setMonsters] = useState<Monster[]>([]);
 
-  // 時間を「○時間前」「○分前」の形式で表示する関数
+  // ------- ユーティリティ -------
+  // 経過時間表示
   const getTimeAgo = (createdAt: string): string => {
     const now = new Date();
     const created = new Date(createdAt);
@@ -84,36 +87,84 @@ export default function EncyclopediaPage() {
       imagePath = `/monsters/phone/phone_monsters${imageNumber > 1 ? imageNumber : ''}.jpg`;
     } else if (thingId === 'homework') {
       imagePath = `/monsters/homework/homework_monsters${imageNumber > 1 ? imageNumber : ''}.jpg`;
+  // 画像パス（固定: 親密度の概念は削除）
+  const getImagePathByThingId = (thingId: string): string => {
+    switch (thingId) {
+      case 'key':
+        return '/monsters/key/key-monster-1.jpg';
+      case 'umbrella':
+        return '/monsters/umbrella/umbrella-monster-1.jpg';
+      case 'wallet':
+        return '/monsters/wallet/wallet-monster.jpg';
+      case 'medicine':
+        return '/monsters/medicine/medicine-monster-1.jpg';
+      case 'smartphone':
+        return '/monsters/phone/phone_monsters.jpg';
+      case 'homework':
+        return '/monsters/homework/homework_monsters.jpg';
+      case 'schedule':
+        return '/monsters/schedule/schedule_monsters.png';
+      case 'time':
+        return '/monsters/time/time_monster.png';
+      default:
+        return '/monsters/wallet/wallet-monster.jpg';
     }
-    
-    console.log(`${thingId}の親密度${intimacyLevel}、画像${imageNumber}枚目:`, imagePath);
-    return imagePath;
   };
 
-  // 親密度に応じてrarityを取得する関数（画像変化と同じタイミング）
-  const getRarityByIntimacy = (intimacyLevel: number): Rarity => {
-    if (intimacyLevel >= 1 && intimacyLevel <= 5) return 'common';      // 1-5: 1枚目の画像
-    if (intimacyLevel >= 6 && intimacyLevel <= 10) return 'uncommon';   // 6-10: 2枚目の画像
-    if (intimacyLevel >= 11 && intimacyLevel <= 15) return 'rare';      // 11-15: 3枚目の画像
-    if (intimacyLevel >= 16 && intimacyLevel <= 20) return 'epic';      // 16-20: 4枚目の画像
-    if (intimacyLevel >= 21) return 'legendary';                        // 21+: 5枚目の画像
-    return 'common';
+  // 難易度→ランク
+  const getRankByDifficulty = (difficulty?: number): Rank => {
+    const d = difficulty ?? 3; // 未指定なら中間
+    if (d >= 7) return 'S';
+    if (d >= 5) return 'A';
+    if (d >= 3) return 'B';
+    return 'C';
   };
 
-  // LocalStorageからthingsデータを読み込んでモンスターを生成
+  // 元の thingId を新しい3カテゴリへマッピング
+  // 物忘れ: key/umbrella/wallet/medicine/smartphone/homework など
+  // 予定忘れ: schedule
+  // 寝坊・遅刻: time
+  const NEW_CATEGORY_MAP: Record<string, 'misplacement' | 'missed_schedule' | 'overslept'> = {
+    key: 'misplacement',
+    umbrella: 'misplacement',
+    wallet: 'misplacement',
+    medicine: 'misplacement',
+    smartphone: 'misplacement',
+    homework: 'misplacement',
+    schedule: 'missed_schedule',
+    time: 'overslept',
+  };
+
+  // 表示用カテゴリ一覧（UIのフィルタ）
+  const categories = [
+    { id: '', name: 'すべて', emoji: '🌟' },
+    { id: 'misplacement', name: '物忘れ', emoji: '🧠' },
+    { id: 'missed_schedule', name: '予定忘れ', emoji: '📅' },
+    { id: 'overslept', name: '寝坊・遅刻', emoji: '⏰' },
+  ];
+
+  // ランクフィルタ一覧
+  const ranks: { value: Rank | ''; label: string }[] = [
+    { value: '', label: 'すべて' },
+    { value: 'S', label: 'Sランク' },
+    { value: 'A', label: 'Aランク' },
+    { value: 'B', label: 'Bランク' },
+    { value: 'C', label: 'Cランク' },
+  ];
+
+  // ------- データ生成 -------
   React.useEffect(() => {
-    // 既存のサンプルモンスター
-    const baseMonsters = [
+    // 既存のサンプル（固定）
+    const baseMonsters: Monster[] = [
       {
         id: 1,
         name: '鍵の精',
         category: 'key',
         categoryName: '鍵',
         categoryEmoji: '🔑',
-        rarity: 'common' as Rarity,
-        intimacyLevel: 15,
+        rank: 'B',
         lastSeenAt: '2時間前',
-        thumbUrl: '/monsters/key-monsters/key-monster-1.jpg'
+        thumbUrl: '/monsters/key/key-monster-1.jpg',
       },
       {
         id: 2,
@@ -121,10 +172,9 @@ export default function EncyclopediaPage() {
         category: 'umbrella',
         categoryName: '傘',
         categoryEmoji: '☔',
-        rarity: 'rare' as Rarity,
-        intimacyLevel: 8,
+        rank: 'A',
         lastSeenAt: '1日前',
-        thumbUrl: '/monsters/umbrella_monsters/umbrella-monster-1.jpg'
+        thumbUrl: '/monsters/umbrella/umbrella-monster-1.jpg'
       },
       {
         id: 3,
@@ -132,37 +182,23 @@ export default function EncyclopediaPage() {
         category: 'wallet',
         categoryName: '財布',
         categoryEmoji: '👛',
-        rarity: 'epic' as Rarity,
-        intimacyLevel: 25,
+        rank: 'S',
         lastSeenAt: '3日前',
-        thumbUrl: '/monsters/wallet_monsters/wallet-monster.jpg'
-      }
+        thumbUrl: '/monsters/wallet/wallet-monster.jpg',
+      },
     ];
 
-    // LocalStorageからthingsデータを読み込み
-    const thingsRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
+    // LocalStorage から things を読み込む
+    const thingsRecords: ThingsRecord[] = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
     console.log('図鑑で読み込まれたthingsデータ:', thingsRecords);
-    
-    // thingsデータからモンスターを生成（重複を避けて親密度を管理）
-    const thingsMonstersMap = new Map<string, Monster>();
-    
-    thingsRecords.forEach((record: ThingsRecord, index: number) => {
-      console.log('処理中のrecord:', record);
-      console.log('record.thingId:', record.thingId);
-      
-      // 既存のモンスターが存在するかチェック
-      const existingMonster = thingsMonstersMap.get(record.thingId);
-      
-      if (existingMonster) {
-        // 既存のモンスターの親密度を+1、最終記録時間を更新
-        existingMonster.intimacyLevel += 1;
-        existingMonster.lastSeenAt = getTimeAgo(record.createdAt);
-        
-        // 親密度に応じて画像とrarityを更新
-        existingMonster.thumbUrl = getImagePathByIntimacy(record.thingId, existingMonster.intimacyLevel);
-        existingMonster.rarity = getRarityByIntimacy(existingMonster.intimacyLevel);
-        
-        console.log(`${record.thingType}の親密度が${existingMonster.intimacyLevel}に上がり、rarityが${existingMonster.rarity}になりました`);
+
+    // thingId ごとに 1 体生成（最新の記録時間、最大難易度 で代表化）
+    const byThingId = new Map<string, { latestAt: string; maxDifficulty: number; sample: ThingsRecord }>();
+
+    for (const rec of thingsRecords) {
+      const prev = byThingId.get(rec.thingId);
+      if (!prev) {
+        byThingId.set(rec.thingId, { latestAt: rec.createdAt, maxDifficulty: rec.difficulty ?? 3, sample: rec });
       } else {
         // 新しいモンスターを作成
         // 忘れ物の種類に応じて適切な画像パスを生成（親密度1用）
@@ -204,56 +240,36 @@ export default function EncyclopediaPage() {
         
         thingsMonstersMap.set(record.thingId, monster);
         console.log('新しいモンスターが作成されました:', monster);
+        const latestAt = new Date(rec.createdAt) > new Date(prev.latestAt) ? rec.createdAt : prev.latestAt;
+        const maxDifficulty = Math.max(prev.maxDifficulty, rec.difficulty ?? 3);
+        byThingId.set(rec.thingId, { latestAt, maxDifficulty, sample: rec });
       }
-    });
-    
-    // Mapからモンスターの配列を取得
-    const thingsMonsters = Array.from(thingsMonstersMap.values());
-
-    // ベースモンスターとthingsモンスターを結合
-    const allMonsters = [...baseMonsters, ...thingsMonsters];
-    setMonsters(allMonsters);
-    console.log('生成された全モンスター:', allMonsters);
-    console.log('全モンスター数:', allMonsters.length);
-    console.log('財布のモンスター:', allMonsters.filter(m => m.category === 'wallet'));
-  }, []);
-
-  // サンプルデータ（実際のAPIから取得）
-  const baseMonsters = [
-    {
-      id: 1,
-      name: '鍵の精',
-      category: 'key',
-      categoryName: '鍵',
-      categoryEmoji: '🔑',
-      rarity: 'common' as Rarity,
-      intimacyLevel: 15,
-      lastSeenAt: '2時間前',
-      thumbUrl: '/monsters/key/key-monster-1.jpg'
-    },
-    {
-      id: 2,
-      name: '傘の守護者',
-      category: 'umbrella',
-      categoryName: '傘',
-      categoryEmoji: '☔',
-      rarity: 'rare' as Rarity,
-      intimacyLevel: 8,
-      lastSeenAt: '1日前',
-      thumbUrl: '/monsters/umbrella/umbrella-monster-1.jpg'
-    },
-    {
-      id: 3,
-      name: '財布の精霊',
-      category: 'wallet',
-      categoryName: '財布',
-      categoryEmoji: '👛',
-      rarity: 'epic' as Rarity,
-      intimacyLevel: 25,
-      lastSeenAt: '3日前',
-      thumbUrl: '/monsters/wallet/wallet-monster-1.jpg'
     }
-  ];
+
+    const thingsMonsters: Monster[] = Array.from(byThingId.entries()).map(([thingId, info], index) => {
+      const sample = info.sample;
+      const displayName = sample.thingType || '忘れ物';
+      const emoji =
+        thingId === 'key' ? '🔑' :
+        thingId === 'umbrella' ? '☔' :
+        thingId === 'wallet' ? '👛' :
+        thingId === 'medicine' ? '💊' :
+        thingId === 'smartphone' ? '📱' :
+        thingId === 'homework' ? '📄' :
+        thingId === 'schedule' ? '📅' :
+        thingId === 'time' ? '⏰' : '😊';
+
+      return {
+        id: 1000 + index,
+        name: displayName,
+        category: thingId,
+        categoryName: displayName,
+        categoryEmoji: emoji,
+        rank: getRankByDifficulty(info.maxDifficulty),
+        lastSeenAt: getTimeAgo(info.latestAt),
+        thumbUrl: getImagePathByThingId(thingId),
+      };
+    });
 
   const things = [
     { id: '', name: 'すべて', emoji: '🌟' },
@@ -271,18 +287,27 @@ export default function EncyclopediaPage() {
     { value: 'epic', label: 'Epic' },
     { value: 'legendary', label: 'Legendary' }
   ];
+    setMonsters([...baseMonsters, ...thingsMonsters]);
+  }, []);
 
-  const filteredMonsters = monsters.filter(monster => {
-    if (selectedCategory && monster.category !== selectedCategory) return false;
-    if (selectedRarity && monster.rarity !== selectedRarity) return false;
+  // ------- フィルタ処理 -------
+  const matchesNewCategory = (monster: Monster, selected: string) => {
+    if (!selected) return true; // すべて
+    const mapped = NEW_CATEGORY_MAP[monster.category];
+    return mapped === selected;
+  };
+
+  const filteredMonsters = monsters.filter((m) => {
+    if (!matchesNewCategory(m, selectedCategory)) return false;
+    if (selectedRank && m.rank !== selectedRank) return false;
     return true;
   });
 
-  // デバッグ用：フィルター後のモンスター数を確認
+  // デバッグ
   console.log('フィルター前のモンスター数:', monsters.length);
   console.log('フィルター後のモンスター数:', filteredMonsters.length);
-  console.log('選択中のカテゴリ:', selectedCategory);
-  console.log('選択中のレアリティ:', selectedRarity);
+  console.log('選択中のカテゴリ(新3分類):', selectedCategory);
+  console.log('選択中のランク:', selectedRank);
 
   return (
     <MainLayout>
@@ -310,36 +335,32 @@ export default function EncyclopediaPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* カテゴリフィルター */}
+            {/* カテゴリフィルター（新3分類） */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                忘れたもの
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">分類</label>
               <div className="flex flex-wrap gap-2">
-                {things.map((category) => (
+                {categories.map((c) => (
                   <Chip
-                    key={category.id}
-                    label={category.name}
-                    emoji={category.emoji}
-                    selected={selectedCategory === category.id}
-                    onClick={() => setSelectedCategory(category.id)}
+                    key={c.id}
+                    label={c.name}
+                    emoji={c.emoji}
+                    selected={selectedCategory === c.id}
+                    onClick={() => setSelectedCategory(c.id)}
                   />
                 ))}
               </div>
             </div>
 
-            {/* レア度フィルター */}
+            {/* ランクフィルター */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                レア度
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">ランク</label>
               <div className="flex flex-wrap gap-2">
-                {rarities.map((rarity) => (
+                {ranks.map((r) => (
                   <Chip
-                    key={rarity.value}
-                    label={rarity.label}
-                    selected={selectedRarity === rarity.value}
-                    onClick={() => setSelectedRarity(rarity.value)}
+                    key={r.value || 'all'}
+                    label={r.label}
+                    selected={selectedRank === r.value}
+                    onClick={() => setSelectedRank(r.value)}
                   />
                 ))}
               </div>
@@ -356,12 +377,11 @@ export default function EncyclopediaPage() {
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <div className="w-16 h-16 flex-shrink-0">
-                        <img 
-                          src={monster.thumbUrl} 
+                        <img
+                          src={monster.thumbUrl}
                           alt={monster.name}
                           className="w-full h-full object-cover rounded-lg"
                           onError={(e) => {
-                            // 画像読み込みエラー時は絵文字を表示
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
                             const fallback = document.createElement('div');
@@ -374,18 +394,29 @@ export default function EncyclopediaPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-gray-900 truncate">{monster.name}</h3>
-                          <Badge rarity={monster.rarity} />
+                          {/* A/B/C/S ランク表示（独自バッジ）*/}
+                          <span
+                            className={
+                              'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ' +
+                              (monster.rank === 'S'
+                                ? 'border-purple-500 text-purple-600'
+                                : monster.rank === 'A'
+                                ? 'border-blue-500 text-blue-600'
+                                : monster.rank === 'B'
+                                ? 'border-green-500 text-green-600'
+                                : 'border-gray-400 text-gray-600')
+                            }
+                            aria-label={`${monster.rank}ランク`}
+                          >
+                            {monster.rank}ランク
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-sm text-gray-500">{monster.categoryEmoji}</span>
                           <span className="text-sm text-gray-600">{monster.categoryName}</span>
                         </div>
-                        <div className="text-sm text-gray-500 mb-2">
-                          親密度: {monster.intimacyLevel}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {monster.lastSeenAt}
-                        </div>
+                        {/* 親密度表示は削除 */}
+                        <div className="text-xs text-gray-400">{monster.lastSeenAt}</div>
                       </div>
                     </div>
                   </CardContent>

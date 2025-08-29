@@ -123,6 +123,30 @@ export default function NotificationsPage() {
 
 
 
+
+  useEffect(() => {
+    const loadNotificationSettings = () => {
+      const savedSettings = JSON.parse(localStorage.getItem('notificationSettings') || '[]');
+      if (savedSettings.length > 0) {
+        // 既存のサンプルデータと新しい設定を結合
+        const combinedSettings = [...reminderSettings, ...savedSettings];
+        setReminderSettings(combinedSettings);
+      }
+    };
+
+    loadNotificationSettings();
+
+    // LocalStorageの変更を監視
+    const handleStorageChange = () => {
+      loadNotificationSettings();
+    };
+
+    window.addEventListener('notificationSettingsChanged', handleStorageChange);
+    return () => {
+      window.removeEventListener('notificationSettingsChanged', handleStorageChange);
+    };
+  }, []);
+
   const handleToggleSetting = (key: keyof typeof notificationSettings) => {
     setNotificationSettings(prev => ({
       ...prev,
@@ -303,6 +327,8 @@ export default function NotificationsPage() {
             <Plus className="mr-2 h-5 w-5" />
             新規登録
           </Button>
+
+          </Link>
         </div>
 
         {/* クイック設定モーダル */}
