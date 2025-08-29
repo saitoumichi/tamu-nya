@@ -157,42 +157,37 @@ export default function AnalysisPage() {
     return stats.sort((a, b) => b.count - a.count);
   }, [timeFilteredRecords, categories]);
 
-  const difficultyRanking = useMemo(() => {
-    const map = new Map<string, { total: number; count: number }>();
-    
-    timeFilteredRecords.forEach((r) => {
-      const key = r.category || r.thingId || "other";
-      const difficulty = typeof r.difficulty === 'number' ? r.difficulty : 0;
-      const existing = map.get(key) || { total: 0, count: 0 };
-      map.set(key, {
-        total: existing.total + difficulty,
-        count: existing.count + 1
-      });
-    });
+// ---- 困った度ランキング --------------------------------------------------
+const difficultyRanking = useMemo(() => {
+  const map = new Map<string, { sum: number; count: number }>();
 
-    const ranking = Array.from(map.entries())
-      .map(([id, stats]) => {
-        const cat = categories.find((c) => c.id === id);
-        const name = cat?.name ?? "その他";
-        const emoji = cat?.emoji ?? "📦";
-        return {
-          id,
-          name,
-          emoji,
-          total: stats.total,
-          count: stats.count,
-          avg: stats.count > 0 ? stats.total / stats.count : 0
-        };
-      })
-      .filter(item => item.total > 0)
-      .sort((a, b) => 
-        b.total - a.total || 
-        b.count - a.count || 
-        a.name.localeCompare(b.name, 'ja')
-      );
+  timeFilteredRecords.forEach((r) => {
+    const key = r.category || r.thingId || "other";
+    const difficulty = typeof r.difficulty === "number" ? r.difficulty : 0;
+    const prev = map.get(key) || { sum: 0, count: 0 };
+    map.set(key, { sum: prev.sum + difficulty, count: prev.count + 1 });
+  });
 
-    return ranking;
-  }, [timeFilteredRecords, categories]);
+  const ranking = Array.from(map.entries())
+    .map(([id, { sum, count }]) => {
+      const cat = categories.find((c) => c.id === id);
+      const name = cat?.name ?? "その他";
+      const emoji = cat?.emoji ?? "📦";
+      const avg = count > 0 ? sum / count : 0;
+
+      // 互換目的：sum（main）とtotal（feature）の両方を持たせる
+      return { id, name, emoji, sum, total: sum, count, avg };
+    })
+    .filter((x) => x.sum > 0)
+    .sort(
+      (a, b) =>
+        b.sum - a.sum ||        // 合計困った度が大きい順
+        b.count - a.count ||    // 件数が多い順
+        a.name.localeCompare(b.name, "ja")
+    );
+
+  return ranking;
+}, [timeFilteredRecords, categories]);
 
   const totalCount = timeFilteredRecords.length;
   const averagePerDay =
@@ -496,6 +491,10 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
 
+
+
+        {/* 困った度ランキング */}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-gray-900">
@@ -509,15 +508,25 @@ export default function AnalysisPage() {
             ) : (
               <div className="space-y-3">
                 {difficultyRanking.map((item, index) => (
-                  <div key={item.id} className="flex items-center justify-between border rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-600 w-8">#{index + 1}</span>
-                      <span className="text-lg">{item.emoji}</span>
-                      <span className="text-sm font-medium text-gray-900">{item.name}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900">{item.total}点</div>
-                      <div className="text-xs text-gray-500">{item.count}件</div>
+<div
+  key={item.id}
+  className="flex items-center justify-between border rounded-lg px-3 py-2"
+>
+  <div className="flex items-center gap-3">
+    <div className="w-8 text-sm font-medium text-gray-600">
+      {index + 1}位
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="text-lg">{item.emoji}</span>
+      <span className="text-sm font-medium text-gray-900">{item.name}</span>
+    </div>
+  </div>
+  <div className="text-right">
+    <div className="text-sm font-medium text-gray-900">合計{item.sum}点</div>
+    <div className="text-xs text-gray-500">{item.count}件</div>
+  </div>
+</div>
+
                     </div>
                   </div>
                 ))}
