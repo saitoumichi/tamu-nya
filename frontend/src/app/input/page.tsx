@@ -29,7 +29,7 @@ export default function InputPage() {
     name: string;
     encounterCount: number;
     intimacyLevel: number;
-    rarity: string;
+    rank: string;
   } | null>(null);
 
   useEffect(() => {
@@ -100,22 +100,22 @@ export default function InputPage() {
       const encounterCount = sameThingRecords.length;
       const intimacyLevel = encounterCount;
       
-      // rarityを計算（図鑑と同じロジック）
-      let rarity = 'common';
-      if (intimacyLevel > 5) rarity = 'uncommon';
-      if (intimacyLevel > 10) rarity = 'rare';
-      if (intimacyLevel > 15) rarity = 'epic';
-      if (intimacyLevel > 20) rarity = 'legendary';
+      // ランクを計算（図鑑と同じロジック、5段階評価）
+      let rank = 'C';
+      if (intimacyLevel > 5) rank = 'B';
+      if (intimacyLevel > 10) rank = 'A';
+      if (intimacyLevel > 15) rank = 'S';
+      if (intimacyLevel > 20) rank = 'SS';
       
       setMonsterInfo({
         name: selectedThing?.name || '忘れ物',
         encounterCount,
         intimacyLevel,
-        rarity
+        rank
       });
       
       console.log('図鑑用データが保存されました:', thingsRecord);
-      console.log('モンスター情報:', { encounterCount, intimacyLevel, rarity });
+      console.log('モンスター情報:', { encounterCount, intimacyLevel, rank });
     }
     
     // 成長リザルトモーダルを表示
@@ -365,7 +365,7 @@ export default function InputPage() {
               <span className="text-gray-300">|</span>
               <span>親密度{monsterInfo?.intimacyLevel || 0}</span>
               <span className="text-gray-300">|</span>
-              <span>{monsterInfo?.rarity || 'common'}</span>
+              <span>{monsterInfo?.rank || 'C'}ランク</span>
             </div>
 
             <div className="space-y-3">
