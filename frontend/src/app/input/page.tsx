@@ -90,9 +90,33 @@ export default function InputPage() {
       if (saved) {
         try {
           const data = JSON.parse(saved);
-          if (data.categories) setCategories(data.categories);
-          if (data.things) setThings(data.things);
-          if (data.situations) setSituations(data.situations);
+          if (Array.isArray(data.categories) && data.categories.length > 0) {
+            setCategories((prev) => {
+              const map = new Map(prev.map((item) => [item.id, item]));
+              for (const item of data.categories) {
+                map.set(item.id, { ...map.get(item.id), ...item });
+              }
+              return Array.from(map.values());
+            });
+          }
+          if (Array.isArray(data.things) && data.things.length > 0) {
+            setThings((prev) => {
+              const map = new Map(prev.map((item) => [item.id, item]));
+              for (const item of data.things) {
+                map.set(item.id, { ...map.get(item.id), ...item });
+              }
+              return Array.from(map.values());
+            });
+          }
+          if (Array.isArray(data.situations) && data.situations.length > 0) {
+            setSituations((prev) => {
+              const map = new Map(prev.map((item) => [item.id, item]));
+              for (const item of data.situations) {
+                map.set(item.id, { ...map.get(item.id), ...item });
+              }
+              return Array.from(map.values());
+            });
+          }
         } catch (error) {
           console.error('カスタムカードデータの読み込みに失敗:', error);
         }
