@@ -17,8 +17,8 @@ interface ThingsRecord {
   createdAt: string;
 }
 
-// ランク定義（Aランク、Bランクなど）
-type Rank = 'S' | 'A' | 'B' | 'C';
+// ランク定義（SSランク、Sランク、Aランク、Bランク、Cランク）
+type Rank = 'SS' | 'S' | 'A' | 'B' | 'C';
 
 interface Monster {
   id: number;
@@ -85,12 +85,22 @@ export default function EncyclopediaPage() {
     }
   };
 
-  // 難易度→ランク
+  // 難易度→ランク（5段階評価）
   const getRankByDifficulty = (difficulty?: number): Rank => {
     const d = difficulty ?? 3; // 未指定なら中間
+    if (d >= 9) return 'SS';
     if (d >= 7) return 'S';
     if (d >= 5) return 'A';
     if (d >= 3) return 'B';
+    return 'C';
+  };
+
+  // 遭遇回数→ランク（5段階評価）
+  const getRankByEncounterCount = (encounterCount: number): Rank => {
+    if (encounterCount > 20) return 'SS';
+    if (encounterCount > 15) return 'S';
+    if (encounterCount > 10) return 'A';
+    if (encounterCount > 5) return 'B';
     return 'C';
   };
 
@@ -117,9 +127,10 @@ export default function EncyclopediaPage() {
     { id: 'overslept', name: '寝坊・遅刻', emoji: '⏰' },
   ];
 
-  // ランクフィルタ一覧
+  // ランクフィルタ一覧（5段階評価）
   const ranks: { value: Rank | ''; label: string }[] = [
     { value: '', label: 'すべて' },
+    { value: 'SS', label: 'SSランク' },
     { value: 'S', label: 'Sランク' },
     { value: 'A', label: 'Aランク' },
     { value: 'B', label: 'Bランク' },
@@ -200,7 +211,7 @@ export default function EncyclopediaPage() {
         category: thingId,
         categoryName: displayName,
         categoryEmoji: emoji,
-        rank: getRankByDifficulty(info.maxDifficulty),
+        rank: getRankByEncounterCount(thingsRecords.filter(r => r.thingId === thingId).length),
         lastSeenAt: getTimeAgo(info.latestAt),
         thumbUrl: getImagePathByThingId(thingId),
       };
@@ -314,17 +325,19 @@ export default function EncyclopediaPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-gray-900 truncate">{monster.name}</h3>
-                          {/* A/B/C/S ランク表示（独自バッジ）*/}
+                          {/* SS/S/A/B/C ランク表示（5段階評価）*/}
                           <span
                             className={
                               'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ' +
-                              (monster.rank === 'S'
-                                ? 'border-purple-500 text-purple-600'
+                              (monster.rank === 'SS'
+                                ? 'border-yellow-500 text-yellow-600 bg-yellow-50'
+                                : monster.rank === 'S'
+                                ? 'border-purple-500 text-purple-600 bg-purple-50'
                                 : monster.rank === 'A'
-                                ? 'border-blue-500 text-blue-600'
+                                ? 'border-blue-500 text-blue-600 bg-blue-50'
                                 : monster.rank === 'B'
-                                ? 'border-green-500 text-green-600'
-                                : 'border-gray-400 text-gray-600')
+                                ? 'border-green-500 text-green-600 bg-green-50'
+                                : 'border-gray-400 text-gray-600 bg-gray-50')
                             }
                             aria-label={`${monster.rank}ランク`}
                           >
