@@ -175,6 +175,41 @@ export default function AnalysisPage() {
     return stats.sort((a, b) => b.count - a.count);
   }, [timeFilteredRecords]);
 
+  // ---- 困った度ランキング --------------------------------------------------
+  const difficultyRanking = useMemo(() => {
+    const map = new Map<string, { sum: number; count: number }>();
+    
+    timeFilteredRecords.forEach((r) => {
+      const key = r.category || r.thingId || "other";
+      const difficulty = typeof r.difficulty === 'number' ? r.difficulty : 0;
+      const existing = map.get(key);
+      
+      if (existing) {
+        existing.sum += difficulty;
+        existing.count += 1;
+      } else {
+        map.set(key, { sum: difficulty, count: 1 });
+      }
+    });
+
+    const ranking = Array.from(map.entries())
+      .map(([id, { sum, count }]) => {
+        const cat = categories.find((c) => c.id === id);
+        const name = cat?.name ?? "その他";
+        const emoji = cat?.emoji ?? "📦";
+        return { id, name, emoji, sum, count };
+      })
+      .filter(item => item.sum > 0) // 合計が0のカテゴリは除外
+      .sort((a, b) => {
+        // 合計困った度降順 → 件数降順 → 名前昇順
+        if (b.sum !== a.sum) return b.sum - a.sum;
+        if (b.count !== a.count) return b.count - a.count;
+        return a.name.localeCompare(b.name, 'ja');
+      });
+
+    return ranking;
+  }, [timeFilteredRecords, categories]);
+
   // ---- 1日平均・総数 -----------------------------------------------------
   const totalCount = timeFilteredRecords.length;
   const averagePerDay =
@@ -486,6 +521,48 @@ export default function AnalysisPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 困った度ランキング */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              困った度ランキング
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {difficultyRanking.length === 0 ? (
+              <div className="text-sm text-gray-500">データがありません。</div>
+            ) : (
+              <div className="space-y-3">
+                {difficultyRanking.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between border rounded-lg px-3 py-2"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 text-sm font-medium text-gray-600">
+                        {index + 1}位
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{item.emoji}</span>
+                        <span className="text-sm font-medium text-gray-900">{item.name}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 text-right">
+                      <div className="text-sm font-medium text-gray-900">
+                        合計{item.sum}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {item.count}件
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
