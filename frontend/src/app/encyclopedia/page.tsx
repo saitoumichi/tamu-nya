@@ -52,6 +52,11 @@ export default function EncyclopediaPage() {
   const [selectedRank, setSelectedRank] = useState<Rank | ''>('');
   const [monsters, setMonsters] = useState<Monster[]>([]);
 
+  // monstersステートの変更を監視
+  useEffect(() => {
+    console.log('monstersステートが変更されました:', monsters.length, '件');
+  }, [monsters]);
+
   // ------- ユーティリティ -------
   // 経過時間表示
   const getTimeAgo = (createdAt: string): string => {
@@ -87,7 +92,7 @@ export default function EncyclopediaPage() {
       case 'schedule':
         return '/monsters/schedule/schedule_monsters.png';
       case 'time':
-        return '/monsters/time/time_monster.png';
+        return '/monsters/late/late_monsters.jpg'; // lateディレクトリを使用
       default:
         return '/monsters/wallet/wallet-monster.jpg';
     }
@@ -221,6 +226,60 @@ export default function EncyclopediaPage() {
       },
     ];
 
+    // 既存のモンスターを読み込み（入力画面で作成されたもの）
+    const existingMonsters: Monster[] = [
+      {
+        id: 100,
+        name: '薬の精',
+        category: 'medicine',
+        categoryName: '薬',
+        categoryEmoji: '💊',
+        rank: 'C',
+        lastSeenAt: '1週間前',
+        thumbUrl: '/monsters/medicine/medicine-monster-1.jpg',
+      },
+      {
+        id: 101,
+        name: 'スマホの精',
+        category: 'smartphone',
+        categoryName: 'スマホ',
+        categoryEmoji: '📱',
+        rank: 'B',
+        lastSeenAt: '3日前',
+        thumbUrl: '/monsters/phone/phone_monsters.jpg',
+      },
+      {
+        id: 102,
+        name: '宿題の精',
+        category: 'homework',
+        categoryName: '宿題',
+        categoryEmoji: '📄',
+        rank: 'A',
+        lastSeenAt: '5日前',
+        thumbUrl: '/monsters/homework/homework_monsters.jpg',
+      },
+      {
+        id: 103,
+        name: '予定の精',
+        category: 'schedule',
+        categoryName: '予定',
+        categoryEmoji: '📅',
+        rank: 'C',
+        lastSeenAt: '2週間前',
+        thumbUrl: '/monsters/schedule/schedule_monsters.png',
+      },
+      {
+        id: 104,
+        name: '時間の精',
+        category: 'time',
+        categoryName: '遅刻',
+        categoryEmoji: '⏰',
+        rank: 'B',
+        lastSeenAt: '1週間前',
+        thumbUrl: '/monsters/time/time_monster.png',
+      },
+    ];
+
     // LocalStorage から things を読み込む
     const thingsRecords: ThingsRecord[] = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
     console.log('図鑑で読み込まれたthingsデータ:', thingsRecords);
@@ -263,10 +322,20 @@ export default function EncyclopediaPage() {
         thingId === 'time' ? '⏰' : '😊'
       );
 
+      // カテゴリIDを正しく設定
+      // 入力画面で保存されたカテゴリIDがあれば使用、なければthingIdをマッピング
+      const categoryId = sample.category || NEW_CATEGORY_MAP[thingId] || 'forget_things';
+
+      console.log(`モンスター生成: ${displayName} (${thingId}) -> カテゴリID: ${categoryId}`, {
+        sampleCategory: sample.category,
+        mappedCategory: NEW_CATEGORY_MAP[thingId],
+        finalCategory: categoryId
+      });
+
       return {
         id: 1000 + index,
         name: displayName,
-        category: thingId,
+        category: categoryId, // カテゴリIDを使用
         categoryName: categoryName,
         categoryEmoji: categoryEmoji,
         rank: getRankByEncounterCount(thingsRecords.filter(r => r.thingId === thingId && r.didForget === true).length),
@@ -275,19 +344,50 @@ export default function EncyclopediaPage() {
       };
     });
 
-    const finalMonsters = [...baseMonsters, ...thingsMonsters];
+    const finalMonsters = [...baseMonsters, ...existingMonsters, ...thingsMonsters];
     console.log('最終的なモンスター数:', finalMonsters.length);
-    console.log('baseMonsters:', baseMonsters.length, 'thingsMonsters:', thingsMonsters.length);
+    console.log('baseMonsters:', baseMonsters.length, 'existingMonsters:', existingMonsters.length, 'thingsMonsters:', thingsMonsters.length);
+    console.log('setMonsters を呼び出します:', finalMonsters);
+    
+    // モンスターの詳細もログに出力
+    finalMonsters.forEach((monster, index) => {
+      console.log(`モンスター${index + 1}:`, monster.name, monster.category, monster.rank);
+    });
+    
     setMonsters(finalMonsters);
+    
+    // モンスターデータをLocalStorageに保存（詳細画面で使用）
+    localStorage.setItem('encyclopediaMonsters', JSON.stringify(finalMonsters));
+    
+    console.log('setMonsters 完了');
   };
 
+  // 初回読み込みとLocalStorageの変更を監視
   useEffect(() => {
-    generateMonsters();
-  }, []);
+    let isInitialized = false;
 
-  // LocalStorageの変更を監視
-  useEffect(() => {
-    const handleStorageChange = () => generateMonsters();
+    const loadAndGenerate = () => {
+      if (isInitialized) {
+        console.log('generateMonsters が実行されました（更新）');
+      } else {
+        console.log('generateMonsters が実行されました（初回）');
+        isInitialized = true;
+      }
+      generateMonsters();
+    };
+
+    // 初回読み込み
+    loadAndGenerate();
+
+    // LocalStorageの変更を監視
+    const handleStorageChange = () => {
+      console.log('LocalStorage変更を検知しました');
+      // 少し遅延を入れて実行
+      setTimeout(() => {
+        loadAndGenerate();
+      }, 100);
+    };
+    
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('thingsRecordsChanged', handleStorageChange);
 
@@ -300,13 +400,49 @@ export default function EncyclopediaPage() {
   // ------- フィルタ処理 -------
   const matchesNewCategory = (monster: Monster, selected: string) => {
     if (!selected) return true; // すべて
-    const mapped = NEW_CATEGORY_MAP[monster.category];
-    return mapped === selected;
+    
+    // モンスターのカテゴリ情報を取得
+    let monsterCategoryId: string;
+    
+    // デバッグ用ログ
+    console.log(`フィルタリング処理開始: ${monster.name}`, {
+      category: monster.category,
+      categoryName: monster.categoryName,
+      categoryEmoji: monster.categoryEmoji,
+      selected: selected
+    });
+    
+    if (monster.categoryName && monster.categoryEmoji && monster.category !== monster.categoryName) {
+      // 新しいデータ構造（入力画面から保存されたデータ）
+      // categoryプロパティにカテゴリIDが保存されている
+      monsterCategoryId = monster.category;
+      console.log(`新しいデータ構造を使用: ${monsterCategoryId}`);
+    } else {
+      // 古いデータ構造（サンプルデータ）
+      // thingIdをカテゴリIDにマッピング
+      monsterCategoryId = NEW_CATEGORY_MAP[monster.category] || 'forget_things';
+      console.log(`古いデータ構造を使用: ${monster.category} -> ${monsterCategoryId}`);
+    }
+    
+    // 選択されたカテゴリと一致するかチェック
+    const categoryMatch = monsterCategoryId === selected;
+    
+    console.log(`フィルタリング結果: モンスター ${monster.name} (${monster.category}) -> カテゴリID: ${monsterCategoryId}, 選択: ${selected}, 一致: ${categoryMatch}`);
+    
+    return categoryMatch;
   };
 
   const filteredMonsters = monsters.filter((m) => {
-    if (!matchesNewCategory(m, selectedCategory)) return false;
-    if (selectedRank && m.rank !== selectedRank) return false;
+    const categoryMatch = matchesNewCategory(m, selectedCategory);
+    const rankMatch = !selectedRank || m.rank === selectedRank;
+    
+    // フィルタリング結果をログに出力
+    if (selectedCategory || selectedRank) {
+      console.log(`フィルタリング結果: ${m.name} (${m.category}) - カテゴリ: ${categoryMatch}, ランク: ${rankMatch}`);
+    }
+    
+    if (!categoryMatch) return false;
+    if (!rankMatch) return false;
     return true;
   });
 
@@ -315,13 +451,33 @@ export default function EncyclopediaPage() {
   console.log('フィルター後のモンスター数:', filteredMonsters.length);
   console.log('選択中のカテゴリ(新3分類):', selectedCategory);
   console.log('選択中のランク:', selectedRank);
-  console.log('フィルタリング詳細:', {
-    totalMonsters: monsters.length,
-    filteredCount: filteredMonsters.length,
-    selectedCategory,
-    selectedRank,
-    monsters: monsters.map(m => ({ name: m.name, category: m.category, rank: m.rank }))
-  });
+  
+  // フィルタリング詳細（フィルターが適用されている場合のみ）
+  if (selectedCategory || selectedRank) {
+    console.log('フィルタリング詳細:', {
+      totalMonsters: monsters.length,
+      filteredCount: filteredMonsters.length,
+      selectedCategory,
+      selectedRank,
+      monsters: filteredMonsters.map(m => {
+        // カテゴリIDを正しく取得
+        let categoryId: string;
+        if (m.categoryName && m.categoryEmoji && m.category !== m.categoryName) {
+          categoryId = m.category; // 新しいデータ構造
+        } else {
+          categoryId = NEW_CATEGORY_MAP[m.category] || 'forget_things'; // 古いデータ構造
+        }
+        
+        return {
+          name: m.name, 
+          category: m.category, 
+          categoryId: categoryId,
+          categoryName: m.categoryName,
+          rank: m.rank 
+        };
+      })
+    });
+  }
 
   return (
     <MainLayout>
@@ -384,90 +540,63 @@ export default function EncyclopediaPage() {
 
         {/* モンスター一覧 */}
         {filteredMonsters.length > 0 ? (
-          <div className="space-y-6">
-            {/* カテゴリ別にグループ化 */}
-            {(() => {
-              const groupedMonsters = new Map<string, Monster[]>();
-              
-              // カテゴリ別にモンスターをグループ化
-              filteredMonsters.forEach(monster => {
-                const categoryId = monster.category;
-                if (!groupedMonsters.has(categoryId)) {
-                  groupedMonsters.set(categoryId, []);
-                }
-                groupedMonsters.get(categoryId)!.push(monster);
-              });
-
-              return Array.from(groupedMonsters.entries()).map(([categoryId, monsters]) => {
-                const category = categories.find(cat => cat.id === categoryId);
-                if (!category) return null;
-
-                return (
-                  <div key={categoryId} className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{category.emoji}</span>
-                      <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
-                      <span className="text-sm text-gray-500">({monsters.length}体)</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {monsters.map((monster) => (
-                        <Link key={monster.id} href={`/monster/${monster.category}`}>
-                          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                            <CardContent className="p-4">
-                              <div className="flex items-start gap-3">
-                                <div className="w-16 h-16 flex-shrink-0">
-                                  <img
-                                    src={monster.thumbUrl}
-                                    alt={monster.name}
-                                    className="w-full h-full object-cover rounded-lg"
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.style.display = 'none';
-                                      const fallback = document.createElement('div');
-                                      fallback.className = 'text-4xl flex items-center justify-center w-full h-full';
-                                      fallback.textContent = monster.categoryEmoji;
-                                      target.parentNode?.appendChild(fallback);
-                                    }}
-                                  />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <h3 className="font-semibold text-gray-900 truncate">{monster.name}</h3>
-                                    {/* SS/S/A/B/C ランク表示（5段階評価）*/}
-                                    <span
-                                      className={
-                                        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ' +
-                                        (monster.rank === 'SS'
-                                          ? 'border-yellow-500 text-yellow-600 bg-yellow-50'
-                                          : monster.rank === 'S'
-                                          ? 'border-purple-500 text-purple-600 bg-purple-50'
-                                          : monster.rank === 'A'
-                                          ? 'border-blue-500 text-blue-600 bg-blue-50'
-                                          : monster.rank === 'B'
-                                          ? 'border-green-500 text-green-600 bg-green-50'
-                                          : 'border-gray-400 text-gray-600 bg-gray-50')
-                                      }
-                                      aria-label={`${monster.rank}ランク`}
-                                    >
-                                      {monster.rank}ランク
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-sm text-gray-500">{monster.categoryEmoji}</span>
-                                    <span className="text-sm text-gray-600">{monster.categoryName}</span>
-                                  </div>
-                                  <div className="text-xs text-gray-400">{monster.lastSeenAt}</div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                );
-              });
-            })()}
+          <div className="space-y-4">
+            {/* 時系列順で横並びに表示 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredMonsters.map((monster) => (
+                <Link key={monster.id} href={`/monster/${monster.id}`}>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-16 h-16 flex-shrink-0">
+                          <img
+                            src={monster.thumbUrl}
+                            alt={monster.name}
+                            className="w-full h-full object-cover rounded-lg"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const fallback = document.createElement('div');
+                              fallback.className = 'text-4xl flex items-center justify-center w-full h-full';
+                              fallback.textContent = monster.categoryEmoji;
+                              target.parentNode?.appendChild(fallback);
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-gray-900 truncate">{monster.name}</h3>
+                            {/* SS/S/A/B/C ランク表示（5段階評価）*/}
+                            <span
+                              className={
+                                'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ' +
+                                (monster.rank === 'SS'
+                                  ? 'border-yellow-500 text-yellow-600 bg-yellow-50'
+                                  : monster.rank === 'S'
+                                  ? 'border-purple-500 text-purple-600 bg-purple-50'
+                                  : monster.rank === 'A'
+                                  ? 'border-blue-500 text-blue-600 bg-blue-50'
+                                  : monster.rank === 'B'
+                                  ? 'border-green-500 text-green-600 bg-green-50'
+                                  : 'border-gray-400 text-gray-600 bg-gray-50')
+                              }
+                              aria-label={`${monster.rank}ランク`}
+                            >
+                              {monster.rank}ランク
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm text-gray-500">{monster.categoryEmoji}</span>
+                            <span className="text-sm text-gray-600">{monster.categoryName}</span>
+                          </div>
+                          <div className="text-xs text-gray-400">{monster.lastSeenAt}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
           </div>
         ) : (
           <EmptyState
