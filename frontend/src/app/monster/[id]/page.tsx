@@ -8,6 +8,7 @@ import { Badge, Rarity } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Search, Clock, Calendar, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { Ravi_Prakash } from 'next/font/google';
 
 interface MonsterDetailPageProps {
   params: Promise<{
@@ -22,7 +23,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
     name: string;
     category: string;
     categoryEmoji: string;
-    rarity: Rarity;
+    rank: Rarity;
     firstSeen: string;
     lastSeen: string;
     encounterCount: number;
@@ -57,18 +58,28 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
       console.log('検索されたtargetRecords:', targetRecords);
     
     if (targetRecords.length > 0) {
+      // 正しい遭遇回数を計算（特定のthingIdの記録数）
       const encounterCount = targetRecords.length;
       const intimacyLevel = encounterCount;
       
-      // rarityを計算（図鑑と同じロジック）
-      let rarity: Rarity = 'common';
-      if (intimacyLevel > 5) rarity = 'uncommon';
-      if (intimacyLevel > 10) rarity = 'rare';
-      if (intimacyLevel > 15) rarity = 'epic';
-      if (intimacyLevel > 20) rarity = 'legendary';
+      // レア度を計算（図鑑と同じロジック、5段階評価）
+      let rank: Rarity = 'C';
+      if (encounterCount > 20) rank = 'SS';
+      if (encounterCount > 15) rank = 'S';
+      if (encounterCount > 10) rank = 'A';
+      if (encounterCount > 5) rank = 'B';
+      // 5回以下はCランク
+      
+      // デバッグ用ログ
+      console.log('レア度計算:', {
+        thingId: id,
+        encounterCount,
+        intimacyLevel,
+        calculatedRank: rank
+      });
       
       // 画像パスを生成
-      let imageUrl = '/monsters/things/things-monster.jpg'; // デフォルト
+      let imageUrl = '/monsters/wallet/wallet-monster.jpg'; // デフォルト（存在する画像）
       if (id === 'key') {
         imageUrl = `/monsters/key/key-monster-${Math.min(Math.ceil(intimacyLevel / 5), 5)}.jpg`;
       } else if (id === 'umbrella') {
@@ -81,6 +92,10 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
         imageUrl = `/monsters/phone/phone_monsters${intimacyLevel > 5 ? Math.min(Math.ceil(intimacyLevel / 5), 5) : ''}.jpg`;
       } else if (id === 'homework') {
         imageUrl = `/monsters/homework/homework_monsters${intimacyLevel > 5 ? Math.min(Math.ceil(intimacyLevel / 5), 5) : ''}.jpg`;
+      } else if (id === 'schedule') {
+        imageUrl = '/monsters/schedule/schedule_monsters.png';
+      } else if (id === 'time') {
+        imageUrl = '/monsters/time/time_monster.png';
       }
       
       const monsterData = {
@@ -88,7 +103,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
         name: targetRecords[0].thingType || '忘れ物',
         category: id,
         categoryEmoji: '🧠',
-        rarity: rarity,
+        rank: rank,
         firstSeen: targetRecords[targetRecords.length - 1]?.createdAt || '',
         lastSeen: targetRecords[0]?.createdAt || '',
         encounterCount: encounterCount,
@@ -185,7 +200,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
               <div className="flex-1 space-y-4 text-gray-900">
                 <div className="flex items-center gap-3 text-gray-900">
                   <h2 className="text-xl font-semibold">{monster.name}</h2>
-                  <Badge rarity={monster.rarity} />
+                  <Badge rarity={monster.rank} />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 text-sm">

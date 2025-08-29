@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+type Rarity = 'C' | 'B' | 'A' | 'S' | 'SS';
 
 interface BadgeProps {
   rarity: Rarity;
@@ -10,24 +10,24 @@ interface BadgeProps {
 
 const Badge: React.FC<BadgeProps> = ({ rarity, className }) => {
   const rarityConfig = {
-    common: {
-      label: 'Common',
+    C: {
+      label: 'Cランク',
       classes: 'bg-gray-100 text-gray-800 border-gray-200'
     },
-    uncommon: {
-      label: 'Uncommon',
+    B: {
+      label: 'Bランク',
       classes: 'bg-green-100 text-green-800 border-green-200'
     },
-    rare: {
-      label: 'Rare',
+    A: {
+      label: 'Aランク',
       classes: 'bg-blue-100 text-blue-800 border-blue-200'
     },
-    epic: {
-      label: 'Epic',
+    S: {
+      label: 'Sランク',
       classes: 'bg-purple-100 text-purple-800 border-purple-200'
     },
-    legendary: {
-      label: 'Legendary',
+    SS: {
+      label: 'SSランク',
       classes: 'bg-yellow-100 text-yellow-800 border-yellow-200'
     }
   };
