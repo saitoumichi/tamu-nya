@@ -27,6 +27,8 @@ export default function FeedPage() {
     encounterCount: number;
     stage: number;
   }>>([]);
+  const [screenWidth, setScreenWidth] = useState(1024);
+  const [fireflies, setFireflies] = useState<Array<{id: number; left: number; top: number; delay: number; duration: number}>>([]);
 
   // ユーティリティ関数
   const readFeedInventory = (): number => {
@@ -127,6 +129,28 @@ export default function FeedPage() {
     refreshInventory();
     refreshMonsterFeed();
     refreshMonsters();
+    
+    // 画面サイズを設定
+    const updateScreenWidth = () => {
+      setScreenWidth(window.innerWidth);
+    };
+    
+    updateScreenWidth();
+    window.addEventListener('resize', updateScreenWidth);
+
+    // 蛍を生成（クライアントサイドでのみ）
+    const generateFireflies = () => {
+      const newFireflies = Array.from({ length: 15 }, (_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        delay: Math.random() * 5,
+        duration: 3 + Math.random() * 4
+      }));
+      setFireflies(newFireflies);
+    };
+    
+    generateFireflies();
 
     // feed:claimed イベントを購読
     const handleFeedClaimed = () => {
@@ -136,88 +160,402 @@ export default function FeedPage() {
     window.addEventListener('feed:claimed', handleFeedClaimed);
 
     return () => {
+      window.removeEventListener('resize', updateScreenWidth);
       window.removeEventListener('feed:claimed', handleFeedClaimed);
     };
   }, []);
 
   return (
     <MainLayout>
-      <div className="space-y-6">
-        {/* ヘッダー */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">えさあげ会場</h1>
-            <p className="text-gray-600">モンスターにえさをあげて成長させよう</p>
+      <div className="relative min-h-screen overflow-hidden forest-background">
+        {/* 森の背景レイヤー */}
+        <div className="absolute inset-0 forest-layers">
+          <div className="forest-layer forest-back"></div>
+          <div className="forest-layer forest-mid"></div>
+          <div className="forest-layer forest-front"></div>
+        </div>
+
+        {/* フローティングヘッダー */}
+        <div className="relative z-10 p-6">
+          <div className="glass-card p-4 rounded-xl mb-6">
+            <h1 className="text-2xl font-bold text-emerald-800 mb-2 flex items-center gap-2">
+              🌲 妖精の森
+            </h1>
+            <p className="text-emerald-600 mb-4">忘れ物から生まれた妖精たちがさまよっています</p>
+            
+            {/* えさと妖精数の表示 */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <div className="px-3 py-1 bg-yellow-100 rounded-full border border-yellow-300">
+                  <span className="text-yellow-800 font-medium">🌰 えさ: {feedInventory}</span>
+                </div>
+                <div className="px-3 py-1 bg-purple-100 rounded-full border border-purple-300">
+                  <span className="text-purple-800 font-medium">🧚‍♀️ 妖精: {monsters.length}</span>
+                </div>
+              </div>
+              <div className="text-xs text-emerald-600">
+                えさ15個で成長
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* えさあげ会場 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              🎪 えさあげ会場
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* 在庫表示 */}
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-lg font-medium text-blue-800">
-                えさ 在庫：{feedInventory}
-              </div>
-              <div className="text-sm text-blue-600 mt-1">
-                えさは15個で1段階成長
-              </div>
-            </div>
-
-            {/* モンスターグリッド */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {monsters.map((monster) => (
+        {/* 妖精エリア */}
+        <div className="relative z-5 px-6 pb-6">
+          <div className="fairy-container">
+            {monsters.map((monster, index) => {
+              // より広い範囲でランダムな動きを作成
+              const wanderRadius = 200 + monster.stage * 50;
+              const baseX = 150 + (index * 250) % (screenWidth - 300);
+              const baseY = 250 + (index * 120) % 400;
+              
+              return (
                 <div
                   key={monster.thingId}
-                  className="text-center p-3 rounded-lg border-2 border-gray-200 hover:border-primary transition-all"
-                >
-                  <div 
-                    className="text-3xl mb-2 floaty"
-                    style={{
-                      transform: `scale(${1 + monster.stage * 0.05})`
-                    }}
-                  >
-                    {THING_EMOJI_MAP[monster.thingId] || '😊'}
+                  className="fairy-sprite"
+                  style={{
+                    left: `${baseX}px`,
+                    top: `${baseY}px`,
+                    animationDelay: `${index * 0.8}s`,
+                    transform: `scale(${0.8 + monster.stage * 0.1})`,
+                    '--wander-x': `${wanderRadius}px`,
+                    '--wander-y': `${wanderRadius * 0.6}px`,
+                    '--fairy-index': index
+                  } as React.CSSProperties}
+                  onClick={() => handleFeedMonster(monster.thingId)}
+              >
+                {/* 妖精の軌跡エフェクト */}
+                <div className="fairy-trail"></div>
+                <div className="fairy-glow"></div>
+                <div className="fairy-body">
+                  <div className="text-2xl">
+                    {THING_EMOJI_MAP[monster.thingId] || '🧚‍♀️'}
                   </div>
-                  <div className="font-medium text-sm text-gray-800 mb-1">
+                  <div className="fairy-wings">✨</div>
+                </div>
+                <div className="fairy-info">
+                  <div className="text-xs font-bold text-white bg-emerald-600 px-2 py-1 rounded-full">
                     {monster.thingType}
                   </div>
-                  <div className="text-xs text-gray-500 mb-2">
-                    段階{monster.stage}
+                  <div className="text-xs text-emerald-800 mt-1">
+                    Lv.{monster.stage}
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleFeedMonster(monster.thingId)}
-                    disabled={feedInventory <= 0}
-                    className="w-full"
-                  >
-                    えさをあげる
-                  </Button>
                 </div>
+                {feedInventory > 0 && (
+                  <div className="feed-hint">
+                    🌰 クリックしてえさをあげる
+                  </div>
+                )}
+              </div>
+              );
+            })}
+            
+            {/* 蛍のエフェクト */}
+            <div className="fireflies">
+              {fireflies.map((firefly) => (
+                <div 
+                  key={firefly.id} 
+                  className="firefly" 
+                  style={{
+                    left: `${firefly.left}%`,
+                    top: `${firefly.top}%`,
+                    animationDelay: `${firefly.delay}s`,
+                    animationDuration: `${firefly.duration}s`
+                  }}
+                ></div>
               ))}
             </div>
+          </div>
 
-            {monsters.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                モンスターがいません
+          {monsters.length === 0 && (
+            <div className="glass-card p-8 text-center mt-8">
+              <div className="text-6xl mb-4">🌲</div>
+              <div className="text-emerald-700 font-medium mb-2">
+                森には妖精がいません
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <div className="text-emerald-600 text-sm">
+                忘れ物をすると妖精が生まれます
+              </div>
+            </div>
+          )}
+        </div>
 
         <style jsx>{`
-          @keyframes floaty {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(-6px); }
-            100% { transform: translateY(0); }
+          .forest-background {
+            background: linear-gradient(to bottom, 
+              #1a1a2e 0%, 
+              #16213e 20%, 
+              #0f3460 40%, 
+              #0e4b99 60%, 
+              #2d5aa0 80%, 
+              #346751 100%);
           }
-          .floaty {
-            animation: floaty 3s ease-in-out infinite;
+          
+          .forest-layers {
+            opacity: 0.8;
+          }
+          
+          .forest-layer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-repeat: repeat-x;
+            background-position: bottom;
+          }
+          
+          .forest-back {
+            height: 50%;
+            background: linear-gradient(to top, 
+              #1a2f1a 0%, 
+              #2d4b2d 30%, 
+              transparent 100%);
+            opacity: 0.6;
+          }
+          
+          .forest-mid {
+            height: 70%;
+            background: linear-gradient(to top, 
+              #0d1f0d 0%, 
+              #1a331a 40%, 
+              transparent 80%);
+            opacity: 0.7;
+          }
+          
+          .forest-front {
+            height: 40%;
+            background: linear-gradient(to top, 
+              #061206 0%, 
+              #0f1f0f 20%, 
+              transparent 100%);
+            opacity: 0.9;
+          }
+          
+          .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+          }
+          
+          .fairy-container {
+            position: relative;
+            min-height: 600px;
+            overflow: hidden;
+          }
+          
+          .fairy-sprite {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            animation: fairy-wander 8s ease-in-out infinite;
+            z-index: 5;
+          }
+          
+          .fairy-sprite:hover {
+            transform: scale(1.2) !important;
+          }
+          
+          .fairy-trail {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60px;
+            height: 60px;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: trail-fade 2s ease-out infinite;
+            pointer-events: none;
+          }
+          
+          .fairy-glow {
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            right: -15px;
+            bottom: -15px;
+            background: radial-gradient(circle, rgba(255, 223, 186, 0.5) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: fairy-glow 3s ease-in-out infinite alternate;
+          }
+          
+          .fairy-body {
+            position: relative;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            border: 2px solid rgba(147, 197, 114, 0.6);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+          }
+          
+          .fairy-wings {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 14px;
+            animation: fairy-wings 1.5s ease-in-out infinite alternate;
+          }
+          
+          .fairy-info {
+            position: absolute;
+            top: -45px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+          }
+          
+          .fairy-sprite:hover .fairy-info {
+            opacity: 1;
+          }
+          
+          .feed-hint {
+            position: absolute;
+            top: 65px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #2d5016;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 4px 8px;
+            border-radius: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          }
+          
+          .fairy-sprite:hover .feed-hint {
+            opacity: 1;
+          }
+          
+          /* 蛍のエフェクト */
+          .fireflies {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 3;
+          }
+          
+          .firefly {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #ffff99;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ffff99, 0 0 20px #ffff99, 0 0 30px #ffff99;
+            animation: firefly-float 6s ease-in-out infinite;
+            opacity: 0;
+          }
+          
+          @keyframes fairy-wander {
+            0% { 
+              transform: translateX(0) translateY(0) rotate(0deg);
+            }
+            20% { 
+              transform: translateX(calc(var(--wander-x) * 0.3)) translateY(calc(var(--wander-y) * -0.2)) rotate(5deg);
+            }
+            40% { 
+              transform: translateX(calc(var(--wander-x) * 0.8)) translateY(calc(var(--wander-y) * -0.6)) rotate(-3deg);
+            }
+            60% { 
+              transform: translateX(calc(var(--wander-x) * 0.5)) translateY(calc(var(--wander-y) * -0.8)) rotate(7deg);
+            }
+            80% { 
+              transform: translateX(calc(var(--wander-x) * -0.4)) translateY(calc(var(--wander-y) * -0.3)) rotate(-2deg);
+            }
+            100% { 
+              transform: translateX(0) translateY(0) rotate(0deg);
+            }
+          }
+          
+          @keyframes trail-fade {
+            0% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.8); }
+            50% { opacity: 0.1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+          }
+          
+          @keyframes fairy-glow {
+            0% { opacity: 0.4; transform: scale(0.9); }
+            100% { opacity: 0.7; transform: scale(1.1); }
+          }
+          
+          @keyframes fairy-wings {
+            0% { transform: rotate(-15deg) scale(0.8); }
+            100% { transform: rotate(15deg) scale(1.2); }
+          }
+          
+          @keyframes firefly-float {
+            0% { 
+              opacity: 0; 
+              transform: translateY(0px) translateX(0px); 
+            }
+            10% { 
+              opacity: 1; 
+            }
+            25% { 
+              transform: translateY(-20px) translateX(10px); 
+            }
+            50% { 
+              transform: translateY(-40px) translateX(-15px); 
+            }
+            75% { 
+              transform: translateY(-20px) translateX(20px); 
+            }
+            90% { 
+              opacity: 1; 
+            }
+            100% { 
+              opacity: 0; 
+              transform: translateY(0px) translateX(0px); 
+            }
+          }
+          
+          /* 森の装飾要素 */
+          .forest-background::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+              radial-gradient(circle at 15% 85%, rgba(34, 139, 34, 0.4) 0%, transparent 60%),
+              radial-gradient(circle at 85% 15%, rgba(34, 139, 34, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 50% 50%, rgba(34, 139, 34, 0.2) 0%, transparent 70%),
+              radial-gradient(ellipse at 30% 70%, rgba(0, 100, 0, 0.1) 0%, transparent 80%);
+            pointer-events: none;
+          }
+          
+          /* 夜の星空効果 */
+          .forest-background::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background-image: 
+              radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+              radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+              radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+              radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent),
+              radial-gradient(2px 2px at 160px 30px, #fff, transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: stars-twinkle 4s ease-in-out infinite alternate;
+            pointer-events: none;
+          }
+          
+          @keyframes stars-twinkle {
+            0% { opacity: 0.7; }
+            100% { opacity: 1; }
           }
         `}</style>
       </div>
