@@ -61,32 +61,6 @@ export default function EncyclopediaPage() {
     return created.toLocaleDateString('ja-JP');
   };
 
-  // 親密度に応じて画像パスを取得する関数
-  const getImagePathByIntimacy = (thingId: string, intimacyLevel: number): string => {
-    // 親密度に応じて画像番号を決定（5レベルごとに変化）
-    let imageNumber = 1;
-    if (intimacyLevel > 5) imageNumber = 2;
-    if (intimacyLevel > 10) imageNumber = 3;
-    if (intimacyLevel > 15) imageNumber = 4;
-    if (intimacyLevel > 20) imageNumber = 5;
-    
-    // 最大レベルは5枚目の画像まで
-    imageNumber = Math.min(imageNumber, 5);
-    
-    let imagePath = '/monsters/things/things-monster.jpg'; // デフォルト
-    
-    if (thingId === 'key') {
-      imagePath = `/monsters/key/key-monster-${imageNumber}.jpg`;
-    } else if (thingId === 'umbrella') {
-      imagePath = `/monsters/umbrella/umbrella-monster-${imageNumber}.jpg`;
-    } else if (thingId === 'wallet') {
-      imagePath = `/monsters/wallet/wallet-monster${imageNumber > 1 ? `-${imageNumber}` : ''}.jpg`;
-    } else if (thingId === 'medicine') {
-      imagePath = `/monsters/medicine/medicine-monster-${imageNumber}.jpg`;
-    } else if (thingId === 'smartphone') {
-      imagePath = `/monsters/phone/phone_monsters${imageNumber > 1 ? imageNumber : ''}.jpg`;
-    } else if (thingId === 'homework') {
-      imagePath = `/monsters/homework/homework_monsters${imageNumber > 1 ? imageNumber : ''}.jpg`;
   // 画像パス（固定: 親密度の概念は削除）
   const getImagePathByThingId = (thingId: string): string => {
     switch (thingId) {
@@ -200,46 +174,7 @@ export default function EncyclopediaPage() {
       if (!prev) {
         byThingId.set(rec.thingId, { latestAt: rec.createdAt, maxDifficulty: rec.difficulty ?? 3, sample: rec });
       } else {
-        // 新しいモンスターを作成
-        // 忘れ物の種類に応じて適切な画像パスを生成（親密度1用）
-        let imagePath = '/monsters/things/things-monster.jpg'; // デフォルト
-        
-        if (record.thingId === 'key') {
-          imagePath = '/monsters/key/key-monster-1.jpg';
-          console.log('鍵のモンスター用画像パス:', imagePath);
-        } else if (record.thingId === 'umbrella') {
-          imagePath = '/monsters/umbrella/umbrella-monster-1.jpg';
-          console.log('傘のモンスター用画像パス:', imagePath);
-        } else if (record.thingId === 'wallet') {
-          imagePath = '/monsters/wallet/wallet-monster.jpg';
-          console.log('財布のモンスター用画像パス:', imagePath);
-        } else if (record.thingId === 'medicine') {
-          imagePath = '/monsters/medicine/medicine-monster-1.jpg';
-          console.log('薬のモンスター用画像パス:', imagePath);
-        } else if (record.thingId === 'smartphone') {
-          imagePath = '/monsters/phone/phone_monsters.jpg';
-          console.log('スマホのモンスター用画像パス:', imagePath);
-        } else if (record.thingId === 'homework') {
-          imagePath = '/monsters/homework/homework_monsters.jpg';
-          console.log('宿題のモンスター用画像パス:', imagePath);
-        } else {
-          console.log('該当する画像が見つからないthingId:', record.thingId);
-        }
-        
-        const monster: Monster = {
-          id: 1000 + index, // ユニークID
-          name: `${record.thingType}`,
-          category: record.thingId || 'things',
-          categoryName: record.thingType || '忘れ物',
-          categoryEmoji: '',
-          rarity: getRarityByIntimacy(1), // 親密度1用のrarity
-          intimacyLevel: 1, // 初期親密度は1
-          lastSeenAt: getTimeAgo(record.createdAt),
-          thumbUrl: getImagePathByIntimacy(record.thingId, 1) // 親密度1用の画像
-        };
-        
-        thingsMonstersMap.set(record.thingId, monster);
-        console.log('新しいモンスターが作成されました:', monster);
+
         const latestAt = new Date(rec.createdAt) > new Date(prev.latestAt) ? rec.createdAt : prev.latestAt;
         const maxDifficulty = Math.max(prev.maxDifficulty, rec.difficulty ?? 3);
         byThingId.set(rec.thingId, { latestAt, maxDifficulty, sample: rec });
@@ -271,22 +206,7 @@ export default function EncyclopediaPage() {
       };
     });
 
-  const things = [
-    { id: '', name: 'すべて', emoji: '🌟' },
-    { id: 'key', name: '鍵', emoji: '🔑' },
-    { id: 'medicine', name: '薬', emoji: '💊' },
-    { id: 'umbrella', name: '傘', emoji: '☔' },
-    { id: 'wallet', name: '財布', emoji: '👛' },
-    { id: 'smartphone', name: 'スマホ', emoji: '📱' }
-  ];
 
-  const rarities: { value: Rarity | ''; label: string }[] = [
-    { value: '', label: 'すべて' },
-    { value: 'common', label: 'Common' },
-    { value: 'rare', label: 'Rare' },
-    { value: 'epic', label: 'Epic' },
-    { value: 'legendary', label: 'Legendary' }
-  ];
     setMonsters([...baseMonsters, ...thingsMonsters]);
   }, []);
 
