@@ -52,26 +52,27 @@ export default function InputPage() {
     setHasClaimedFeedToday(lastClaimedDate === today);
   }, []);
 
-  const categories = [
+  // カスタムカードデータを読み込み（createページで作成したもの）
+  const [categories, setCategories] = useState([
     { id: 'forget_things', name: '物忘れ', emoji: '🔍' },
     { id: 'forget_schedule', name: '予定忘れ', emoji: '📅' },
     { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰' },
     { id: 'another', name: 'その他', emoji: '😊' },
-  ];
+  ]);
 
-  const things = [
-    { id: 'key', name: '鍵', emoji: '🔑' },
-    { id: 'medicine', name: '薬', emoji: '💊' },
-    { id: 'umbrella', name: '傘', emoji: '☔' },
-    { id: 'wallet', name: '財布', emoji: '👛' },
-    { id: 'smartphone', name: 'スマホ', emoji: '📱' },
-    { id: 'schedule', name: '予定', emoji: '📅' },
-    { id: 'time', name: '遅刻', emoji: '⏰' },
-    { id: 'homework', name: '宿題', emoji: '📄' },
-    { id: 'another', name: 'その他', emoji: '😊' },
-  ];
+  const [things, setThings] = useState([
+    { id: 'key', name: '鍵', emoji: '🔑', categoryId: 'forget_things' },
+    { id: 'medicine', name: '薬', emoji: '💊', categoryId: 'forget_things' },
+    { id: 'umbrella', name: '傘', emoji: '☔', categoryId: 'forget_things' },
+    { id: 'wallet', name: '財布', emoji: '👛', categoryId: 'forget_things' },
+    { id: 'smartphone', name: 'スマホ', emoji: '📱', categoryId: 'forget_things' },
+    { id: 'schedule', name: '予定', emoji: '📅', categoryId: 'forget_schedule' },
+    { id: 'time', name: '遅刻', emoji: '⏰', categoryId: 'oversleep_late' },
+    { id: 'homework', name: '宿題', emoji: '📄', categoryId: 'forget_things' },
+    { id: 'another', name: 'その他', emoji: '😊', categoryId: 'another' },
+  ]);
 
-  const situations = [
+  const [situations, setSituations] = useState([
     { id: 'morning', name: '朝', emoji: '🌅' },
     { id: 'home', name: '家', emoji: '🏠' },
     { id: 'before_going_out', name: '外出前', emoji: '🚪' },
@@ -80,25 +81,54 @@ export default function InputPage() {
     { id: 'work', name: '仕事', emoji: '💼' },
     { id: 'school', name: '学校', emoji: '🎒' },
     { id: 'another', name: 'その他', emoji: '😊' },
-  ];
+  ]);
+
+  // LocalStorageからカスタムカードデータを読み込み
+  useEffect(() => {
+    const loadCustomCards = () => {
+      const saved = localStorage.getItem('customCards');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.categories) setCategories(data.categories);
+          if (data.things) setThings(data.things);
+          if (data.situations) setSituations(data.situations);
+        } catch (error) {
+          console.error('カスタムカードデータの読み込みに失敗:', error);
+        }
+      }
+    };
+
+    loadCustomCards();
+
+    // LocalStorageの変更を監視
+    const handleStorageChange = () => loadCustomCards();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('customCardsChanged', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('customCardsChanged', handleStorageChange);
+    };
+  }, []);
 
   // 既存モンスター一覧を生成
   const getExistingMonsters = () => {
     const existingRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
-    const forgetRecords = existingRecords.filter((record: any) => record.didForget === true);
+    const forgetRecords = existingRecords.filter((record: { didForget?: boolean }) => record.didForget === true);
     
     const monsterMap = new Map();
-    forgetRecords.forEach((record: any) => {
+    forgetRecords.forEach((record: { thingId?: string; thingType?: string }) => {
       if (record.thingId && record.thingId !== 'none') {
         if (!monsterMap.has(record.thingId)) {
           monsterMap.set(record.thingId, {
             thingId: record.thingId,
-            thingType: record.thingType,
+            thingType: record.thingType || '不明',
             emoji: things.find(t => t.id === record.thingId)?.emoji || '😊',
             count: 0
           });
         }
-        monsterMap.get(record.thingId).count++;
+        monsterMap.get(record.thingId)!.count++;
       }
     });
     
@@ -206,12 +236,16 @@ export default function InputPage() {
         // 新規モンスターモード（従来どおり）
         if (formData.forgottenItem) {
           const selectedThing = things.find(thing => thing.id === formData.forgottenItem);
+          const selectedCategory = categories.find(cat => cat.id === formData.category);
           console.log('選択された忘れ物:', selectedThing);
+          console.log('選択されたカテゴリ:', selectedCategory);
           
           // LocalStorageに保存（図鑑で読み込むため）
           const thingsRecord = {
             id: Date.now().toString(),
             category: formData.category,
+            categoryName: selectedCategory?.name || '不明',
+            categoryEmoji: selectedCategory?.emoji || '😊',
             thingType: selectedThing?.name || '忘れ物',
             thingId: formData.forgottenItem,
             title: formData.title,
@@ -295,10 +329,18 @@ export default function InputPage() {
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-black">
-              <Plus className="h-5 w-5 text-primary" />
-              忘れ物を記録
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-black">
+                <Plus className="h-5 w-5 text-primary" />
+                忘れ物を記録
+              </CardTitle>
+              <Link href="/create">
+                <Button variant="ghost" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  カード作成
+                </Button>
+              </Link>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">

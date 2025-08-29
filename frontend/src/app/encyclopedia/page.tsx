@@ -31,6 +31,14 @@ interface Monster {
   thumbUrl: string;
 }
 
+interface CategoryCard {
+  id: string;
+  name: string;
+  emoji: string;
+  description?: string;
+  type: 'category';
+}
+
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -120,12 +128,52 @@ export default function EncyclopediaPage() {
   };
 
   // 表示用カテゴリ一覧（UIのフィルタ）
-  const categories = [
+  const [categories, setCategories] = useState([
     { id: '', name: 'すべて', emoji: '🌟' },
-    { id: 'misplacement', name: '物忘れ', emoji: '🧠' },
-    { id: 'missed_schedule', name: '予定忘れ', emoji: '📅' },
-    { id: 'overslept', name: '寝坊・遅刻', emoji: '⏰' },
-  ];
+    { id: 'forget_things', name: '物忘れ', emoji: '🔍' },
+    { id: 'forget_schedule', name: '予定忘れ', emoji: '📅' },
+    { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰' },
+    { id: 'another', name: 'その他', emoji: '😊' },
+  ]);
+
+  // カスタムカテゴリを読み込み
+  React.useEffect(() => {
+    const loadCustomCategories = () => {
+      const saved = localStorage.getItem('customCards');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.categories && data.categories.length > 0) {
+            // カスタムカテゴリを追加
+            const customCategories = data.categories.map((cat: CategoryCard) => ({
+              id: cat.id,
+              name: cat.name,
+              emoji: cat.emoji
+            }));
+            
+            setCategories([
+              { id: '', name: 'すべて', emoji: '🌟' },
+              ...customCategories
+            ]);
+          }
+        } catch (error) {
+          console.error('カスタムカテゴリの読み込みに失敗:', error);
+        }
+      }
+    };
+
+    loadCustomCategories();
+
+    // LocalStorageの変更を監視
+    const handleStorageChange = () => loadCustomCategories();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('customCardsChanged', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('customCardsChanged', handleStorageChange);
+    };
+  }, []);
 
   // ランクフィルタ一覧（5段階評価）
   const ranks: { value: Rank | ''; label: string }[] = [
@@ -268,7 +316,7 @@ export default function EncyclopediaPage() {
           <CardContent className="space-y-4">
             {/* カテゴリフィルター（新3分類） */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">分類</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリ</label>
               <div className="flex flex-wrap gap-2">
                 {categories.map((c) => (
                   <Chip
@@ -301,61 +349,90 @@ export default function EncyclopediaPage() {
 
         {/* モンスター一覧 */}
         {filteredMonsters.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredMonsters.map((monster) => (
-              <Link key={monster.id} href={`/monster/${monster.category}`}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-16 h-16 flex-shrink-0">
-                        <img
-                          src={monster.thumbUrl}
-                          alt={monster.name}
-                          className="w-full h-full object-cover rounded-lg"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const fallback = document.createElement('div');
-                            fallback.className = 'text-4xl flex items-center justify-center w-full h-full';
-                            fallback.textContent = monster.categoryEmoji;
-                            target.parentNode?.appendChild(fallback);
-                          }}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-gray-900 truncate">{monster.name}</h3>
-                          {/* SS/S/A/B/C ランク表示（5段階評価）*/}
-                          <span
-                            className={
-                              'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ' +
-                              (monster.rank === 'SS'
-                                ? 'border-yellow-500 text-yellow-600 bg-yellow-50'
-                                : monster.rank === 'S'
-                                ? 'border-purple-500 text-purple-600 bg-purple-50'
-                                : monster.rank === 'A'
-                                ? 'border-blue-500 text-blue-600 bg-blue-50'
-                                : monster.rank === 'B'
-                                ? 'border-green-500 text-green-600 bg-green-50'
-                                : 'border-gray-400 text-gray-600 bg-gray-50')
-                            }
-                            aria-label={`${monster.rank}ランク`}
-                          >
-                            {monster.rank}ランク
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-sm text-gray-500">{monster.categoryEmoji}</span>
-                          <span className="text-sm text-gray-600">{monster.categoryName}</span>
-                        </div>
-                        {/* 親密度表示は削除 */}
-                        <div className="text-xs text-gray-400">{monster.lastSeenAt}</div>
-                      </div>
+          <div className="space-y-6">
+            {/* カテゴリ別にグループ化 */}
+            {(() => {
+              const groupedMonsters = new Map<string, Monster[]>();
+              
+              // カテゴリ別にモンスターをグループ化
+              filteredMonsters.forEach(monster => {
+                const categoryId = monster.category;
+                if (!groupedMonsters.has(categoryId)) {
+                  groupedMonsters.set(categoryId, []);
+                }
+                groupedMonsters.get(categoryId)!.push(monster);
+              });
+
+              return Array.from(groupedMonsters.entries()).map(([categoryId, monsters]) => {
+                const category = categories.find(cat => cat.id === categoryId);
+                if (!category) return null;
+
+                return (
+                  <div key={categoryId} className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{category.emoji}</span>
+                      <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
+                      <span className="text-sm text-gray-500">({monsters.length}体)</span>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {monsters.map((monster) => (
+                        <Link key={monster.id} href={`/monster/${monster.category}`}>
+                          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-3">
+                                <div className="w-16 h-16 flex-shrink-0">
+                                  <img
+                                    src={monster.thumbUrl}
+                                    alt={monster.name}
+                                    className="w-full h-full object-cover rounded-lg"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      const fallback = document.createElement('div');
+                                      fallback.className = 'text-4xl flex items-center justify-center w-full h-full';
+                                      fallback.textContent = monster.categoryEmoji;
+                                      target.parentNode?.appendChild(fallback);
+                                    }}
+                                  />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <h3 className="font-semibold text-gray-900 truncate">{monster.name}</h3>
+                                    {/* SS/S/A/B/C ランク表示（5段階評価）*/}
+                                    <span
+                                      className={
+                                        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ' +
+                                        (monster.rank === 'SS'
+                                          ? 'border-yellow-500 text-yellow-600 bg-yellow-50'
+                                          : monster.rank === 'S'
+                                          ? 'border-purple-500 text-purple-600 bg-purple-50'
+                                          : monster.rank === 'A'
+                                          ? 'border-blue-500 text-blue-600 bg-blue-50'
+                                          : monster.rank === 'B'
+                                          ? 'border-green-500 text-green-600 bg-green-50'
+                                          : 'border-gray-400 text-gray-600 bg-gray-50')
+                                      }
+                                      aria-label={`${monster.rank}ランク`}
+                                    >
+                                      {monster.rank}ランク
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-sm text-gray-500">{monster.categoryEmoji}</span>
+                                    <span className="text-sm text-gray-600">{monster.categoryName}</span>
+                                  </div>
+                                  <div className="text-xs text-gray-400">{monster.lastSeenAt}</div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
         ) : (
           <EmptyState
