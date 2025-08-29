@@ -377,6 +377,7 @@ export default function AnalysisPage() {
                     <div key={d.day} className="flex items-center gap-4">
                       <div className="w-12 text-sm font-medium text-gray-600">{d.day}</div>
                       <div className="flex-1">
+
                         <Progress value={pct} max={100} />
                       </div>
                       <div className="w-16 text-right text-sm font-medium text-gray-900">
