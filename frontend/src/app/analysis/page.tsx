@@ -157,6 +157,24 @@ export default function AnalysisPage() {
     return stats.sort((a, b) => b.count - a.count);
   }, [timeFilteredRecords, categories]);
 
+// ---- 困った度ランキング --------------------------------------------------
+const difficultyRanking = useMemo(() => {
+  const map = new Map<string, { sum: number; count: number }>();
+  timeFilteredRecords.forEach((r) => {
+    const key = r.category || r.thingId || "other";
+    const difficulty = typeof r.difficulty === "number" ? r.difficulty : 0;
+    const prev = map.get(key) || { sum: 0, count: 0 };
+    map.set(key, { sum: prev.sum + difficulty, count: prev.count + 1 });
+  });
+  return Array.from(map.entries())
+    .map(([id, { sum, count }]) => {
+      const cat = categories.find((c) => c.id === id);
+      return { id, name: cat?.name ?? "その他", emoji: cat?.emoji ?? "📦", sum, count };
+    })
+    .filter(x => x.sum > 0)
+    .sort((a, b) => b.sum - a.sum || b.count - a.count || a.name.localeCompare(b.name, "ja"));
+}, [timeFilteredRecords, categories]);
+
   const totalCount = timeFilteredRecords.length;
   const averagePerDay =
     timeRange === "week"
@@ -454,6 +472,48 @@ export default function AnalysisPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 困った度ランキング */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              困った度ランキング
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {difficultyRanking.length === 0 ? (
+              <div className="text-sm text-gray-500">データがありません。</div>
+            ) : (
+              <div className="space-y-3">
+                {difficultyRanking.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between border rounded-lg px-3 py-2"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 text-sm font-medium text-gray-600">
+                        {index + 1}位
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{item.emoji}</span>
+                        <span className="text-sm font-medium text-gray-900">{item.name}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 text-right">
+                      <div className="text-sm font-medium text-gray-900">
+                        合計{item.sum}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {item.count}件
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
