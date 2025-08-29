@@ -21,7 +21,8 @@ export default function InputPage() {
     difficulty: 3,
     situation: [] as string[],
     location: '',
-    datetime: new Date().toISOString().slice(0, 16)
+    datetime: new Date().toISOString().slice(0, 16),
+    didForget: true // デフォルトは忘れた（既存の動作を維持）
   });
 
   const [showResultModal, setShowResultModal] = useState(false);
@@ -87,13 +88,17 @@ export default function InputPage() {
         difficulty: formData.difficulty,
         location: formData.location,
         datetime: formData.datetime,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        didForget: formData.didForget // 新しいフィールドを追加
       };
       
       // 既存のデータを取得して追加
       const existingRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
       existingRecords.push(thingsRecord);
       localStorage.setItem('thingsRecords', JSON.stringify(existingRecords));
+      
+      // thingsRecordsChanged イベントを dispatch
+      window.dispatchEvent(new CustomEvent('thingsRecordsChanged'));
       
       // モンスター情報を計算
       const sameThingRecords = existingRecords.filter((record: { thingId: string }) => record.thingId === formData.forgottenItem);
@@ -209,6 +214,19 @@ export default function InputPage() {
                       onClick={() => setFormData(prev => ({ ...prev, forgottenItem: thing.id }))}
                     />
                   ))}
+                </div>
+                {/* 忘れ物してないオプション */}
+                <div className="mt-3">
+                  <Chip
+                    label="忘れ物をしていない"
+                    emoji="✅"
+                    selected={!formData.didForget}
+                    onClick={() => setFormData(prev => ({ 
+                      ...prev, 
+                      didForget: false,
+                      forgottenItem: '' // 忘れ物を選択解除
+                    }))}
+                  />
                 </div>
               </div>
 

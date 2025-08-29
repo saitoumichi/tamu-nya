@@ -157,6 +157,43 @@ export default function AnalysisPage() {
     return stats.sort((a, b) => b.count - a.count);
   }, [timeFilteredRecords, categories]);
 
+  const difficultyRanking = useMemo(() => {
+    const map = new Map<string, { total: number; count: number }>();
+    
+    timeFilteredRecords.forEach((r) => {
+      const key = r.category || r.thingId || "other";
+      const difficulty = typeof r.difficulty === 'number' ? r.difficulty : 0;
+      const existing = map.get(key) || { total: 0, count: 0 };
+      map.set(key, {
+        total: existing.total + difficulty,
+        count: existing.count + 1
+      });
+    });
+
+    const ranking = Array.from(map.entries())
+      .map(([id, stats]) => {
+        const cat = categories.find((c) => c.id === id);
+        const name = cat?.name ?? "その他";
+        const emoji = cat?.emoji ?? "📦";
+        return {
+          id,
+          name,
+          emoji,
+          total: stats.total,
+          count: stats.count,
+          avg: stats.count > 0 ? stats.total / stats.count : 0
+        };
+      })
+      .filter(item => item.total > 0)
+      .sort((a, b) => 
+        b.total - a.total || 
+        b.count - a.count || 
+        a.name.localeCompare(b.name, 'ja')
+      );
+
+    return ranking;
+  }, [timeFilteredRecords, categories]);
+
   const totalCount = timeFilteredRecords.length;
   const averagePerDay =
     timeRange === "week"
@@ -454,6 +491,36 @@ export default function AnalysisPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              困った度ランキング
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {difficultyRanking.length === 0 ? (
+              <div className="text-sm text-gray-500">データがありません。</div>
+            ) : (
+              <div className="space-y-3">
+                {difficultyRanking.map((item, index) => (
+                  <div key={item.id} className="flex items-center justify-between border rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-gray-600 w-8">#{index + 1}</span>
+                      <span className="text-lg">{item.emoji}</span>
+                      <span className="text-sm font-medium text-gray-900">{item.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-gray-900">{item.total}点</div>
+                      <div className="text-xs text-gray-500">{item.count}件</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
