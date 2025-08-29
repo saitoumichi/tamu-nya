@@ -32,6 +32,12 @@ const BottomTabs = () => {
       icon: BarChart3,
       active: pathname === '/analysis'
     },
+    {
+      name: '作成',
+      href: '/create',
+      icon: Plus,
+      active: pathname === '/create'
+    },
   ];
 
   return (

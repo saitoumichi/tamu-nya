@@ -36,26 +36,27 @@ export default function InputPage() {
     console.log('showResultModal changed:', showResultModal);
   }, [showResultModal]);
 
-  const categories = [
+  // カスタムカードデータを読み込み（createページで作成したもの）
+  const [categories, setCategories] = useState([
     { id: 'forget_things', name: '物忘れ', emoji: '🔍' },
     { id: 'forget_schedule', name: '予定忘れ', emoji: '📅' },
     { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰' },
     { id: 'another', name: 'その他', emoji: '😊' },
-  ];
+  ]);
 
-  const things = [
-    { id: 'key', name: '鍵', emoji: '🔑' },
-    { id: 'medicine', name: '薬', emoji: '💊' },
-    { id: 'umbrella', name: '傘', emoji: '☔' },
-    { id: 'wallet', name: '財布', emoji: '👛' },
-    { id: 'smartphone', name: 'スマホ', emoji: '📱' },
-    { id: 'schedule', name: '予定', emoji: '📅' },
-    { id: 'time', name: '遅刻', emoji: '⏰' },
-    { id: 'homework', name: '宿題', emoji: '📄' },
-    { id: 'another', name: 'その他', emoji: '😊' },
-  ];
+  const [things, setThings] = useState([
+    { id: 'key', name: '鍵', emoji: '🔑', categoryId: 'forget_things' },
+    { id: 'medicine', name: '薬', emoji: '💊', categoryId: 'forget_things' },
+    { id: 'umbrella', name: '傘', emoji: '☔', categoryId: 'forget_things' },
+    { id: 'wallet', name: '財布', emoji: '👛', categoryId: 'forget_things' },
+    { id: 'smartphone', name: 'スマホ', emoji: '📱', categoryId: 'forget_things' },
+    { id: 'schedule', name: '予定', emoji: '📅', categoryId: 'forget_schedule' },
+    { id: 'time', name: '遅刻', emoji: '⏰', categoryId: 'oversleep_late' },
+    { id: 'homework', name: '宿題', emoji: '📄', categoryId: 'forget_things' },
+    { id: 'another', name: 'その他', emoji: '😊', categoryId: 'another' },
+  ]);
 
-  const situations = [
+  const [situations, setSituations] = useState([
     { id: 'morning', name: '朝', emoji: '🌅' },
     { id: 'home', name: '家', emoji: '🏠' },
     { id: 'before_going_out', name: '外出前', emoji: '🚪' },
@@ -64,7 +65,36 @@ export default function InputPage() {
     { id: 'work', name: '仕事', emoji: '💼' },
     { id: 'school', name: '学校', emoji: '🎒' },
     { id: 'another', name: 'その他', emoji: '😊' },
-  ];
+  ]);
+
+  // LocalStorageからカスタムカードデータを読み込み
+  useEffect(() => {
+    const loadCustomCards = () => {
+      const saved = localStorage.getItem('customCards');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.categories) setCategories(data.categories);
+          if (data.things) setThings(data.things);
+          if (data.situations) setSituations(data.situations);
+        } catch (error) {
+          console.error('カスタムカードデータの読み込みに失敗:', error);
+        }
+      }
+    };
+
+    loadCustomCards();
+
+    // LocalStorageの変更を監視
+    const handleStorageChange = () => loadCustomCards();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('customCardsChanged', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('customCardsChanged', handleStorageChange);
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,12 +103,16 @@ export default function InputPage() {
     // 選択された「忘れたもの」の情報を図鑑に送る
     if (formData.forgottenItem) {
       const selectedThing = things.find(thing => thing.id === formData.forgottenItem);
+      const selectedCategory = categories.find(cat => cat.id === formData.category);
       console.log('選択された忘れ物:', selectedThing);
+      console.log('選択されたカテゴリ:', selectedCategory);
       
       // LocalStorageに保存（図鑑で読み込むため）
       const thingsRecord = {
         id: Date.now().toString(),
         category: formData.category,
+        categoryName: selectedCategory?.name || '不明',
+        categoryEmoji: selectedCategory?.emoji || '😊',
         thingType: selectedThing?.name || '忘れ物',
         thingId: formData.forgottenItem,
         title: formData.title,
@@ -127,6 +161,15 @@ export default function InputPage() {
     setFormData(prev => ({ ...prev, category: categoryId }));
   };
 
+  const handleSituationSelect = (situationId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      situation: prev.situation.includes(situationId)
+        ? prev.situation.filter(id => id !== situationId)
+        : [...prev.situation, situationId]
+    }));
+  };
+
   const handleSituationToggle = (situationId: string) => {
     setFormData(prev => ({
       ...prev,
@@ -150,30 +193,22 @@ export default function InputPage() {
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-black">
-              <Plus className="h-5 w-5 text-primary" />
-              忘れ物を記録
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-black">
+                <Plus className="h-5 w-5 text-primary" />
+                忘れ物を記録
+              </CardTitle>
+              <Link href="/create">
+                <Button variant="ghost" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  カード作成
+                </Button>
+              </Link>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* カテゴリ選択 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  カテゴリ
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((category) => (
-                    <Chip
-                      key={category.id}
-                      label={category.name}
-                      emoji={category.emoji}
-                      selected={formData.category === category.id}
-                      onClick={() => handleCategorySelect(category.id)}
-                    />
-                  ))}
-                </div>
-              </div>
+
 
               {/* タイトル */}
               <div>
@@ -185,7 +220,7 @@ export default function InputPage() {
                   id="title"
                   value={formData.title}
                   onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-gray-400"
                   placeholder="忘れ物のタイトル"
                   maxLength={120}
                 />
@@ -206,11 +241,40 @@ export default function InputPage() {
                       label={thing.name}
                       emoji={thing.emoji}
                       selected={formData.forgottenItem === thing.id}
-                      onClick={() => setFormData(prev => ({ ...prev, forgottenItem: thing.id }))}
+                      onClick={() => {
+                        const selectedThing = things.find(t => t.id === thing.id);
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          forgottenItem: thing.id,
+                          category: selectedThing?.categoryId || ''
+                        }));
+                      }}
                     />
                   ))}
                 </div>
               </div>
+
+              {/* 選択されたカテゴリ表示 */}
+              {formData.category && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    選択されたカテゴリ
+                  </label>
+                  <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                    {(() => {
+                      const selectedCategory = categories.find(cat => cat.id === formData.category);
+                      return selectedCategory ? (
+                        <>
+                          <span className="text-2xl">{selectedCategory.emoji}</span>
+                          <span className="font-medium text-gray-900">{selectedCategory.name}</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-500">カテゴリが選択されていません</span>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
 
               {/* 内容 */}
               <div>
@@ -321,19 +385,37 @@ export default function InputPage() {
                 />
               </div>
 
-              {/* 状況 */}
+              {/* カテゴリ */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  状況
+                  カテゴリ
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {situations.map((category) => (
+                  {categories.map((category) => (
                     <Chip
                       key={category.id}
                       label={category.name}
                       emoji={category.emoji}
                       selected={formData.category === category.id}
                       onClick={() => handleCategorySelect(category.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* 状況 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  状況
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {situations.map((situation) => (
+                    <Chip
+                      key={situation.id}
+                      label={situation.name}
+                      emoji={situation.emoji}
+                      selected={formData.situation.includes(situation.id)}
+                      onClick={() => handleSituationSelect(situation.id)}
                     />
                   ))}
                 </div>
