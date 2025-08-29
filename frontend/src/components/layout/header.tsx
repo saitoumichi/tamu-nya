@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, User } from 'lucide-react';
+import { Bell} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
@@ -32,10 +32,6 @@ const Header: React.FC<HeaderProps> = ({ appName = '忘れ物図鑑' }) => {
               )}
             </Button>
           </Link>
-          {/* プロフィール */}
-          <Button variant="ghost" size="sm">
-            <User className="h-5 w-5" />
-          </Button>
         </div>
       </div>
     </header>
