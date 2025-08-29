@@ -33,17 +33,11 @@ const Sidebar = () => {
       active: pathname === '/analysis'
     },
     {
-      name: '通知設定',
-      href: '/notifications',
-      icon: Bell,
-      active: pathname === '/notifications'
+      name: '作成',
+      href: '/create',
+      icon: Plus,
+      active: pathname === '/create'
     },
-    {
-      name: '設定',
-      href: '/settings',
-      icon: Settings,
-      active: pathname === '/settings'
-    }
   ];
 
   return (
