@@ -14,15 +14,20 @@ export default function InputPage() {
   const [formData, setFormData] = useState({
     category: '',
     title: '',
-    content: '',
     note: '',
     forgottenItem: '',
-    details: '',
     difficulty: 3,
     situation: [] as string[],
-    location: '',
-    datetime: new Date().toISOString().slice(0, 16)
+    didForget: true // デフォルトは忘れた（既存の動作を維持）
   });
+
+  const [hasClaimedFeedToday, setHasClaimedFeedToday] = useState(false);
+  const [forgetMode, setForgetMode] = useState<'new' | 'existing'>('new');
+  const [selectedExistingMonster, setSelectedExistingMonster] = useState<{
+    thingId: string;
+    thingType: string;
+    emoji: string;
+  } | null>(null);
 
   const [showResultModal, setShowResultModal] = useState(false);
   const [monsterInfo, setMonsterInfo] = useState<{
@@ -35,6 +40,17 @@ export default function InputPage() {
   useEffect(() => {
     console.log('showResultModal changed:', showResultModal);
   }, [showResultModal]);
+
+  useEffect(() => {
+    // 今日の日付を取得
+    const today = new Date().toISOString().slice(0, 10);
+    
+    // localStorage から前回の受取日を取得
+    const lastClaimedDate = localStorage.getItem('dailyFeedClaimedAt');
+    
+    // 今日受取済みかどうかを判定
+    setHasClaimedFeedToday(lastClaimedDate === today);
+  }, []);
 
   // カスタムカードデータを読み込み（createページで作成したもの）
   const [categories, setCategories] = useState([
@@ -96,32 +112,44 @@ export default function InputPage() {
     };
   }, []);
 
+  // 既存モンスター一覧を生成
+  const getExistingMonsters = () => {
+    const existingRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
+    const forgetRecords = existingRecords.filter((record: { didForget?: boolean }) => record.didForget === true);
+    
+    const monsterMap = new Map();
+    forgetRecords.forEach((record: { thingId?: string; thingType?: string }) => {
+      if (record.thingId && record.thingId !== 'none') {
+        if (!monsterMap.has(record.thingId)) {
+          monsterMap.set(record.thingId, {
+            thingId: record.thingId,
+            thingType: record.thingType || '不明',
+            emoji: things.find(t => t.id === record.thingId)?.emoji || '😊',
+            count: 0
+          });
+        }
+        monsterMap.get(record.thingId)!.count++;
+      }
+    });
+    
+    return Array.from(monsterMap.values());
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('handleSubmit called');
     
-    // 選択された「忘れたもの」の情報を図鑑に送る
-    if (formData.forgottenItem) {
-      const selectedThing = things.find(thing => thing.id === formData.forgottenItem);
-      const selectedCategory = categories.find(cat => cat.id === formData.category);
-      console.log('選択された忘れ物:', selectedThing);
-      console.log('選択されたカテゴリ:', selectedCategory);
-      
-      // LocalStorageに保存（図鑑で読み込むため）
+    if (formData.didForget === false) {
+      // 忘れていない場合の処理
       const thingsRecord = {
         id: Date.now().toString(),
         category: formData.category,
-        categoryName: selectedCategory?.name || '不明',
-        categoryEmoji: selectedCategory?.emoji || '😊',
-        thingType: selectedThing?.name || '忘れ物',
-        thingId: formData.forgottenItem,
-        title: formData.title,
-        content: formData.content,
-        details: formData.details,
+        thingType: '忘れなかった',
+        thingId: 'none',
         difficulty: formData.difficulty,
-        location: formData.location,
-        datetime: formData.datetime,
-        createdAt: new Date().toISOString()
+        situation: formData.situation,
+        createdAt: new Date().toISOString(),
+        didForget: false
       };
       
       // 既存のデータを取得して追加
@@ -129,27 +157,140 @@ export default function InputPage() {
       existingRecords.push(thingsRecord);
       localStorage.setItem('thingsRecords', JSON.stringify(existingRecords));
       
-      // モンスター情報を計算
-      const sameThingRecords = existingRecords.filter((record: { thingId: string }) => record.thingId === formData.forgottenItem);
-      const encounterCount = sameThingRecords.length;
+      // thingsRecordsChanged イベントを dispatch
+      window.dispatchEvent(new CustomEvent('thingsRecordsChanged'));
+      
+      // モンスター情報を計算（thingId==='none' の件数で算出）
+      const noneRecords = existingRecords.filter((record: { thingId: string }) => record.thingId === 'none');
+      const encounterCount = noneRecords.length;
       const intimacyLevel = encounterCount;
       
-      // ランクを計算（図鑑と同じロジック、5段階評価）
-      let rank = 'C';
-      if (intimacyLevel > 5) rank = 'B';
-      if (intimacyLevel > 10) rank = 'A';
-      if (intimacyLevel > 15) rank = 'S';
-      if (intimacyLevel > 20) rank = 'SS';
-      
       setMonsterInfo({
-        name: selectedThing?.name || '忘れ物',
+        name: '忘れなかった',
         encounterCount,
         intimacyLevel,
-        rank
+        rank: 'C'
       });
       
-      console.log('図鑑用データが保存されました:', thingsRecord);
-      console.log('モンスター情報:', { encounterCount, intimacyLevel, rank });
+      console.log('忘れなかった記録が保存されました:', thingsRecord);
+      console.log('モンスター情報:', { encounterCount, intimacyLevel, rank: 'C' });
+      
+      // 今日の分のえさを受取済みとして記録
+      const today = new Date().toISOString().slice(0, 10);
+      localStorage.setItem('dailyFeedClaimedAt', today);
+      setHasClaimedFeedToday(true);
+    } else {
+      // 忘れた場合の処理
+      if (forgetMode === 'existing') {
+        // 既存モンスターモード
+        if (!selectedExistingMonster) {
+          alert('既存モンスターを選択してください');
+          return;
+        }
+        
+        const thingsRecord = {
+          id: Date.now().toString(),
+          thingType: selectedExistingMonster.thingType,
+          thingId: selectedExistingMonster.thingId,
+          difficulty: formData.difficulty,
+          situation: formData.situation,
+          createdAt: new Date().toISOString(),
+          didForget: true
+        };
+        
+        // 既存のデータを取得して追加
+        const existingRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
+        existingRecords.push(thingsRecord);
+        localStorage.setItem('thingsRecords', JSON.stringify(existingRecords));
+        
+        // thingsRecordsChanged イベントを dispatch
+        window.dispatchEvent(new CustomEvent('thingsRecordsChanged'));
+        
+        // モンスター情報を計算
+        const sameThingRecords = existingRecords.filter((record: { thingId: string }) => record.thingId === selectedExistingMonster.thingId);
+        const encounterCount = sameThingRecords.length;
+        const intimacyLevel = encounterCount;
+        
+        // ランクを計算（図鑑と同じロジック、5段階評価）
+        let rank = 'C';
+        if (intimacyLevel > 5) rank = 'B';
+        if (intimacyLevel > 10) rank = 'A';
+        if (intimacyLevel > 15) rank = 'S';
+        if (intimacyLevel > 20) rank = 'SS';
+        
+        setMonsterInfo({
+          name: selectedExistingMonster.thingType,
+          encounterCount,
+          intimacyLevel,
+          rank
+        });
+        
+        console.log('既存モンスター記録が保存されました:', thingsRecord);
+        console.log('モンスター情報:', { encounterCount, intimacyLevel, rank });
+        
+        // 今日の分のえさを受取済みとして記録
+        const today = new Date().toISOString().slice(0, 10);
+        localStorage.setItem('dailyFeedClaimedAt', today);
+        setHasClaimedFeedToday(true);
+      } else {
+        // 新規モンスターモード（従来どおり）
+        if (formData.forgottenItem) {
+          const selectedThing = things.find(thing => thing.id === formData.forgottenItem);
+          const selectedCategory = categories.find(cat => cat.id === formData.category);
+          console.log('選択された忘れ物:', selectedThing);
+          console.log('選択されたカテゴリ:', selectedCategory);
+          
+          // LocalStorageに保存（図鑑で読み込むため）
+          const thingsRecord = {
+            id: Date.now().toString(),
+            category: formData.category,
+            categoryName: selectedCategory?.name || '不明',
+            categoryEmoji: selectedCategory?.emoji || '😊',
+            thingType: selectedThing?.name || '忘れ物',
+            thingId: formData.forgottenItem,
+            title: formData.title,
+            difficulty: formData.difficulty,
+            situation: formData.situation,
+            createdAt: new Date().toISOString(),
+            didForget: true
+          };
+          
+          // 既存のデータを取得して追加
+          const existingRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
+          existingRecords.push(thingsRecord);
+          localStorage.setItem('thingsRecords', JSON.stringify(existingRecords));
+          
+          // thingsRecordsChanged イベントを dispatch
+          window.dispatchEvent(new CustomEvent('thingsRecordsChanged'));
+          
+          // モンスター情報を計算
+          const sameThingRecords = existingRecords.filter((record: { thingId: string }) => record.thingId === formData.forgottenItem);
+          const encounterCount = sameThingRecords.length;
+          const intimacyLevel = encounterCount;
+          
+          // ランクを計算（図鑑と同じロジック、5段階評価）
+          let rank = 'C';
+          if (intimacyLevel > 5) rank = 'B';
+          if (intimacyLevel > 10) rank = 'A';
+          if (intimacyLevel > 15) rank = 'S';
+          if (intimacyLevel > 20) rank = 'SS';
+          
+          setMonsterInfo({
+            name: selectedThing?.name || '忘れ物',
+            encounterCount,
+            intimacyLevel,
+            rank
+          });
+          
+          console.log('図鑑用データが保存されました:', thingsRecord);
+          console.log('モンスター情報:', { encounterCount, intimacyLevel, rank });
+          
+          // 今日の分のえさを受取済みとして記録
+          const today = new Date().toISOString().slice(0, 10);
+          localStorage.setItem('dailyFeedClaimedAt', today);
+          setHasClaimedFeedToday(true);
+        }
+      }
     }
     
     // 成長リザルトモーダルを表示
@@ -161,13 +302,8 @@ export default function InputPage() {
     setFormData(prev => ({ ...prev, category: categoryId }));
   };
 
-  const handleSituationSelect = (situationId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      situation: prev.situation.includes(situationId)
-        ? prev.situation.filter(id => id !== situationId)
-        : [...prev.situation, situationId]
-    }));
+  const handleExistingMonsterSelect = (monster: { thingId: string; thingType: string; emoji: string }) => {
+    setSelectedExistingMonster(monster);
   };
 
   const handleSituationToggle = (situationId: string) => {
@@ -208,223 +344,227 @@ export default function InputPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-
-
-              {/* タイトル */}
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                  タイトル
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-gray-400"
-                  placeholder="忘れ物のタイトル"
-                  maxLength={120}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.title.length}/120文字
-                </p>
-              </div>
-
-              {/* 忘れたもの */}
+              {/* 今日の状態 - 最上部に移動 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  忘れたもの
+                  今日の状態
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {things.map((thing) => (
-                    <Chip
-                      key={thing.id}
-                      label={thing.name}
-                      emoji={thing.emoji}
-                      selected={formData.forgottenItem === thing.id}
-                      onClick={() => {
-                        const selectedThing = things.find(t => t.id === thing.id);
-                        setFormData(prev => ({ 
-                          ...prev, 
-                          forgottenItem: thing.id,
-                          category: selectedThing?.categoryId || ''
-                        }));
-                      }}
-                    />
-                  ))}
+                  <Chip
+                    label="忘れた"
+                    emoji="⚠️"
+                    selected={formData.didForget === true}
+                    onClick={() => setFormData(prev => ({ 
+                      ...prev, 
+                      didForget: true 
+                    }))}
+                  />
+                  <Chip
+                    label="忘れ物をしていない"
+                    emoji="✅"
+                    selected={formData.didForget === false}
+                    onClick={() => setFormData(prev => ({ 
+                      ...prev, 
+                      didForget: false,
+                      forgottenItem: '', // 忘れ物を選択解除
+                      category: ''        // カテゴリもリセット
+                    }))}
+                  />
                 </div>
               </div>
 
-              {/* 選択されたカテゴリ表示 */}
-              {formData.category && (
+              {/* 忘れた場合のモード選択 */}
+              {formData.didForget && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    選択されたカテゴリ
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    モード選択
                   </label>
-                  <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                    {(() => {
-                      const selectedCategory = categories.find(cat => cat.id === formData.category);
-                      return selectedCategory ? (
-                        <>
-                          <span className="text-2xl">{selectedCategory.emoji}</span>
-                          <span className="font-medium text-gray-900">{selectedCategory.name}</span>
-                        </>
-                      ) : (
-                        <span className="text-gray-500">カテゴリが選択されていません</span>
-                      );
-                    })()}
+                  <div className="flex flex-wrap gap-2">
+                    <Chip
+                      label="新しいモンスターを作成"
+                      emoji="🆕"
+                      selected={forgetMode === 'new'}
+                      onClick={() => {
+                        setForgetMode('new');
+                        setSelectedExistingMonster(null);
+                        setFormData(prev => ({ ...prev, category: '', title: '', forgottenItem: '' }));
+                      }}
+                    />
+                    <Chip
+                      label="既存のモンスターに記録"
+                      emoji="📝"
+                      selected={forgetMode === 'existing'}
+                      onClick={() => {
+                        setForgetMode('existing');
+                        setSelectedExistingMonster(null);
+                        setFormData(prev => ({ ...prev, category: '', title: '', forgottenItem: '' }));
+                      }}
+                    />
                   </div>
                 </div>
               )}
 
-              {/* 内容 */}
-              <div>
-                <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
-                  内容
-                </label>
-                <input
-                  type="text"
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="忘れ物の内容"
-                  maxLength={120}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.content.length}/120文字
-                </p>
-              </div>
-
-              {/* 困った度 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  困った度
-                </label>
-                <div className="flex gap-2 mb-2">
-                  {[1, 2, 3, 4, 5].map((level) => (
-                    <button
-                      key={level}
-                      type="button"
-                      onClick={() => handleDifficultyChange(level)}
-                      className={cn(
-                        'w-12 h-12 rounded-full border-2 flex items-center justify-center text-lg transition-colors',
-                        formData.difficulty >= level
-                          ? 'border-yellow-400 bg-yellow-400 text-white'
-                          : 'border-gray-300 hover:border-gray-400'
-                      )}
-                      aria-label={`レベル${level}`}
-                    >
-                      <Star className="h-5 w-5" />
-                    </button>
-                  ))}
+              {/* カテゴリ選択 - 新規モードのときだけ表示 */}
+              {formData.didForget && forgetMode === 'new' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    カテゴリ
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((category) => (
+                      <Chip
+                        key={category.id}
+                        label={category.name}
+                        emoji={category.emoji}
+                        selected={formData.category === category.id}
+                        onClick={() => handleCategorySelect(category.id)}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600">
-                  レベル {formData.difficulty}: {formData.difficulty === 1 ? '全然困らなかった' :
-                    formData.difficulty === 2 ? '少し困った' :
-                    formData.difficulty === 3 ? '困った' :
-                    formData.difficulty === 4 ? 'かなり困った' : '非常に困った'}
-                </p>
-              </div>
+              )}
 
-              {/* 内容・詳細 */}
-              <div>
-                <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-2">
-                  内容・詳細
-                </label>
-                <textarea
-                  id="details"
-                  value={formData.details}
-                  onChange={(e) => setFormData(prev => ({ ...prev, details: e.target.value }))}
-                  rows={3}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="詳細や状況などを記録"
-                  maxLength={2000}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.details.length}/2000文字
-                </p>
-              </div>
-
-              {/* 日時表示 */}
-              <div className="text-sm text-gray-500">
-                {new Date().toLocaleString('ja-JP', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </div>
-              
-              {/* 場所 */}
-              <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                  場所
-                </label>
-                <input
-                  type="text"
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="忘れ物をした場所"
-                />
-              </div>
-
-              {/* 日時入力 */}
-              <div>
-                <label htmlFor="datetime" className="block text-sm font-medium text-gray-700 mb-2">
-                  日時
-                </label>
-                <input
-                  type="datetime-local"
-                  id="datetime"
-                  value={formData.datetime}
-                  onChange={(e) => setFormData(prev => ({ ...prev, datetime: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-
-              {/* カテゴリ */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  カテゴリ
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((category) => (
-                    <Chip
-                      key={category.id}
-                      label={category.name}
-                      emoji={category.emoji}
-                      selected={formData.category === category.id}
-                      onClick={() => handleCategorySelect(category.id)}
-                    />
-                  ))}
+              {/* タイトル - 新規モードのときだけ表示 */}
+              {formData.didForget && forgetMode === 'new' && (
+                <div>
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                    タイトル
+                  </label>
+                  <input
+                    type="text"
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="忘れ物のタイトル"
+                    maxLength={120}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.title.length}/120文字
+                  </p>
                 </div>
-              </div>
+              )}
 
-              {/* 状況 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  状況
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {situations.map((situation) => (
-                    <Chip
-                      key={situation.id}
-                      label={situation.name}
-                      emoji={situation.emoji}
-                      selected={formData.situation.includes(situation.id)}
-                      onClick={() => handleSituationSelect(situation.id)}
-                    />
-                  ))}
+              {/* 既存モンスター一覧 - 既存モードのときだけ表示 */}
+              {formData.didForget && forgetMode === 'existing' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    既存モンスターを選択
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {getExistingMonsters().map((monster) => (
+                      <div
+                        key={monster.thingId}
+                        className={cn(
+                          'p-3 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md',
+                          selectedExistingMonster?.thingId === monster.thingId
+                            ? 'border-primary bg-primary/10 shadow-lg'
+                            : 'border-gray-200 hover:border-gray-300'
+                        )}
+                        onClick={() => handleExistingMonsterSelect(monster)}
+                      >
+                        <div className="text-center">
+                          <div className="text-3xl mb-2">{monster.emoji}</div>
+                          <div className="font-medium text-sm text-gray-800 mb-1">
+                            {monster.thingType}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            累計{monster.count}回
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {getExistingMonsters().length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      既存のモンスターがありません。新規モードで作成してください。
+                    </p>
+                  )}
                 </div>
-              </div>
+              )}
+
+              {/* 忘れたもの - 新規モードのときだけ表示 */}
+              {formData.didForget && forgetMode === 'new' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    忘れたもの
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {things.map((thing) => (
+                      <Chip
+                        key={thing.id}
+                        label={thing.name}
+                        emoji={thing.emoji}
+                        selected={formData.forgottenItem === thing.id}
+                        onClick={() => setFormData(prev => ({ ...prev, forgottenItem: thing.id }))}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 困った度 - didForget === true のときだけ表示 */}
+              {formData.didForget && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    困った度
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    {[1, 2, 3, 4, 5].map((level) => (
+                      <button
+                        key={level}
+                        type="button"
+                        onClick={() => handleDifficultyChange(level)}
+                        className={cn(
+                          'w-12 h-12 rounded-full border-2 flex items-center justify-center text-lg transition-colors',
+                          formData.difficulty >= level
+                            ? 'border-yellow-400 bg-yellow-400 text-white'
+                            : 'border-gray-300 hover:border-gray-400'
+                        )}
+                        aria-label={`レベル${level}`}
+                      >
+                        <Star className="h-5 w-5" />
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    レベル {formData.difficulty}: {formData.difficulty === 1 ? '全然困らなかった' :
+                      formData.difficulty === 2 ? '少し困った' :
+                      formData.difficulty === 3 ? '困った' :
+                      formData.difficulty === 4 ? 'かなり困った' : '非常に困った'}
+                  </p>
+                </div>
+              )}
+
+              {/* 状況 - didForget === true のときだけ表示 */}
+              {formData.didForget && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    状況
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {situations.map((situation) => (
+                      <Chip
+                        key={situation.id}
+                        label={situation.name}
+                        emoji={situation.emoji}
+                        selected={formData.situation.includes(situation.id)}
+                        onClick={() => handleSituationToggle(situation.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* 送信ボタン */}
-              <Button type="button" onClick={handleSubmit} className="w-full">
+              <Button 
+                type="button" 
+                onClick={handleSubmit} 
+                className="w-full"
+                disabled={formData.didForget && forgetMode === 'existing' && !selectedExistingMonster}
+              >
                 <Save className="mr-2 h-4 w-4" />
-                送信
+                {hasClaimedFeedToday ? '送信' : '今日の分のえさをもらう'}
               </Button>
             </form>
           </CardContent>
