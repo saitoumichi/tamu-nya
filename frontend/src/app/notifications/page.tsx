@@ -323,11 +323,11 @@ export default function NotificationsPage() {
 
         {/* 新規リマインダー追加ボタン */}
         <div className="flex justify-center">
-          <Button size="lg" className="px-8">
-            <Plus className="mr-2 h-5 w-5" />
-            新規登録
-          </Button>
-
+          <Link href="/notifications/new">
+            <Button size="lg" className="px-8">
+              <Plus className="mr-2 h-5 w-5" />
+              新規登録
+            </Button>
           </Link>
         </div>
 
