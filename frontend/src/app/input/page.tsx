@@ -339,6 +339,30 @@ export default function InputPage() {
     }));
   };
 
+  // 画像パスを生成する関数
+  const getImagePathByThingId = (thingId: string): string => {
+    switch (thingId) {
+      case 'key':
+        return '/monsters/key/key-monster-1.jpg';
+      case 'umbrella':
+        return '/monsters/umbrella/umbrella-monster-1.jpg';
+      case 'wallet':
+        return '/monsters/wallet/wallet-monster.jpg';
+      case 'medicine':
+        return '/monsters/medicine/medicine-monster-1.jpg';
+      case 'smartphone':
+        return '/monsters/phone/phone_monsters.jpg';
+      case 'homework':
+        return '/monsters/homework/homework_monsters.jpg';
+      case 'schedule':
+        return '/monsters/schedule/schedule_monsters.png';
+      case 'time':
+        return '/monsters/late/late_monsters.jpg';
+      default:
+        return '/monsters/wallet/wallet-monster.jpg';
+    }
+  };
+
   const handleDifficultyChange = (difficulty: number) => {
     setFormData(prev => ({ ...prev, difficulty }));
   };
@@ -488,7 +512,23 @@ export default function InputPage() {
                         onClick={() => handleExistingMonsterSelect(monster)}
                       >
                         <div className="text-center">
-                          <div className="text-3xl mb-2">{monster.emoji}</div>
+                          {/* 画像表示 */}
+                          <div className="w-16 h-16 mx-auto mb-2">
+                            <img
+                              src={getImagePathByThingId(monster.thingId)}
+                              alt={monster.thingType}
+                              className="w-full h-full object-cover rounded-lg"
+                              onError={(e) => {
+                                // 画像読み込みエラー時は絵文字を表示
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const fallback = document.createElement('div');
+                                fallback.className = 'text-3xl flex items-center justify-center w-full h-full';
+                                fallback.textContent = monster.emoji;
+                                target.parentNode?.appendChild(fallback);
+                              }}
+                            />
+                          </div>
                           <div className="font-medium text-sm text-gray-800 mb-1">
                             {monster.thingType}
                           </div>
