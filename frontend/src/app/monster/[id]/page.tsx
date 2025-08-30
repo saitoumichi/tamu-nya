@@ -4,7 +4,7 @@ import React, { use } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge, Rarity } from '@/components/ui/badge';
+
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Search, Clock, Calendar, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
@@ -23,7 +23,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
     name: string;
     category: string;
     categoryEmoji: string;
-    rank: Rarity;
+    rank: string;
     firstSeen: string;
     lastSeen: string;
     encounterCount: number;
@@ -93,7 +93,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
           const intimacyLevel = encounterCount;
           
           // レア度を計算（図鑑と同じロジック、5段階評価）
-          let rank: Rarity = 'C';
+          let rank: string = 'C';
           if (encounterCount > 20) rank = 'SS';
           if (encounterCount > 15) rank = 'S';
           if (encounterCount > 10) rank = 'A';
@@ -224,7 +224,15 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
               <div className="flex-1 space-y-4 text-gray-900">
                 <div className="flex items-center gap-3 text-gray-900">
                   <h2 className="text-xl font-semibold">{monster.name}</h2>
-                  <Badge rarity={monster.rank} />
+                  {/* レベル表示を追加 */}
+                  <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">
+                    Lv.{(() => {
+                      // feedページと同様のレベル計算ロジック
+                      const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
+                      const fedCount = feed[monster.category]?.fed || 0;
+                      return Math.min(Math.floor(fedCount / 5), 100);
+                    })()}
+                  </span>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -246,21 +254,45 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
           </CardContent>
         </Card>
 
-        {/* 進化条件 */}
+        {/* レベル情報 */}
         <div className="text-gray-900">
         <Card>
           <CardHeader>
-            <CardTitle>進化条件 {monster.evolutionCondition}</CardTitle>
+            <CardTitle>レベル情報</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">現在のレベル</span>
+              <span className="text-lg font-semibold text-emerald-600">
+                Lv.{(() => {
+                  const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
+                  const fedCount = feed[monster.category]?.fed || 0;
+                  return Math.min(Math.floor(fedCount / 5), 100);
+                })()}
+              </span>
+            </div>
             <Progress
-              value={monster.evolutionProgress}
-              max={monster.evolutionTarget}
-              label="進化"
+              value={(() => {
+                const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
+                const fedCount = feed[monster.category]?.fed || 0;
+                return (fedCount % 5) * 20; // 5個ごとにレベルアップなので、残りを20%単位で表示
+              })()}
+              max={100}
+              label="次のレベルまで"
               showPercentage
             />
             <div className="flex justify-between text-sm text-gray-600">
-              <span>レベルアップまであと{monster.evolutionProgress}回</span>
+              <span>
+                次のレベルまであと{
+                  (() => {
+                    const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
+                    const fedCount = feed[monster.category]?.fed || 0;
+                    const currentLevel = Math.min(Math.floor(fedCount / 5), 100);
+                    if (currentLevel >= 100) return '最大レベル';
+                    return `${5 - (fedCount % 5)}個`;
+                  })()
+                }のえさ
+              </span>
               <span>{monster.lastLevelUp}</span>
             </div>
           </CardContent>
