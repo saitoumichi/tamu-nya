@@ -4,6 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  getFeedInventory,
+  setFeedInventory as repoSetFeedInventory,
+  getMonsterFeed,
+  setMonsterFeed as repoSetMonsterFeed,
+  getThingsRecords,
+  aggregateMonstersFromThings,
+  getDailyFeedClaimedAt,
+  getTodayISODate,
+} from '@/lib/feed-repo';
 
 // 絵文字フォールバック用マップ
 const THING_EMOJI_MAP: { [key: string]: string } = {
@@ -35,66 +45,47 @@ export default function FeedPage() {
     stage: number;
     fedCount: number;
   } | null>(null);
+  const [hasClaimedToday, setHasClaimedToday] = useState<boolean | null>(null);
 
-  // ユーティリティ関数
-  const readFeedInventory = (): number => {
-    return parseInt(localStorage.getItem('feedInventory') || '0');
+  // リポジトリベースの読み書き
+  const readFeedInventory = async (): Promise<number> => {
+    return await getFeedInventory();
   };
 
-  const writeFeedInventory = (n: number): void => {
-    localStorage.setItem('feedInventory', n.toString());
+  const writeFeedInventory = async (n: number): Promise<void> => {
+    await repoSetFeedInventory(n);
   };
 
-  const readMonsterFeed = (): { [thingId: string]: { fed: number } } => {
-    return JSON.parse(localStorage.getItem('monsterFeed') || '{}');
+  const readMonsterFeed = async (): Promise<{ [thingId: string]: { fed: number } }> => {
+    return await getMonsterFeed();
   };
 
-  const writeMonsterFeed = (obj: { [thingId: string]: { fed: number } }): void => {
-    localStorage.setItem('monsterFeed', JSON.stringify(obj));
+  const writeMonsterFeed = async (obj: { [thingId: string]: { fed: number } }): Promise<void> => {
+    await repoSetMonsterFeed(obj);
   };
 
-  const aggregateMonstersFromThingsRecords = () => {
-    const existingRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
-    const forgetRecords = existingRecords.filter((record: any) => record.didForget === true);
-    
-    const monsterMap = new Map();
-    forgetRecords.forEach((record: any) => {
-      if (record.thingId && record.thingId !== 'none') {
-        if (!monsterMap.has(record.thingId)) {
-          monsterMap.set(record.thingId, {
-            thingId: record.thingId,
-            thingType: record.thingType,
-            encounterCount: 0,
-            stage: 0
-          });
-        }
-        monsterMap.get(record.thingId).encounterCount++;
-      }
-    });
-    
-    return Array.from(monsterMap.values());
+  const aggregateMonstersFromThingsRecords = async () => {
+    const existingRecords = await getThingsRecords();
+    return aggregateMonstersFromThings(existingRecords).map(m => ({ ...m, stage: 0 }));
   };
 
-  const refreshInventory = () => {
-    const inventory = readFeedInventory();
+  const refreshInventory = async () => {
+    const inventory = await readFeedInventory();
     setFeedInventory(inventory);
   };
 
-  const refreshMonsterFeed = () => {
-    const feed = readMonsterFeed();
+  const refreshMonsterFeed = async () => {
+    const feed = await readMonsterFeed();
     setMonsterFeed(feed);
   };
 
-  const refreshMonsters = () => {
-    const monsterList = aggregateMonstersFromThingsRecords();
-    const feed = readMonsterFeed();
-    
-    // 各モンスターの成長段階を計算
+  const refreshMonsters = async () => {
+    const monsterList = await aggregateMonstersFromThingsRecords();
+    const feed = await readMonsterFeed();
     const monstersWithStage = monsterList.map(monster => ({
       ...monster,
       stage: Math.floor((feed[monster.thingId]?.fed || 0) / 15)
     }));
-    
     setMonsters(monstersWithStage);
   };
 
@@ -108,34 +99,21 @@ export default function FeedPage() {
     });
   };
 
-  const handleFeedMonster = (thingId: string) => {
+  const handleFeedMonster = async (thingId: string) => {
     if (feedInventory <= 0) return;
-    
     const newInventory = feedInventory - 1;
-    const newMonsterFeed = { ...monsterFeed };
-    
+    const newMonsterFeed = { ...monsterFeed } as { [thingId: string]: { fed: number } };
     if (!newMonsterFeed[thingId]) {
       newMonsterFeed[thingId] = { fed: 0 };
     }
     newMonsterFeed[thingId].fed++;
-    
-    // 保存
-    writeFeedInventory(newInventory);
-    writeMonsterFeed(newMonsterFeed);
-    
-    // 状態更新
+    await writeFeedInventory(newInventory);
+    await writeMonsterFeed(newMonsterFeed);
     setFeedInventory(newInventory);
     setMonsterFeed(newMonsterFeed);
-    
-    // モンスター一覧を再計算
-    refreshMonsters();
-    
-    // イベント発火
+    await refreshMonsters();
     window.dispatchEvent(new CustomEvent('feed:inventoryChanged'));
-    
-    // 成長演出（15個ごと）
     if (newMonsterFeed[thingId].fed % 15 === 0) {
-      // 軽い演出（アラート）
       alert('成長！');
     }
   };
@@ -181,6 +159,15 @@ export default function FeedPage() {
     };
   }, []);
 
+  // 今日の受け取り状態（クライアントでのみ算出）
+  useEffect(() => {
+    (async () => {
+      const today = getTodayISODate();
+      const last = await getDailyFeedClaimedAt();
+      setHasClaimedToday(last === today);
+    })();
+  }, []);
+
   return (
     <MainLayout>
       <div className="relative min-h-screen overflow-hidden forest-background">
@@ -218,12 +205,7 @@ export default function FeedPage() {
             <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
               <div className="text-xs text-blue-800 text-center">
                 <span className="font-medium">📅 今日のえさ: </span>
-                {(() => {
-                  const today = new Date().toISOString().slice(0, 10);
-                  const lastClaimedDate = localStorage.getItem('dailyFeedClaimedAt');
-                  const hasClaimedToday = lastClaimedDate === today;
-                  return hasClaimedToday ? '✅ 受取済み' : '⏳ 未受取';
-                })()}
+                {hasClaimedToday === null ? '...' : (hasClaimedToday ? '✅ 受取済み' : '⏳ 未受取')}
               </div>
             </div>
           </div>
