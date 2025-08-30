@@ -89,11 +89,11 @@ export default function FeedPage() {
     const monsterList = aggregateMonstersFromThingsRecords();
     const feed = readMonsterFeed();
     
-    // 各モンスターの成長段階を計算
-    const monstersWithStage = monsterList.map(monster => ({
-      ...monster,
-      stage: Math.floor((feed[monster.thingId]?.fed || 0) / 15)
-    }));
+         // 各モンスターの成長段階を計算（上限100レベル）
+     const monstersWithStage = monsterList.map(monster => ({
+       ...monster,
+       stage: Math.min(Math.floor((feed[monster.thingId]?.fed || 0) / 5), 100)
+     }));
     
     setMonsters(monstersWithStage);
   };
@@ -133,11 +133,11 @@ export default function FeedPage() {
     // イベント発火
     window.dispatchEvent(new CustomEvent('feed:inventoryChanged'));
     
-    // 成長演出（15個ごと）
-    if (newMonsterFeed[thingId].fed % 15 === 0) {
-      // 軽い演出（アラート）
-      alert('成長！');
-    }
+         // 成長演出（5個ごと）
+     if (newMonsterFeed[thingId].fed % 5 === 0) {
+       // 軽い演出（アラート）
+       alert('成長！');
+     }
   };
 
   // 初期化とイベント購読
@@ -210,7 +210,7 @@ export default function FeedPage() {
                 </div>
               </div>
               <div className="text-xs text-emerald-600">
-                えさ15個で成長
+                えさ5個で成長
               </div>
             </div>
             
@@ -346,31 +346,31 @@ export default function FeedPage() {
                     <span className="text-emerald-900">{selectedFairy.fedCount}回</span>
                   </div>
                   
-                  <div className="flex justify-between items-center">
-                    <span className="text-emerald-700 font-medium">次の成長まで:</span>
-                    <span className="text-emerald-900">
-                      {15 - (selectedFairy.fedCount % 15)}回
-                    </span>
-                  </div>
+                                     <div className="flex justify-between items-center">
+                     <span className="text-emerald-700 font-medium">次の成長まで:</span>
+                     <span className="text-emerald-900">
+                       {selectedFairy.stage >= 100 ? '最大レベル' : `${5 - (selectedFairy.fedCount % 5)}回`}
+                     </span>
+                   </div>
                 </div>
                 
                 <div className="mt-6 space-y-3">
-                  <Button
-                    onClick={() => {
-                      handleFeedMonster(selectedFairy.thingId);
-                      // ステータスを更新
-                      const newFedCount = (monsterFeed[selectedFairy.thingId]?.fed || 0) + 1;
-                      setSelectedFairy({
-                        ...selectedFairy,
-                        fedCount: newFedCount,
-                        stage: Math.floor(newFedCount / 15)
-                      });
-                    }}
-                    disabled={feedInventory <= 0}
-                    className="w-full"
-                  >
-                    🌰 えさをあげる ({feedInventory})
-                  </Button>
+                                     <Button
+                     onClick={() => {
+                       handleFeedMonster(selectedFairy.thingId);
+                       // ステータスを更新
+                       const newFedCount = (monsterFeed[selectedFairy.thingId]?.fed || 0) + 1;
+                       setSelectedFairy({
+                         ...selectedFairy,
+                         fedCount: newFedCount,
+                         stage: Math.min(Math.floor(newFedCount / 5), 100)
+                       });
+                     }}
+                     disabled={feedInventory <= 0 || selectedFairy.stage >= 100}
+                     className="w-full"
+                   >
+                     {selectedFairy.stage >= 100 ? '🌰 最大レベル達成！' : `🌰 えさをあげる (${feedInventory})`}
+                   </Button>
                   
                   <Button
                     variant="secondary"
