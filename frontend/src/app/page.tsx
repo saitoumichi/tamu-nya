@@ -13,6 +13,7 @@ interface Mission {
   title: string;
   description: string;
   completed: boolean;
+  weeklyDay?: string; // 毎週設定する曜日
 }
 
 interface ForgottenItem {
@@ -29,8 +30,21 @@ export default function HomePage() {
   const [recentItems, setRecentItems] = useState<ForgottenItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddMission, setShowAddMission] = useState(false);
-  const [newMission, setNewMission] = useState({ title: '', description: '' });
+  const [newMission, setNewMission] = useState({ title: '', description: '', weeklyDay: '' });
   const [editingMission, setEditingMission] = useState<Mission | null>(null);
+
+  // 曜日の配列
+  const weekDays = [
+    { value: 'none', label: 'なし' },
+    { value: '', label: '毎日' },
+    { value: 'monday', label: '毎週月曜日' },
+    { value: 'tuesday', label: '毎週火曜日' },
+    { value: 'wednesday', label: '毎週水曜日' },
+    { value: 'thursday', label: '毎週木曜日' },
+    { value: 'friday', label: '毎週金曜日' },
+    { value: 'saturday', label: '毎週土曜日' },
+    { value: 'sunday', label: '毎週日曜日' }
+  ];
 
   // 今日のミッション情報
   const todayMission = {
@@ -126,17 +140,18 @@ export default function HomePage() {
         id: Date.now(),
         title: newMission.title.trim(),
         description: newMission.description.trim(),
-        completed: false
+        completed: false,
+        weeklyDay: newMission.weeklyDay
       };
       setMissions(prev => [...prev, mission]);
-      setNewMission({ title: '', description: '' });
+      setNewMission({ title: '', description: '', weeklyDay: '' });
       setShowAddMission(false);
     }
   };
 
   const handleEditMission = (mission: Mission) => {
     setEditingMission(mission);
-    setNewMission({ title: mission.title, description: mission.description });
+    setNewMission({ title: mission.title, description: mission.description, weeklyDay: mission.weeklyDay || '' });
     setShowAddMission(true);
   };
 
@@ -145,11 +160,11 @@ export default function HomePage() {
       setMissions(prev => 
         prev.map(mission => 
           mission.id === editingMission.id
-            ? { ...mission, title: newMission.title.trim(), description: newMission.description.trim() }
+            ? { ...mission, title: newMission.title.trim(), description: newMission.description.trim(), weeklyDay: newMission.weeklyDay }
             : mission
         )
       );
-      setNewMission({ title: '', description: '' });
+      setNewMission({ title: '', description: '', weeklyDay: '' });
       setEditingMission(null);
       setShowAddMission(false);
     }
@@ -160,7 +175,7 @@ export default function HomePage() {
   };
 
   const handleCancelEdit = () => {
-    setNewMission({ title: '', description: '' });
+    setNewMission({ title: '', description: '', weeklyDay: '' });
     setEditingMission(null);
     setShowAddMission(false);
   };
@@ -212,6 +227,13 @@ export default function HomePage() {
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">{mission.title}</h4>
                     <p className="text-sm text-gray-500">{mission.description}</p>
+                    {mission.weeklyDay && (
+                      <div className="mt-1">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {weekDays.find(day => day.value === mission.weeklyDay)?.label || mission.weeklyDay}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -235,11 +257,11 @@ export default function HomePage() {
 
             {/* ミッション追加・編集フォーム */}
             {showAddMission && (
-              <div className="mb-4 p-4 border rounded-lg bg-gray-50">
-                <h4 className="font-medium mb-3">
+              <div className="mb-4 p-4 border rounded-lg bg-blue-100">
+                <h4 className="font-medium mb-3 text-gray-800">
                   {editingMission ? 'ミッションを編集' : '新しいミッションを追加'}
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-3 text-gray-800">
                   <input
                     type="text"
                     placeholder="ミッションのタイトル"
@@ -254,6 +276,30 @@ export default function HomePage() {
                     onChange={(e) => setNewMission(prev => ({ ...prev, description: e.target.value }))}
                     className="w-full p-2 border rounded-md"
                   />
+                  
+                  {/* 曜日選択 */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      繰り返し設定
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {weekDays.map((day) => (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => setNewMission(prev => ({ ...prev, weeklyDay: day.value }))}
+                          className={`p-2 text-sm border rounded-md transition-colors ${
+                            newMission.weeklyDay === day.value
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {day.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
                   <div className="flex gap-2">
                     <Button
                       onClick={editingMission ? handleUpdateMission : handleAddMission}
