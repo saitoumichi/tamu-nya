@@ -56,90 +56,90 @@ export default function AnalysisPage() {
   const [customCategories, setCustomCategories] = useState<Array<{id: string, name: string, emoji: string}>>([]);
 
   const categories = useMemo(() => {
-    // 入力画面と同じ定義のカテゴリ
-    const categoryMap = new Map<string, { id: string, name: string, emoji: string }>();
-    const nameEmojiMap = new Map<string, { id: string, name: string, emoji: string }>();
+    // より厳密な重複管理のため、名前+絵文字をキーとした一意マップを使用
+    const uniqueCategories = new Map<string, { id: string, name: string, emoji: string }>();
     
     // 「すべて」は常に表示
-    categoryMap.set("", { id: "", name: "すべて", emoji: "🌟" });
-    nameEmojiMap.set("すべて🌟", { id: "", name: "すべて", emoji: "🌟" });
+    uniqueCategories.set("すべて🌟", { id: "", name: "すべて", emoji: "🌟" });
     
     // 入力されたデータからカテゴリを抽出
+    console.log('分析処理対象レコード:', thingsRecords);
+    
     thingsRecords.forEach(record => {
-      // カテゴリ情報がある場合
+      console.log('処理中レコード:', { 
+        category: record.category, 
+        thingId: record.thingId, 
+        categoryName: record.categoryName, 
+        categoryEmoji: record.categoryEmoji,
+        thingType: record.thingType
+      });
+      
+      let categoryName = '';
+      let categoryEmoji = '';
+      let categoryId = '';
+      
+      // APIデータの場合、categoryName と categoryEmoji が設定されている
       if (record.categoryName && record.categoryEmoji) {
-        const categoryId = record.category || record.thingId || 'unknown';
-        // 名前と絵文字の両方が一致した場合のみ重複とみなす
-        const nameEmojiKey = `${record.categoryName}${record.categoryEmoji}`;
-        if (!nameEmojiMap.has(nameEmojiKey)) {
-          categoryMap.set(categoryId, {
-            id: categoryId,
-            name: record.categoryName,
-            emoji: record.categoryEmoji
-          });
-          nameEmojiMap.set(nameEmojiKey, {
-            id: categoryId,
-            name: record.categoryName,
-            emoji: record.categoryEmoji
-          });
+        categoryName = record.categoryName;
+        categoryEmoji = record.categoryEmoji;
+        categoryId = record.category || record.thingId || 'unknown';
+      }
+      // LocalStorageデータの場合の処理
+      else if (record.category || record.thingId) {
+        categoryId = record.category || record.thingId;
+        categoryName = record.thingType || categoryId;
+        
+        // thingTypeから絵文字を推定
+        if (record.thingType) {
+          categoryEmoji = getItemEmoji(record.thingType);
+        } else {
+          // デフォルトの絵文字設定
+          if (categoryId === 'key') categoryEmoji = '🔑';
+          else if (categoryId === 'umbrella') categoryEmoji = '☔';
+          else if (categoryId === 'wallet') categoryEmoji = '👛';
+          else if (categoryId === 'medicine') categoryEmoji = '💊';
+          else if (categoryId === 'smartphone') categoryEmoji = '📱';
+          else if (categoryId === 'homework') categoryEmoji = '📄';
+          else if (categoryId === 'schedule') categoryEmoji = '📅';
+          else if (categoryId === 'time') categoryEmoji = '⏰';
+          else categoryEmoji = '📦';
         }
       }
-      // カテゴリ情報がない場合でも、カテゴリIDが存在する場合は処理
-      else if (record.category || record.thingId) {
-        const categoryId = record.category || record.thingId;
-        // デフォルトの絵文字を設定
-        let defaultEmoji = '📦';
-        if (categoryId === 'key') defaultEmoji = '🔑';
-        else if (categoryId === 'umbrella') defaultEmoji = '☂️';
-        else if (categoryId === 'wallet') defaultEmoji = '👛';
-        else if (categoryId === 'medicine') defaultEmoji = '💊';
-        else if (categoryId === 'smartphone') defaultEmoji = '📱';
-        else if (categoryId === 'homework') defaultEmoji = '📚';
-        else if (categoryId === 'schedule') defaultEmoji = '🗓️';
-        else if (categoryId === 'time') defaultEmoji = '⏰';
-        
-        const displayName = record.thingType || categoryId;
-        
-        // 名前と絵文字の両方が一致した場合のみ重複とみなす
-        const nameEmojiKey = `${displayName}${defaultEmoji}`;
-        if (!nameEmojiMap.has(nameEmojiKey)) {
-          categoryMap.set(categoryId, {
+      
+      // カテゴリ情報がある場合のみ追加
+      if (categoryName && categoryEmoji) {
+        const uniqueKey = `${categoryName}${categoryEmoji}`;
+        if (!uniqueCategories.has(uniqueKey)) {
+          uniqueCategories.set(uniqueKey, {
             id: categoryId,
-            name: displayName,
-            emoji: defaultEmoji
+            name: categoryName,
+            emoji: categoryEmoji
           });
-          nameEmojiMap.set(nameEmojiKey, {
-            id: categoryId,
-            name: displayName,
-            emoji: defaultEmoji
-          });
+          console.log('カテゴリ追加:', { uniqueKey, categoryId, categoryName, categoryEmoji });
         }
       }
     });
     
-    // カスタムカテゴリも追加（新しく作成されたカードも表示）
+    // カスタムカテゴリも追加
     customCategories.forEach(cat => {
-      // 名前と絵文字の両方が一致した場合のみ重複とみなす
-      const nameEmojiKey = `${cat.name}${cat.emoji}`;
-      if (!nameEmojiMap.has(nameEmojiKey)) {
-        categoryMap.set(cat.id, cat);
-        nameEmojiMap.set(nameEmojiKey, cat);
+      const uniqueKey = `${cat.name}${cat.emoji}`;
+      if (!uniqueCategories.has(uniqueKey)) {
+        uniqueCategories.set(uniqueKey, cat);
+        console.log('カスタムカテゴリ追加:', { uniqueKey, cat });
       }
     });
     
     // 新しく作成されたカードが入力で使用された場合の処理
-    // customCardsから直接カテゴリを取得して追加
     const customCardsRaw = localStorage.getItem("customCards");
     if (customCardsRaw) {
       try {
         const customCards = JSON.parse(customCardsRaw);
         if (customCards.categories && Array.isArray(customCards.categories)) {
           customCards.categories.forEach((cat: { id: string, name: string, emoji: string }) => {
-            // 名前と絵文字の両方が一致した場合のみ重複とみなす
-            const nameEmojiKey = `${cat.name}${cat.emoji}`;
-            if (!nameEmojiMap.has(nameEmojiKey)) {
-              categoryMap.set(cat.id, cat);
-              nameEmojiMap.set(nameEmojiKey, cat);
+            const uniqueKey = `${cat.name}${cat.emoji}`;
+            if (!uniqueCategories.has(uniqueKey)) {
+              uniqueCategories.set(uniqueKey, cat);
+              console.log('カスタムカード（localStorage）カテゴリ追加:', { uniqueKey, cat });
             }
           });
         }
@@ -148,13 +148,17 @@ export default function AnalysisPage() {
       }
     }
     
-    // データが存在するカテゴリのみを返す（「すべて」は除く）
-    const categoriesWithData = Array.from(categoryMap.values()).filter(cat => {
+    // データが存在するカテゴリのみを返す
+    const allCategories = Array.from(uniqueCategories.values());
+    const categoriesWithData = allCategories.filter(cat => {
       if (cat.id === "") return true; // 「すべて」は常に表示
       return thingsRecords.some(record => 
         record.category === cat.id || record.thingId === cat.id
       );
     });
+    
+    // デバッグログ
+    console.log('最終的なカテゴリ配列:', categoriesWithData);
     
     return categoriesWithData;
   }, [thingsRecords, customCategories]);
@@ -471,24 +475,62 @@ export default function AnalysisPage() {
         // 「忘れたもの」のみをフィルタリング（didForget === true のもの）
         const forgottenRecords = Array.isArray(records) ? records.filter(r => r.didForget === true) : [];
         
+        // forgotten_itemの名前から絵文字を取得する関数
+        const getItemEmoji = (itemName: string): string => {
+          const emojiMap: { [key: string]: string } = {
+            '鍵': '🔑',
+            '薬': '💊', 
+            '傘': '☔',
+            '財布': '👛',
+            'スマホ': '📱',
+            '予定': '📅',
+            '遅刻': '⏰',
+            '宿題': '📄',
+            'その他': '😊'
+          };
+          return emojiMap[itemName] || '📦';
+        };
+
+        // forgotten_itemの名前からカテゴリIDを取得する関数
+        const getItemCategoryId = (itemName: string): string => {
+          const categoryMap: { [key: string]: string } = {
+            '鍵': 'key',
+            '薬': 'medicine',
+            '傘': 'umbrella', 
+            '財布': 'wallet',
+            'スマホ': 'smartphone',
+            '予定': 'schedule',
+            '遅刻': 'time',
+            '宿題': 'homework',
+            'その他': 'another'
+          };
+          return categoryMap[itemName] || 'other';
+        };
+
         // APIデータをThingsRecord形式に変換
-        const apiRecords: ThingsRecord[] = apiData.map((item: any, index: number) => ({
-          id: `api_${item.id || index}`,
-          category: item.category || 'forget_things',
-          thingType: item.forgotten_item || item.title || '忘れ物',
-          thingId: `api_${item.forgotten_item?.toLowerCase().replace(/\s+/g, '_') || 'item'}`,
-          title: item.title || '',
-          content: item.details || '',
-          details: item.details || '',
-          difficulty: item.difficulty || 3,
-          location: item.location || '',
-          datetime: item.datetime || item.created_at || new Date().toISOString(),
-          createdAt: item.datetime || item.created_at || new Date().toISOString(),
-          situation: Array.isArray(item.situation) ? item.situation.join(',') : (item.situation || ''),
-          didForget: true,
-          categoryName: item.category || '忘れ物',
-          categoryEmoji: '📦'
-        }));
+        const apiRecords: ThingsRecord[] = apiData.map((item: any, index: number) => {
+          const forgottenItemName = item.forgotten_item || item.title || '忘れ物';
+          const actualCategoryId = getItemCategoryId(forgottenItemName);
+          const itemEmoji = getItemEmoji(forgottenItemName);
+          
+          return {
+            id: `api_${item.id || index}`,
+            category: actualCategoryId,  // forgotten_itemから推定したカテゴリID
+            thingType: forgottenItemName,
+            thingId: actualCategoryId,   // カテゴリIDをthingIdとして使用
+            title: item.title || '',
+            content: item.details || '',
+            details: item.details || '',
+            difficulty: item.difficulty || 3,
+            location: item.location || '',
+            datetime: item.datetime || item.created_at || new Date().toISOString(),
+            createdAt: item.datetime || item.created_at || new Date().toISOString(),
+            situation: Array.isArray(item.situation) ? item.situation.join(',') : (item.situation || ''),
+            didForget: true,
+            categoryName: forgottenItemName,  // forgotten_itemの名前をそのまま使用
+            categoryEmoji: itemEmoji         // forgotten_itemから推定した絵文字
+          };
+        });
 
         console.log('分析画面API変換後データ:', apiRecords);
 

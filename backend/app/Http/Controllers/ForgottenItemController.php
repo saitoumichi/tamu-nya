@@ -28,9 +28,31 @@ class ForgottenItemController extends Controller
         try {
             $items = ForgottenItem::orderBy('datetime', 'desc')->get();
 
+            // 各アイテムに表示用の属性を追加
+            $formattedItems = $items->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'user_id' => $item->user_id,
+                    'title' => $item->title,
+                    'forgotten_item' => $item->forgotten_item,
+                    'details' => $item->details,
+                    'category' => $item->category,
+                    'category_name' => $item->category_name,
+                    'emoji' => $item->emoji,
+                    'difficulty' => $item->difficulty,
+                    'difficulty_text' => $item->difficulty_text,
+                    'situation' => $item->situation,
+                    'situation_text' => $item->situation_text,
+                    'location' => $item->location,
+                    'datetime' => $item->datetime,
+                    'created_at' => $item->created_at,
+                    'updated_at' => $item->updated_at,
+                ];
+            });
+
             $response = response()->json([
                 'success' => true,
-                'data' => $items,
+                'data' => $formattedItems,
                 'message' => '忘れ物一覧を取得しました'
             ]);
 
