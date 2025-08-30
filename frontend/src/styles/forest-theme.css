@@ -1,0 +1,213 @@
+/* 森をテーマにした背景とスタイル */
+.forest-background {
+  background: linear-gradient(to bottom, 
+    #1a1a2e 0%, 
+    #16213e 20%, 
+    #0f3460 40%, 
+    #0e4b99 60%, 
+    #2d5aa0 80%, 
+    #346751 100%);
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.forest-layers {
+  opacity: 0.6;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.forest-layer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-repeat: repeat-x;
+  background-position: bottom;
+}
+
+.forest-back {
+  height: 50%;
+  background: linear-gradient(to top, 
+    #1a2f1a 0%, 
+    #2d4b2d 30%, 
+    transparent 100%);
+  opacity: 0.6;
+}
+
+.forest-mid {
+  height: 70%;
+  background: linear-gradient(to top, 
+    #0d1f0d 0%, 
+    #1a331a 40%, 
+    transparent 80%);
+  opacity: 0.7;
+}
+
+.forest-front {
+  height: 40%;
+  background: linear-gradient(to top, 
+    #061206 0%, 
+    #0f1f0f 20%, 
+    transparent 100%);
+  opacity: 0.9;
+}
+
+.glass-card {
+  background: rgba(20, 83, 45, 0.15);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(52, 211, 153, 0.25);
+  box-shadow: 0 8px 32px rgba(6, 78, 59, 0.3), inset 0 1px 2px rgba(52, 211, 153, 0.15);
+  border-radius: 16px;
+}
+
+/* 森の装飾要素 */
+.forest-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 15% 85%, rgba(34, 139, 34, 0.4) 0%, transparent 60%),
+    radial-gradient(circle at 85% 15%, rgba(34, 139, 34, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(34, 139, 34, 0.2) 0%, transparent 70%),
+    radial-gradient(ellipse at 30% 70%, rgba(0, 100, 0, 0.1) 0%, transparent 80%);
+  pointer-events: none;
+}
+
+/* 夜の星空効果 */
+.forest-background::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent),
+    radial-gradient(2px 2px at 160px 30px, #fff, transparent);
+  background-repeat: repeat;
+  background-size: 200px 100px;
+  animation: stars-twinkle 4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes stars-twinkle {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* 森のテーマ用のコンポーネントスタイル */
+
+/* ヘッダー・サイドバー・フォーム用の森カード */
+.forest-card {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.7), rgba(20, 83, 45, 0.65));
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(52, 211, 153, 0.3);
+  box-shadow: 0 8px 32px rgba(6, 78, 59, 0.4), inset 0 2px 4px rgba(52, 211, 153, 0.2);
+  color: #ecfdf5;
+}
+
+/* 入力フォーム */
+.forest-input {
+  background: rgba(6, 78, 59, 0.25);
+  border: 2px solid rgba(52, 211, 153, 0.4);
+  color: #ecfdf5;
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+}
+
+.forest-input:focus {
+  border-color: rgba(52, 211, 153, 0.8);
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2);
+  outline: none;
+}
+
+.forest-input::placeholder {
+  color: rgba(236, 253, 245, 0.6);
+}
+
+/* ラベル */
+.forest-label {
+  color: #d1fae5 !important;
+  text-shadow: 0 1px 2px rgba(6, 78, 59, 0.8);
+  font-weight: 600;
+}
+
+/* ボタン */
+.forest-button {
+  background: linear-gradient(135deg, #059669, #047857);
+  border: 2px solid rgba(52, 211, 153, 0.4);
+  color: #ecfdf5;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(6, 78, 59, 0.8);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4), inset 0 1px 2px rgba(52, 211, 153, 0.3);
+  transition: all 0.3s ease;
+}
+
+.forest-button:hover {
+  background: linear-gradient(135deg, #047857, #065f46);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.5), inset 0 1px 2px rgba(52, 211, 153, 0.4);
+}
+
+/* チップコンポーネント */
+.forest-chip {
+  background: rgba(6, 78, 59, 0.5);
+  border: 2px solid rgba(52, 211, 153, 0.3);
+  color: #d1fae5;
+  backdrop-filter: blur(10px);
+}
+
+.forest-chip.selected {
+  background: linear-gradient(135deg, #059669, #047857);
+  border-color: rgba(52, 211, 153, 0.8);
+  box-shadow: 0 4px 8px rgba(5, 150, 105, 0.4);
+}
+
+/* テキストカラー */
+.text-forest-primary {
+  color: #d1fae5 !important;
+  text-shadow: 0 1px 2px rgba(6, 78, 59, 0.8);
+}
+
+.text-forest-secondary {
+  color: #a7f3d0 !important;
+  text-shadow: 0 1px 2px rgba(6, 78, 59, 0.6);
+}
+
+.text-forest-accent {
+  color: #34d399 !important;
+  text-shadow: 0 1px 2px rgba(6, 78, 59, 0.8);
+}
+
+/* ナビゲーションアイテム */
+.forest-nav-item {
+  background: rgba(6, 78, 59, 0.2);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  color: #d1fae5;
+  transition: all 0.3s ease;
+}
+
+.forest-nav-item:hover {
+  background: rgba(5, 150, 105, 0.4);
+  border-color: rgba(52, 211, 153, 0.6);
+  transform: translateX(4px);
+}
+
+.forest-nav-item.active {
+  background: linear-gradient(135deg, #059669, #047857);
+  border-color: rgba(52, 211, 153, 0.8);
+  box-shadow: 0 4px 8px rgba(5, 150, 105, 0.4);
+}

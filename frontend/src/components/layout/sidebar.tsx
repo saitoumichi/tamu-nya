@@ -41,15 +41,17 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="hidden w-64 border-r bg-white md:block">
+    <aside className="hidden w-64 border-r-0 forest-card md:block">
       <div className="flex h-full flex-col">
         {/* ロゴ */}
-        <div className="flex h-16 items-center border-b px-6">
-          <h2 className="text-lg font-semibold text-primary">忘れ物図鑑</h2>
+        <div className="flex h-16 items-center border-b border-emerald-400/30 px-6">
+          <div className="text-forest-primary font-bold text-lg flex items-center gap-2">
+            🧚‍♀️ ナビゲーション
+          </div>
         </div>
 
         {/* ナビゲーション */}
-        <nav className="flex-1 space-y-1 p-4">
+        <nav className="flex-1 space-y-2 p-4">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -57,16 +59,11 @@ const Sidebar = () => {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  'flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  item.active
-                    ? 'bg-primary text-white'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  'forest-nav-item flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium',
+                  item.active && 'active'
                 )}
               >
-                <Icon className={cn(
-                  'h-5 w-5',
-                  item.active ? 'text-white' : 'text-gray-500'
-                )} />
+                <Icon className="h-5 w-5" />
                 <span>{item.name}</span>
               </Link>
             );

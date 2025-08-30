@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
@@ -276,13 +274,12 @@ export default function CreatePage() {
     return (
       <MainLayout>
         <div className="space-y-6">
-          <Card>
-            <CardContent className="text-center py-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                読み込み中...
-              </h2>
-            </CardContent>
-          </Card>
+          <div className="forest-card p-8 rounded-xl text-center">
+            <div className="text-6xl mb-4">🌲</div>
+            <h2 className="text-2xl font-bold text-forest-primary mb-4">
+              読み込み中...
+            </h2>
+          </div>
         </div>
       </MainLayout>
     );
@@ -293,17 +290,16 @@ export default function CreatePage() {
     return (
       <MainLayout>
         <div className="space-y-6">
-          <Card>
-            <CardContent className="text-center py-12">
-              <h2 className="text-2xl font-bold text-red-600 mb-4">
-                エラーが発生しました
-              </h2>
-              <p className="text-gray-600 mb-6">{error}</p>
-              <Button onClick={() => window.location.reload()}>
-                再読み込み
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="forest-card p-8 rounded-xl text-center">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-red-400 mb-4">
+              エラーが発生しました
+            </h2>
+            <p className="text-forest-secondary mb-6">{error}</p>
+            <button className="forest-button px-6 py-2 rounded-lg" onClick={() => window.location.reload()}>
+              再読み込み
+            </button>
+          </div>
         </div>
       </MainLayout>
     );
@@ -314,24 +310,23 @@ export default function CreatePage() {
     return (
       <MainLayout>
         <div className="space-y-6">
-          <Card>
-            <CardContent className="text-center py-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                カード作成機能を使うにはログインが必要です
-              </h2>
-              <p className="text-gray-600 mb-6">
-                カスタムカードを作成して忘れ物記録をカスタマイズしましょう。
-              </p>
-              <div className="flex justify-center gap-4">
-                <Link href="/login">
-                  <Button>ログイン</Button>
-                </Link>
-                <Link href="/register">
-                  <Button variant="outline">新規登録</Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="forest-card p-8 rounded-xl text-center">
+            <div className="text-6xl mb-4">🃏</div>
+            <h2 className="text-2xl font-bold text-forest-primary mb-4">
+              カード作成機能を使うにはログインが必要です
+            </h2>
+            <p className="text-forest-secondary mb-6">
+              カスタムカードを作成して忘れ物記録をカスタマイズしましょう。
+            </p>
+            <div className="flex justify-center gap-4">
+              <Link href="/login">
+                <button className="forest-button px-6 py-2 rounded-lg">ログイン</button>
+              </Link>
+              <Link href="/register">
+                <button className="forest-button px-6 py-2 rounded-lg">新規登録</button>
+              </Link>
+            </div>
+          </div>
         </div>
       </MainLayout>
     );
@@ -341,110 +336,114 @@ export default function CreatePage() {
     <MainLayout>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between text-black">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">カード作成・管理</h1>
+        <div className="forest-card p-6 rounded-xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-forest-primary flex items-center gap-2">
+                🃏 カード作成・管理
+              </h1>
+            </div>
           </div>
         </div>
 
         {/* カテゴリカード */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between text-gray-900">
-              <span>📂 カテゴリカード</span>
-              <div className="text-sm">
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-forest-primary">
+                📂 カテゴリカード
+              </h2>
               <Link href="/create/category">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
+                <button className="forest-button px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
                   カテゴリ管理
-                </Button>
+                </button>
               </Link>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </div>
+          </div>
+          <div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {categories.map((category) => (
-                    <div key={category.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div key={category.id} className="border-2 border-emerald-400/30 bg-emerald-900/20 rounded-lg p-4 hover:bg-emerald-900/30 transition-all">
                       <div className="flex items-center gap-2">
                         <span>{category.emoji}</span>
-                        <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                        <h3 className="font-semibold text-forest-primary">{category.name}</h3>
                       </div>
                       {category.description && (
-                        <p className="text-sm text-gray-600">{category.description}</p>
+                        <p className="text-sm text-forest-secondary">{category.description}</p>
                       )}
                     </div>
                   ))}
                 </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* 忘れたものカード */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between text-gray-900">
-              <span>🎯 忘れたものカード</span>
-              <div className="text-sm">
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-forest-primary">
+                🎯 忘れたものカード
+              </h2>
               <Link href="/create/thing">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
+                <button className="forest-button px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
                   忘れたもの管理
-                </Button>
+                </button>
               </Link>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </div>
+          </div>
+          <div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {things.map((thing) => {
                     const category = categories.find(c => c.id === thing.categoryId);
                     return (
-                      <div key={thing.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                                            <div className="flex items-center gap-2">
-                        <span>{thing.emoji}</span>
-                        <h3 className="font-semibold text-gray-900">{thing.name}</h3>
-                      </div>
-                      {thing.description && (
-                        <p className="text-sm text-gray-600">{thing.description}</p>
-                      )}
+                      <div key={thing.id} className="border-2 border-emerald-400/30 bg-emerald-900/20 rounded-lg p-4 hover:bg-emerald-900/30 transition-all">
+                        <div className="flex items-center gap-2">
+                          <span>{thing.emoji}</span>
+                          <h3 className="font-semibold text-forest-primary">{thing.name}</h3>
+                        </div>
+                        {thing.description && (
+                          <p className="text-sm text-forest-secondary">{thing.description}</p>
+                        )}
                     </div>
                   );
                 })}
               </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* 状況カード */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between text-gray-900">
-              <span>🌟 状況カード</span>
-              <div className="text-sm">
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-forest-primary">
+                🌟 状況カード
+              </h2>
               <Link href="/create/situation">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
+                <button className="forest-button px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
                   状況管理
-                </Button>
+                </button>
               </Link>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </div>
+          </div>
+          <div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {situations.map((situation) => (
-                    <div key={situation.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                                          <div className="flex items-center gap-2">
-                      <span>{situation.emoji}</span>
-                      <h3 className="font-semibold text-gray-900">{situation.name}</h3>
-                    </div>
+                    <div key={situation.id} className="border-2 border-emerald-400/30 bg-emerald-900/20 rounded-lg p-4 hover:bg-emerald-900/30 transition-all">
+                      <div className="flex items-center gap-2">
+                        <span>{situation.emoji}</span>
+                        <h3 className="font-semibold text-forest-primary">{situation.name}</h3>
+                      </div>
                       {situation.description && (
-                        <p className="text-sm text-gray-600">{situation.description}</p>
+                        <p className="text-sm text-forest-secondary">{situation.description}</p>
                       )}
                     </div>
                   ))}
                 </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
 
       </div>

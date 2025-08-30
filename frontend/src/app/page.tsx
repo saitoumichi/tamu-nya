@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Plus, Target, Clock, CheckCircle, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -218,29 +217,30 @@ export default function HomePage() {
     return (
       <MainLayout>
         <div className="space-y-6">
-          <Card>
-            <CardContent className="text-center py-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="glass-card p-8 rounded-xl">
+            <div className="text-center">
+              <div className="text-6xl mb-4">🌲</div>
+              <h2 className="text-2xl font-bold text-forest-primary mb-4">
                 忘れ物図鑑へようこそ！
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-forest-secondary mb-6">
                 忘れ物を記録してモンスターを育てましょう。<br />
                 まずはアカウントを作成してください。
               </p>
               <div className="flex justify-center gap-4">
                 <Link href="/register">
-                  <Button size="lg">
+                  <button className="forest-button px-6 py-3 text-lg rounded-lg">
                     新規登録
-                  </Button>
+                  </button>
                 </Link>
                 <Link href="/login">
-                  <Button variant="outline" size="lg">
+                  <button className="forest-button px-6 py-3 text-lg rounded-lg">
                     ログイン
-                  </Button>
+                  </button>
                 </Link>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </MainLayout>
     );
@@ -250,52 +250,52 @@ export default function HomePage() {
     <MainLayout>
       <div className="space-y-6">
         {/* 今日のミッション */}
-        <Card>
-                      <CardHeader>
-              <CardTitle className="flex items-center justify-between text-black">
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5  text-primary" />
-                  {todayMission.title}
-                </div>
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-forest-accent" />
+                <h2 className="text-xl font-bold text-forest-primary">{todayMission.title}</h2>
+              </div>
 
-                {/* ミッション追加ボタン */}
-                {!showAddMission && (
-                  <Button
-                    onClick={() => setShowAddMission(true)}
-                    size="sm"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    ミッションを追加
-                  </Button>
-                )}
-              </CardTitle>
-            </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-gray-600">{todayMission.description}</p>
+              {/* ミッション追加ボタン */}
+              {!showAddMission && (
+                <button
+                  onClick={() => setShowAddMission(true)}
+                  className="forest-button px-4 py-2 rounded-lg text-sm flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  ミッションを追加
+                </button>
+              )}
+            </div>
+          </div>
+          <div>
+            <p className="mb-4 text-forest-secondary">{todayMission.description}</p>
             
             {/* ミッションリスト */}
             <div className="space-y-3 mb-4">
               {missions.map((mission) => (
                 <div
                   key={mission.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50"
+                  className="flex items-center gap-3 p-3 rounded-lg border-2 border-emerald-400/30 bg-emerald-900/20 hover:bg-emerald-900/30 transition-colors backdrop-filter backdrop-blur-sm"
                 >
                   <div 
                     className="flex-shrink-0 cursor-pointer"
                     onClick={() => handleMissionToggle(mission.id)}
                   >
                     {mission.completed ? (
-                      <CheckCircle className="h-6 w-6 text-primary" />
+                      <CheckCircle className="h-6 w-6 text-forest-accent" />
                     ) : (
-                      <div className="h-6 w-6 rounded-full border-2 border-gray-300" />
+                      <div className="h-6 w-6 rounded-full border-2 border-emerald-400/50" />
                     )}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{mission.title}</h4>
-                    <p className="text-sm text-gray-500">{mission.description}</p>
+                    <h4 className="font-medium text-forest-primary">{mission.title}</h4>
+                    <p className="text-sm text-forest-secondary">{mission.description}</p>
                     {mission.weeklyDay && (
                       <div className="mt-1">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-900/40 text-forest-accent border border-emerald-400/30">
                           {weekDays.find(day => day.value === mission.weeklyDay)?.label || mission.weeklyDay}
                         </span>
                       </div>
@@ -323,29 +323,29 @@ export default function HomePage() {
 
             {/* ミッション追加・編集フォーム */}
             {showAddMission && (
-              <div className="mb-4 p-4 border rounded-lg bg-blue-100">
-                <h4 className="font-medium mb-3 text-gray-800">
+              <div className="mb-4 p-4 rounded-lg bg-emerald-900/20 border-2 border-emerald-400/30 backdrop-filter backdrop-blur-sm">
+                <h4 className="font-medium mb-3 text-forest-primary">
                   {editingMission ? 'ミッションを編集' : '新しいミッションを追加'}
                 </h4>
-                <div className="space-y-3 text-gray-800">
+                <div className="space-y-3">
                   <input
                     type="text"
                     placeholder="ミッションのタイトル"
                     value={newMission.title}
                     onChange={(e) => setNewMission(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full p-2 border rounded-md"
+                    className="w-full forest-input p-2"
                   />
                   <input
                     type="text"
                     placeholder="詳細説明（オプション）"
                     value={newMission.description}
                     onChange={(e) => setNewMission(prev => ({ ...prev, description: e.target.value }))}
-                    className="w-full p-2 border rounded-md"
+                    className="w-full forest-input p-2"
                   />
                   
                   {/* 曜日選択 */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium forest-label">
                       繰り返し設定
                     </label>
                     <div className="grid grid-cols-3 gap-2">
@@ -354,10 +354,8 @@ export default function HomePage() {
                           key={day.value}
                           type="button"
                           onClick={() => setNewMission(prev => ({ ...prev, weeklyDay: day.value }))}
-                          className={`p-2 text-sm border rounded-md transition-colors ${
-                            newMission.weeklyDay === day.value
-                              ? 'bg-primary text-white border-primary'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          className={`forest-chip p-2 text-sm rounded-md transition-colors ${
+                            newMission.weeklyDay === day.value ? 'selected' : ''
                           }`}
                         >
                           {day.label}
@@ -367,45 +365,53 @@ export default function HomePage() {
                   </div>
                   
                   <div className="flex gap-2">
-                    <Button
+                    <button
                       onClick={editingMission ? handleUpdateMission : handleAddMission}
-                      className="flex-1"
+                      className="forest-button flex-1 px-4 py-2 rounded-lg"
                     >
                       {editingMission ? '更新' : '追加'}
-                    </Button>
-                    <Button
+                    </button>
+                    <button
                       onClick={handleCancelEdit}
-                      className="flex-1"
+                      className="forest-button flex-1 px-4 py-2 rounded-lg"
                     >
                       キャンセル
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
             )}
 
             {/* 進捗バー */}
-            <Progress 
-              value={todayMission.completed} 
-              max={todayMission.total}
-              label="進捗"
-              showPercentage
-            />
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-forest-primary">進捗</span>
+                <span className="text-sm text-forest-secondary">
+                  {todayMission.completed}/{todayMission.total} ({Math.round((todayMission.completed / todayMission.total) * 100)}%)
+                </span>
+              </div>
+              <div className="w-full bg-emerald-900/30 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(todayMission.completed / todayMission.total) * 100}%` }}
+                ></div>
+              </div>
+            </div>
 
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* 最近の忘れ物 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-black">
-              <Clock className="h-5 w-5 text-primary" />
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <Clock className="h-5 w-5 text-forest-accent" />
               最近の忘れ物
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </h2>
+          </div>
+          <div>
             {loading ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-forest-secondary">
                 最近の忘れ物を読み込み中...
               </div>
             ) : recentItems.length > 0 ? (
@@ -413,21 +419,21 @@ export default function HomePage() {
                 {recentItems.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50"
+                    className="flex items-center gap-3 p-3 rounded-lg border-2 border-emerald-400/30 bg-emerald-900/20 hover:bg-emerald-900/30 transition-colors backdrop-filter backdrop-blur-sm"
                   >
                     <span className="text-2xl">{getCategoryEmoji(item.category)}</span>
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{item.title}</h4>
-                      <p className="text-sm text-gray-500">{formatDateTime(item.datetime)}</p>
+                      <h4 className="font-medium text-forest-primary">{item.title}</h4>
+                      <p className="text-sm text-forest-secondary">{formatDateTime(item.datetime)}</p>
                       {item.difficulty && (
                         <div className="mt-1 flex items-center gap-2">
-                          <span className="text-xs text-gray-500">困った度:</span>
+                          <span className="text-xs text-forest-secondary">困った度:</span>
                           <div className="flex gap-1">
                             {[1, 2, 3, 4, 5].map((level) => (
                               <div
                                 key={level}
                                 className={`w-2 h-2 rounded-full ${
-                                  level <= item.difficulty! ? 'bg-red-500' : 'bg-gray-300'
+                                  level <= item.difficulty! ? 'bg-red-400' : 'bg-emerald-900/40'
                                 }`}
                               />
                             ))}
@@ -439,7 +445,7 @@ export default function HomePage() {
                           {item.situation.map((situation, index) => (
                             <span
                               key={index}
-                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-900/40 text-forest-accent border border-emerald-400/30"
                             >
                               {situation}
                             </span>
@@ -447,7 +453,7 @@ export default function HomePage() {
                         </div>
                       )}
                       {item.location && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-forest-secondary mt-1">
                           📍 {item.location}
                         </p>
                       )}
@@ -456,19 +462,19 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-forest-secondary">
                 まずは忘れ物を1件登録しよう
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* えさあげボタン */}
         <div className="flex justify-center">
           <Link href="/feed">
-            <Button size="lg" className="px-8">
+            <button className="forest-button px-8 py-3 text-lg rounded-lg">
               🍽️ モンスターにえさをあげに行く
-            </Button>
+            </button>
           </Link>
         </div>
       </div>

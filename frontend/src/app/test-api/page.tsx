@@ -33,7 +33,7 @@ export default function TestApiPage() {
       console.log('API Response:', data);
     } catch (error) {
       console.error('Error:', error);
-      setProfile({ error: error.message });
+      setProfile({ error: error instanceof Error ? error.message : 'Unknown error' });
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ export default function TestApiPage() {
       console.log('Stats Response:', data);
     } catch (error) {
       console.error('Error:', error);
-      setStats({ error: error.message });
+      setStats({ error: error instanceof Error ? error.message : 'Unknown error' });
     } finally {
       setLoading(false);
     }

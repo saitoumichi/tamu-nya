@@ -537,7 +537,7 @@ export default function EncyclopediaPage() {
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-accent"></div>
         </div>
       </MainLayout>
     );
@@ -548,24 +548,25 @@ export default function EncyclopediaPage() {
     return (
       <MainLayout>
         <div className="space-y-6">
-          <Card>
-            <CardContent className="text-center py-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="forest-card p-8 rounded-xl">
+            <div className="text-center">
+              <div className="text-6xl mb-4">📚</div>
+              <h2 className="text-2xl font-bold text-forest-primary mb-4">
                 図鑑を見るにはログインが必要です
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-forest-secondary mb-6">
                 忘れ物を記録してモンスターを収集しましょう。
               </p>
               <div className="flex justify-center gap-4">
                 <Link href="/login">
-                  <Button>ログイン</Button>
+                  <button className="forest-button px-6 py-2 rounded-lg">ログイン</button>
                 </Link>
                 <Link href="/register">
-                  <Button variant="secondary">新規登録</Button>
+                  <button className="forest-button px-6 py-2 rounded-lg">新規登録</button>
                 </Link>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </MainLayout>
     );
@@ -576,7 +577,7 @@ export default function EncyclopediaPage() {
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-accent"></div>
         </div>
       </MainLayout>
     );
@@ -586,40 +587,44 @@ export default function EncyclopediaPage() {
     <MainLayout>
       <div className="space-y-6">
         {/* ヘッダー */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">図鑑</h1>
-            <p className="text-gray-600">
-              収集したモンスターたち ({filteredMonsters.length}体)
-              {selectedCategory && (
-                <span className="ml-2 text-blue-600 font-medium">
-                  • {categories.find(c => c.id === selectedCategory)?.name}カテゴリ
-                </span>
-              )}
-            </p>
-            <p className="text-sm text-gray-500 mt-1">
-              カテゴリを選択して、特定の種類の忘れ物モンスターを絞り込めます
-            </p>
+        <div className="forest-card p-6 rounded-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-forest-primary flex items-center gap-2">
+                📚 図鑑
+              </h1>
+              <p className="text-forest-secondary">
+                収集したモンスターたち ({filteredMonsters.length}体)
+                {selectedCategory && (
+                  <span className="ml-2 text-forest-accent font-medium">
+                    • {categories.find(c => c.id === selectedCategory)?.name}カテゴリ
+                  </span>
+                )}
+              </p>
+              <p className="text-sm text-forest-secondary mt-1">
+                カテゴリを選択して、特定の種類の忘れ物モンスターを絞り込めます
+              </p>
+            </div>
+            <Link href="/input">
+              <button className="forest-button px-4 py-2 rounded-lg flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                忘れ物を記録
+              </button>
+            </Link>
           </div>
-          <Link href="/input">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              忘れ物を記録
-            </Button>
-          </Link>
         </div>
 
         {/* カテゴリフィルター */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <Filter className="h-5 w-5 text-primary" />
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <Filter className="h-5 w-5 text-forest-accent" />
               カテゴリで絞り込み
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            </h2>
+          </div>
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium forest-label mb-3">
                 忘れ物の種類を選択してください
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -635,15 +640,15 @@ export default function EncyclopediaPage() {
                 ))}
               </div>
               {selectedCategory && (
-                <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="text-sm text-blue-700 text-center">
+                <div className="mt-3 p-2 bg-emerald-900/30 rounded-lg border-2 border-emerald-400/40">
+                  <div className="text-sm text-forest-accent text-center">
                     📍 選択中: {categories.find(c => c.id === selectedCategory)?.name}
                   </div>
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* モンスター一覧 */}
         {filteredMonsters.length > 0 ? (
@@ -652,8 +657,7 @@ export default function EncyclopediaPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredMonsters.map((monster) => (
                 <Link key={monster.id} href={`/monster/${monster.id}`}>
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardContent className="p-4">
+                  <div className="forest-card p-4 rounded-xl hover:scale-105 transition-all cursor-pointer">
                       <div className="flex items-start gap-3">
                         <div className="w-16 h-16 flex-shrink-0">
                           <img
@@ -672,37 +676,39 @@ export default function EncyclopediaPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-gray-900 truncate">{monster.name}</h3>
+                            <h3 className="font-semibold text-forest-primary truncate">{monster.name}</h3>
                           </div>
                           
                           {/* レベル表示を追加 */}
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
+                            <span className="text-xs bg-emerald-900/40 text-forest-accent px-2 py-1 rounded-full font-medium border border-emerald-400/30">
                               Lv.{monsterFeed === null ? '...' : Math.min(Math.floor(((monsterFeed[monster.category]?.fed || 0) / 5)), 100)}
                             </span>
                           </div>
-                          <div className="text-xs text-gray-400">{monster.lastSeenAt}</div>
+                          <div className="text-xs text-forest-secondary">{monster.lastSeenAt}</div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                  </div>
                 </Link>
               ))}
             </div>
           </div>
         ) : (
-          <EmptyState
-            title="モンスターが見つかりません"
-            description="フィルターを調整するか、新しい忘れ物を記録してみてください"
-            action={
-              <Link href="/input">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  忘れ物を記録
-                </Button>
-              </Link>
-            }
-          />
+          <div className="forest-card p-8 rounded-xl text-center">
+            <div className="text-6xl mb-4">👾</div>
+            <h3 className="text-xl font-bold text-forest-primary mb-2">
+              モンスターが見つかりません
+            </h3>
+            <p className="text-forest-secondary mb-6">
+              フィルターを調整するか、新しい忘れ物を記録してみてください
+            </p>
+            <Link href="/input">
+              <button className="forest-button px-6 py-2 rounded-lg flex items-center gap-2 mx-auto">
+                <Plus className="h-4 w-4" />
+                忘れ物を記録
+              </button>
+            </Link>
+          </div>
         )}
       </div>
     </MainLayout>

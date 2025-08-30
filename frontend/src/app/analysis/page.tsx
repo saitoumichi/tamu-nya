@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { MainLayout } from "@/components/layout/main-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -15,7 +14,6 @@ import {
 import { apiClient } from '@/api/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 
 interface ThingsRecord {
   id: string;
@@ -36,6 +34,22 @@ interface ThingsRecord {
 }
 
 type TimeRange = "week" | "month";
+
+// forgotten_itemの名前から絵文字を取得する関数
+const getItemEmoji = (itemName: string): string => {
+  const emojiMap: { [key: string]: string } = {
+    '鍵': '🔑',
+    '薬': '💊', 
+    '傘': '☔',
+    '財布': '👛',
+    'スマホ': '📱',
+    '予定': '📅',
+    '遅刻': '⏰',
+    '宿題': '📄',
+    'その他': '😊'
+  };
+  return emojiMap[itemName] || '📦';
+};
 
 export default function AnalysisPage() {
   const { user, token } = useAuth();
@@ -475,21 +489,6 @@ export default function AnalysisPage() {
         // 「忘れたもの」のみをフィルタリング（didForget === true のもの）
         const forgottenRecords = Array.isArray(records) ? records.filter(r => r.didForget === true) : [];
         
-        // forgotten_itemの名前から絵文字を取得する関数
-        const getItemEmoji = (itemName: string): string => {
-          const emojiMap: { [key: string]: string } = {
-            '鍵': '🔑',
-            '薬': '💊', 
-            '傘': '☔',
-            '財布': '👛',
-            'スマホ': '📱',
-            '予定': '📅',
-            '遅刻': '⏰',
-            '宿題': '📄',
-            'その他': '😊'
-          };
-          return emojiMap[itemName] || '📦';
-        };
 
         // forgotten_itemの名前からカテゴリIDを取得する関数
         const getItemCategoryId = (itemName: string): string => {
@@ -799,24 +798,22 @@ const difficultyRanking = useMemo(() => {
     return (
       <MainLayout>
         <div className="space-y-6">
-          <Card>
-            <CardContent className="text-center py-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                分析機能を使うにはログインが必要です
-              </h2>
-              <p className="text-gray-600 mb-6">
-                忘れ物の傾向を分析してみましょう。
-              </p>
-              <div className="flex justify-center gap-4">
-                <Link href="/login">
-                  <Button>ログイン</Button>
-                </Link>
-                <Link href="/register">
-                  <Button variant="outline">新規登録</Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="forest-card p-8 rounded-xl text-center">
+            <h2 className="text-2xl font-bold text-forest-primary mb-4">
+              分析機能を使うにはログインが必要です
+            </h2>
+            <p className="text-forest-secondary mb-6">
+              忘れ物の傾向を分析してみましょう。
+            </p>
+            <div className="flex justify-center gap-4">
+              <Link href="/login">
+                <button className="forest-button px-6 py-2 rounded-lg">ログイン</button>
+              </Link>
+              <Link href="/register">
+                <button className="forest-button px-6 py-2 rounded-lg">新規登録</button>
+              </Link>
+            </div>
+          </div>
         </div>
       </MainLayout>
     );
@@ -836,23 +833,27 @@ const difficultyRanking = useMemo(() => {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">分析</h1>
-            <p className="text-gray-600">忘れ物の傾向と統計</p>
+        <div className="forest-card p-6 rounded-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-forest-primary flex items-center gap-2">
+                📊 分析
+              </h1>
+              <p className="text-forest-secondary">忘れ物の傾向と統計</p>
+            </div>
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <Calendar className="h-5 w-5 text-primary" />
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <Calendar className="h-5 w-5 text-forest-accent" />
               {timeRange === "week" ? "週間カテゴリー" : "月間カテゴリー"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+            </h2>
+          </div>
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium forest-label mb-2">
                 期間
               </label>
               <div className="flex gap-2">
@@ -869,7 +870,7 @@ const difficultyRanking = useMemo(() => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium forest-label mb-2">
                 カテゴリ
               </label>
               <div className="flex flex-wrap gap-2">
@@ -886,7 +887,7 @@ const difficultyRanking = useMemo(() => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium forest-label mb-2">
                 忘れたもの種類
               </label>
               <div className="flex flex-wrap gap-2">
@@ -903,7 +904,7 @@ const difficultyRanking = useMemo(() => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium forest-label mb-2">
                 状況（シチュエーション）
               </label>
               <div className="flex flex-wrap gap-2">
@@ -918,59 +919,55 @@ const difficultyRanking = useMemo(() => {
                 ))}
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <TrendingUp className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">総記録数</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <BarChart3 className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">1日平均</p>
-                  <p className="text-2xl font-bold text-gray-900">{averagePerDay}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <TrendingUp className="h-5 w-5 text-primary" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="forest-card p-6 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-900/30 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-forest-accent" />
+              </div>
+              <div>
+                <p className="text-sm text-forest-secondary">総記録数</p>
+                <p className="text-2xl font-bold text-forest-primary">{totalCount}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="forest-card p-6 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-900/30 rounded-lg">
+                <BarChart3 className="h-6 w-6 text-forest-accent" />
+              </div>
+              <div>
+                <p className="text-sm text-forest-secondary">1日平均</p>
+                <p className="text-2xl font-bold text-forest-primary">{averagePerDay}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <TrendingUp className="h-5 w-5 text-forest-accent" />
               {timeRange === "week" ? "週間トレンド" : "月間トレンド"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </h2>
+          </div>
+          <div>
             {timeRange === "week" ? (
               <div className="space-y-4">
                 {weeklyData.map((d) => {
                   const pct = weeklyMaxCount > 0 ? (d.count / weeklyMaxCount) * 100 : 0;
                   return (
                     <div key={d.day} className="flex items-center gap-4">
-                      <div className="w-12 text-sm font-medium text-gray-600">{d.day}</div>
+                      <div className="w-12 text-sm font-medium text-forest-secondary">{d.day}</div>
                       <div className="flex-1">
 
                         <Progress value={pct} max={100} />
                       </div>
-                      <div className="w-16 text-right text-sm font-medium text-gray-900">
+                      <div className="w-16 text-right text-sm font-medium text-forest-primary">
                         {d.count}件
                       </div>
                     </div>
@@ -981,7 +978,7 @@ const difficultyRanking = useMemo(() => {
               <div className="space-y-4">
                 <div className="grid grid-cols-7 gap-1 text-center">
                   {["日", "月", "火", "水", "木", "金", "土"].map((day) => (
-                    <div key={day} className="text-sm font-medium text-gray-600 py-2">
+                    <div key={day} className="text-sm font-medium text-forest-secondary py-2">
                       {day}
                     </div>
                   ))}
@@ -991,16 +988,16 @@ const difficultyRanking = useMemo(() => {
                     <div
                       key={idx}
                       className={`aspect-square border rounded-lg p-1 text-xs ${
-                        date ? "bg-white border-gray-200" : "bg-gray-50 border-gray-100"
-                      } ${date && getDateCount(date) > 0 ? "border-blue-300 bg-blue-50" : ""}`}
+                        date ? "bg-emerald-900/20 border-emerald-400/30" : "bg-emerald-900/10 border-emerald-400/20"
+                      } ${date && getDateCount(date) > 0 ? "border-emerald-400 bg-emerald-900/30" : ""}`}
                     >
                       {date && (
                         <>
-                          <div className="text-gray-900 font-medium">
+                          <div className="text-forest-primary font-medium">
                             {new Date(date).getDate()}
                           </div>
                           {getDateCount(date) > 0 && (
-                            <div className="text-blue-600 font-bold text-center">
+                            <div className="text-forest-accent font-bold text-center">
                               {getDateCount(date)}件
                             </div>
                           )}
@@ -1011,19 +1008,19 @@ const difficultyRanking = useMemo(() => {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <PieChartIcon className="h-5 w-5 text-primary" />
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <PieChartIcon className="h-5 w-5 text-forest-accent" />
               {timeRange === "week" ? "週間カテゴリー（円グラフ）" : "月間カテゴリー（円グラフ）"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </h2>
+          </div>
+          <div>
             {totalCount === 0 ? (
-              <div className="text-sm text-gray-500">データがありません。</div>
+              <div className="text-sm text-forest-secondary">データがありません。</div>
             ) : (
               <div className="flex flex-col md:flex-row items-center gap-6">
                 <PieChart data={categoryStats} />
@@ -1031,64 +1028,64 @@ const difficultyRanking = useMemo(() => {
                   {categoryStats.map((c) => (
                     <div
                       key={c.id}
-                      className="flex items-center justify-between border rounded-lg px-3 py-2"
+                      className="flex items-center justify-between border-2 border-emerald-400/30 bg-emerald-900/20 rounded-lg px-3 py-2"
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{c.emoji}</span>
-                        <span className="text-sm font-medium text-gray-900">{c.name}</span>
+                        <span className="text-sm font-medium text-forest-primary">{c.name}</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-medium text-gray-900">{c.count}件</div>
-                        <div className="text-xs text-gray-500">{c.pct.toFixed(0)}%</div>
+                        <div className="text-sm font-medium text-forest-primary">{c.count}件</div>
+                        <div className="text-xs text-forest-secondary">{c.pct.toFixed(0)}%</div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
 
 
         {/* 困った度ランキング */}
 
-        <Card>
-          <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-gray-900">
-            <Trophy className="h-5 w-5 text-primary" />
-            困った度ランキング
-          </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <Trophy className="h-5 w-5 text-forest-accent" />
+              困った度ランキング
+            </h2>
+          </div>
+          <div>
             {difficultyRanking.length === 0 ? (
-              <div className="text-sm text-gray-500">データがありません。</div>
+              <div className="text-sm text-forest-secondary">データがありません。</div>
             ) : (
               <div className="space-y-3">
                 {difficultyRanking.map((item, index) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between border rounded-lg px-3 py-2"
+                    className="flex items-center justify-between border-2 border-emerald-400/30 bg-emerald-900/20 rounded-lg px-3 py-2"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 text-sm font-medium text-gray-600">
+                      <div className="w-8 text-sm font-medium text-forest-secondary">
                         {index + 1}位
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{item.emoji}</span>
-                        <span className="text-sm font-medium text-gray-900">{item.name}</span>
+                        <span className="text-sm font-medium text-forest-primary">{item.name}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900">合計{item.sum}点</div>
-                      <div className="text-xs text-gray-500">{item.count}件</div>
+                      <div className="text-sm font-medium text-forest-primary">合計{item.sum}点</div>
+                      <div className="text-xs text-forest-secondary">{item.count}件</div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </MainLayout>
   );

@@ -13,11 +13,13 @@ const Header: React.FC<HeaderProps> = ({ appName = '忘れ物図鑑' }) => {
   const { user, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <header className="sticky top-0 z-40 w-full border-b-0 forest-card">
       <div className="container flex h-16 items-center justify-between px-4">
         {/* アプリ名 */}
         <div className="flex items-center space-x-2">
-          <h1 className="text-xl font-bold text-primary">{appName}</h1>
+          <h1 className="text-xl font-bold text-forest-primary flex items-center gap-2">
+            🌲 {appName}
+          </h1>
         </div>
 
         {/* 右側のアクション */}
