@@ -17,16 +17,12 @@ interface ThingsRecord {
   didForget: boolean;
 }
 
-// ランク定義
-type Rank = 'SS' | 'S' | 'A' | 'B' | 'C';
-
 interface Monster {
   id: number;
   name: string;
   category: string; // 元の thingId（例: 'wallet'）
   categoryName: string; // 表示名
   categoryEmoji: string;
-  rank: Rank;
   lastSeenAt: string;
   thumbUrl: string;
 }
@@ -97,24 +93,7 @@ export default function EncyclopediaPage() {
     }
   };
 
-  // 難易度→ランク（5段階評価）
-  const getRankByDifficulty = (difficulty?: number): Rank => {
-    const d = difficulty ?? 3; // 未指定なら中間
-    if (d >= 9) return 'SS';
-    if (d >= 7) return 'S';
-    if (d >= 5) return 'A';
-    if (d >= 3) return 'B';
-    return 'C';
-  };
 
-  // 遭遇回数→ランク（5段階評価）
-  const getRankByEncounterCount = (encounterCount: number): Rank => {
-    if (encounterCount > 20) return 'SS';
-    if (encounterCount > 15) return 'S';
-    if (encounterCount > 10) return 'A';
-    if (encounterCount > 5) return 'B';
-    return 'C';
-  };
 
   // 元の thingId を新しいカテゴリへマッピング
   // 物忘れ: key/umbrella/wallet/medicine/smartphone/homework など
@@ -136,8 +115,7 @@ export default function EncyclopediaPage() {
     { id: '', name: 'すべて', emoji: '🌟' },
     { id: 'forget_things', name: '物忘れ', emoji: '🔍' },
     { id: 'forget_schedule', name: '予定忘れ', emoji: '📅' },
-    { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰' },
-    { id: 'another', name: 'その他', emoji: '😊' },
+    { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰' }
   ]);
 
   // カスタムカテゴリを読み込み
@@ -157,12 +135,38 @@ export default function EncyclopediaPage() {
             
             setCategories([
               { id: '', name: 'すべて', emoji: '🌟' },
+              { id: 'forget_things', name: '物忘れ', emoji: '🔍' },
+              { id: 'forget_schedule', name: '予定忘れ', emoji: '📅' },
+              { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰' },
               ...customCategories
+            ]);
+          } else {
+            // カスタムカテゴリがない場合は基本カテゴリのみ
+            setCategories([
+              { id: '', name: 'すべて', emoji: '🌟' },
+              { id: 'forget_things', name: '物忘れ', emoji: '🔍' },
+              { id: 'forget_schedule', name: '予定忘れ', emoji: '📅' },
+              { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰' }
             ]);
           }
         } catch (error) {
           console.error('カスタムカテゴリの読み込みに失敗:', error);
+          // エラー時も基本カテゴリを表示
+          setCategories([
+            { id: '', name: 'すべて', emoji: '🌟' },
+            { id: 'forget_things', name: '物忘れ', emoji: '🔍' },
+            { id: 'forget_schedule', name: '予定忘れ', emoji: '📅' },
+            { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰' }
+          ]);
         }
+      } else {
+        // カスタムカテゴリがない場合は基本カテゴリのみ
+        setCategories([
+          { id: '', name: 'すべて', emoji: '🌟' },
+          { id: 'forget_things', name: '物忘れ', emoji: '🔍' },
+          { id: 'forget_schedule', name: '予定忘れ', emoji: '📅' },
+          { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰' }
+        ]);
       }
     };
 
@@ -191,7 +195,6 @@ export default function EncyclopediaPage() {
         category: 'key',
         categoryName: '鍵',
         categoryEmoji: '🔑',
-        rank: 'B',
         lastSeenAt: '2時間前',
         thumbUrl: '/monsters/key/key-monster-1.jpg',
       },
@@ -201,7 +204,6 @@ export default function EncyclopediaPage() {
         category: 'umbrella',
         categoryName: '傘',
         categoryEmoji: '☔',
-        rank: 'A',
         lastSeenAt: '1日前',
         thumbUrl: '/monsters/umbrella/umbrella-monster-1.jpg'
       },
@@ -211,7 +213,6 @@ export default function EncyclopediaPage() {
         category: 'wallet',
         categoryName: '財布',
         categoryEmoji: '👛',
-        rank: 'S',
         lastSeenAt: '3日前',
         thumbUrl: '/monsters/wallet/wallet-monster.jpg',
       },
@@ -225,7 +226,6 @@ export default function EncyclopediaPage() {
         category: 'medicine',
         categoryName: '薬',
         categoryEmoji: '💊',
-        rank: 'C',
         lastSeenAt: '1週間前',
         thumbUrl: '/monsters/medicine/medicine-monster-1.jpg',
       },
@@ -235,7 +235,6 @@ export default function EncyclopediaPage() {
         category: 'smartphone',
         categoryName: 'スマホ',
         categoryEmoji: '📱',
-        rank: 'B',
         lastSeenAt: '3日前',
         thumbUrl: '/monsters/phone/phone_monsters.jpg',
       },
@@ -245,7 +244,6 @@ export default function EncyclopediaPage() {
         category: 'homework',
         categoryName: '宿題',
         categoryEmoji: '📄',
-        rank: 'A',
         lastSeenAt: '5日前',
         thumbUrl: '/monsters/homework/homework_monsters.jpg',
       },
@@ -255,7 +253,6 @@ export default function EncyclopediaPage() {
         category: 'schedule',
         categoryName: '予定',
         categoryEmoji: '📅',
-        rank: 'C',
         lastSeenAt: '2週間前',
         thumbUrl: '/monsters/schedule/schedule_monsters.png',
       },
@@ -265,7 +262,6 @@ export default function EncyclopediaPage() {
         category: 'time',
         categoryName: '遅刻',
         categoryEmoji: '⏰',
-        rank: 'B',
         lastSeenAt: '1週間前',
         thumbUrl: '/monsters/time/time_monster.png',
       },
@@ -323,17 +319,15 @@ export default function EncyclopediaPage() {
         finalCategory: categoryId
       });
 
-      return {
-        id: 1000 + index,
-        name: displayName,
-
-        category: categoryId, // カテゴリIDを使用
-        categoryName: categoryName,
-        categoryEmoji: categoryEmoji,
-        rank: getRankByEncounterCount(thingsRecords.filter(r => r.thingId === thingId && r.didForget === true).length),
-        lastSeenAt: getTimeAgo(info.latestAt),
-        thumbUrl: getImagePathByThingId(thingId),
-      };
+             return {
+         id: 1000 + index,
+         name: displayName,
+         category: categoryId, // カテゴリIDを使用
+         categoryName: categoryName,
+         categoryEmoji: categoryEmoji,
+         lastSeenAt: getTimeAgo(info.latestAt),
+         thumbUrl: getImagePathByThingId(thingId),
+       };
     });
 
     const finalMonsters = [...baseMonsters, ...existingMonsters, ...thingsMonsters];
@@ -341,10 +335,10 @@ export default function EncyclopediaPage() {
     console.log('baseMonsters:', baseMonsters.length, 'existingMonsters:', existingMonsters.length, 'thingsMonsters:', thingsMonsters.length);
     console.log('setMonsters を呼び出します:', finalMonsters);
     
-    // モンスターの詳細もログに出力
-    finalMonsters.forEach((monster, index) => {
-      console.log(`モンスター${index + 1}:`, monster.name, monster.category, monster.rank);
-    });
+         // モンスターの詳細もログに出力
+     finalMonsters.forEach((monster, index) => {
+       console.log(`モンスター${index + 1}:`, monster.name, monster.category);
+     });
     
     setMonsters(finalMonsters);
     
@@ -456,13 +450,12 @@ export default function EncyclopediaPage() {
           categoryId = NEW_CATEGORY_MAP[m.category] || 'forget_things'; // 古いデータ構造
         }
         
-        return {
-          name: m.name, 
-          category: m.category, 
-          categoryId: categoryId,
-          categoryName: m.categoryName,
-          rank: m.rank 
-        };
+                 return {
+           name: m.name, 
+           category: m.category, 
+           categoryId: categoryId,
+           categoryName: m.categoryName
+         };
       })
     });
   }
@@ -474,7 +467,17 @@ export default function EncyclopediaPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">図鑑</h1>
-            <p className="text-gray-600">収集したモンスターたち</p>
+            <p className="text-gray-600">
+              収集したモンスターたち ({filteredMonsters.length}体)
+              {selectedCategory && (
+                <span className="ml-2 text-blue-600 font-medium">
+                  • {categories.find(c => c.id === selectedCategory)?.name}カテゴリ
+                </span>
+              )}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              カテゴリを選択して、特定の種類の忘れ物モンスターを絞り込めます
+            </p>
           </div>
           <Link href="/input">
             <Button>
@@ -484,31 +487,39 @@ export default function EncyclopediaPage() {
           </Link>
         </div>
 
-        {/* フィルター */}
+        {/* カテゴリフィルター */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-gray-900">
               <Filter className="h-5 w-5 text-primary" />
-              フィルター
+              カテゴリで絞り込み
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* カテゴリフィルター（新3分類） */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリ</label>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((c) => (
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                忘れ物の種類を選択してください
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {categories.filter(c => c.id !== '').map((c) => (
                   <Chip
                     key={c.id}
                     label={c.name}
                     emoji={c.emoji}
                     selected={selectedCategory === c.id}
                     onClick={() => setSelectedCategory(c.id)}
+                    className="justify-center py-3 text-base"
                   />
                 ))}
               </div>
+              {selectedCategory && (
+                <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="text-sm text-blue-700 text-center">
+                    📍 選択中: {categories.find(c => c.id === selectedCategory)?.name}
+                  </div>
+                </div>
+              )}
             </div>
-
           </CardContent>
         </Card>
 
@@ -541,10 +552,7 @@ export default function EncyclopediaPage() {
                           <div className="flex items-center gap-2 mb-2">
                             <h3 className="font-semibold text-gray-900 truncate">{monster.name}</h3>
                           </div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm text-gray-500">{monster.categoryEmoji}</span>
-                            <span className="text-sm text-gray-600">{monster.categoryName}</span>
-                          </div>
+                          
                           {/* レベル表示を追加 */}
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">

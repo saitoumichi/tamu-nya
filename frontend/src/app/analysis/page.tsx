@@ -49,19 +49,28 @@ export default function AnalysisPage() {
   const [customCategories, setCustomCategories] = useState<Array<{id: string, name: string, emoji: string}>>([]);
 
   const categories = useMemo(() => {
-    // 入力されたデータからカテゴリを動的に生成
+    // 入力画面と同じ定義のカテゴリ
     const categoryMap = new Map<string, { id: string, name: string, emoji: string }>();
+    const nameEmojiMap = new Map<string, { id: string, name: string, emoji: string }>();
     
-    // デフォルトカテゴリを追加
+    // 「すべて」は常に表示
     categoryMap.set("", { id: "", name: "すべて", emoji: "🌟" });
+    nameEmojiMap.set("すべて🌟", { id: "", name: "すべて", emoji: "🌟" });
     
     // 入力されたデータからカテゴリを抽出
     thingsRecords.forEach(record => {
       // カテゴリ情報がある場合
       if (record.categoryName && record.categoryEmoji) {
         const categoryId = record.category || record.thingId || 'unknown';
-        if (!categoryMap.has(categoryId)) {
+        // 名前と絵文字の両方が一致した場合のみ重複とみなす
+        const nameEmojiKey = `${record.categoryName}${record.categoryEmoji}`;
+        if (!nameEmojiMap.has(nameEmojiKey)) {
           categoryMap.set(categoryId, {
+            id: categoryId,
+            name: record.categoryName,
+            emoji: record.categoryEmoji
+          });
+          nameEmojiMap.set(nameEmojiKey, {
             id: categoryId,
             name: record.categoryName,
             emoji: record.categoryEmoji
@@ -71,35 +80,76 @@ export default function AnalysisPage() {
       // カテゴリ情報がない場合でも、カテゴリIDが存在する場合は処理
       else if (record.category || record.thingId) {
         const categoryId = record.category || record.thingId;
-        if (!categoryMap.has(categoryId)) {
-          // デフォルトの絵文字を設定
-          let defaultEmoji = '📦';
-          if (categoryId === 'key') defaultEmoji = '🔑';
-          else if (categoryId === 'umbrella') defaultEmoji = '☂️';
-          else if (categoryId === 'wallet') defaultEmoji = '👛';
-          else if (categoryId === 'medicine') defaultEmoji = '💊';
-          else if (categoryId === 'smartphone') defaultEmoji = '📱';
-          else if (categoryId === 'homework') defaultEmoji = '📚';
-          else if (categoryId === 'schedule') defaultEmoji = '🗓️';
-          else if (categoryId === 'time') defaultEmoji = '⏰';
-          
+        // デフォルトの絵文字を設定
+        let defaultEmoji = '📦';
+        if (categoryId === 'key') defaultEmoji = '🔑';
+        else if (categoryId === 'umbrella') defaultEmoji = '☂️';
+        else if (categoryId === 'wallet') defaultEmoji = '👛';
+        else if (categoryId === 'medicine') defaultEmoji = '💊';
+        else if (categoryId === 'smartphone') defaultEmoji = '📱';
+        else if (categoryId === 'homework') defaultEmoji = '📚';
+        else if (categoryId === 'schedule') defaultEmoji = '🗓️';
+        else if (categoryId === 'time') defaultEmoji = '⏰';
+        
+        const displayName = record.thingType || categoryId;
+        
+        // 名前と絵文字の両方が一致した場合のみ重複とみなす
+        const nameEmojiKey = `${displayName}${defaultEmoji}`;
+        if (!nameEmojiMap.has(nameEmojiKey)) {
           categoryMap.set(categoryId, {
             id: categoryId,
-            name: record.thingType || categoryId,
+            name: displayName,
+            emoji: defaultEmoji
+          });
+          nameEmojiMap.set(nameEmojiKey, {
+            id: categoryId,
+            name: displayName,
             emoji: defaultEmoji
           });
         }
       }
     });
     
-    // カスタムカテゴリも追加
+    // カスタムカテゴリも追加（新しく作成されたカードも表示）
     customCategories.forEach(cat => {
-      if (!categoryMap.has(cat.id)) {
+      // 名前と絵文字の両方が一致した場合のみ重複とみなす
+      const nameEmojiKey = `${cat.name}${cat.emoji}`;
+      if (!nameEmojiMap.has(nameEmojiKey)) {
         categoryMap.set(cat.id, cat);
+        nameEmojiMap.set(nameEmojiKey, cat);
       }
     });
     
-    return Array.from(categoryMap.values());
+    // 新しく作成されたカードが入力で使用された場合の処理
+    // customCardsから直接カテゴリを取得して追加
+    const customCardsRaw = localStorage.getItem("customCards");
+    if (customCardsRaw) {
+      try {
+        const customCards = JSON.parse(customCardsRaw);
+        if (customCards.categories && Array.isArray(customCards.categories)) {
+          customCards.categories.forEach((cat: { id: string, name: string, emoji: string }) => {
+            // 名前と絵文字の両方が一致した場合のみ重複とみなす
+            const nameEmojiKey = `${cat.name}${cat.emoji}`;
+            if (!nameEmojiMap.has(nameEmojiKey)) {
+              categoryMap.set(cat.id, cat);
+              nameEmojiMap.set(nameEmojiKey, cat);
+            }
+          });
+        }
+      } catch (error) {
+        console.error('カスタムカードの読み込みエラー:', error);
+      }
+    }
+    
+    // データが存在するカテゴリのみを返す（「すべて」は除く）
+    const categoriesWithData = Array.from(categoryMap.values()).filter(cat => {
+      if (cat.id === "") return true; // 「すべて」は常に表示
+      return thingsRecords.some(record => 
+        record.category === cat.id || record.thingId === cat.id
+      );
+    });
+    
+    return categoriesWithData;
   }, [thingsRecords, customCategories]);
 
   const [customThings, setCustomThings] = useState<Array<{id: string, name: string, emoji: string, categoryId: string}>>([]);
@@ -108,8 +158,34 @@ export default function AnalysisPage() {
     // 入力されたデータから「忘れたもの」を動的に生成
     const thingMap = new Map<string, { id: string, name: string, emoji: string, categoryId: string }>();
     
-    // デフォルトの「すべて」を追加
+    // 「すべて」は常に表示
     thingMap.set("", { id: "", name: "すべて", emoji: "🌟", categoryId: "" });
+    
+    // 入力されたデータから「忘れたもの」を抽出
+    thingsRecords.forEach(record => {
+      if (record.thingType) {
+        const thingId = record.thingId || record.thingType;
+        if (!thingMap.has(thingId)) {
+          // デフォルトの絵文字を設定
+          let defaultEmoji = '📦';
+          if (thingId === 'key') defaultEmoji = '🔑';
+          else if (thingId === 'umbrella') defaultEmoji = '☂️';
+          else if (thingId === 'wallet') defaultEmoji = '👛';
+          else if (thingId === 'medicine') defaultEmoji = '💊';
+          else if (thingId === 'smartphone') defaultEmoji = '📱';
+          else if (thingId === 'homework') defaultEmoji = '📚';
+          else if (thingId === 'schedule') defaultEmoji = '🗓️';
+          else if (thingId === 'time') defaultEmoji = '⏰';
+          
+          thingMap.set(thingId, {
+            id: thingId,
+            name: record.thingType,
+            emoji: defaultEmoji,
+            categoryId: record.category || 'forget_things'
+          });
+        }
+      }
+    });
     
     // カスタム「忘れたもの」も追加（ただし「忘れなかった」は除外）
     customThings.forEach(thing => {
@@ -123,6 +199,31 @@ export default function AnalysisPage() {
       }
     });
     
+    // 新しく作成されたカードが入力で使用された場合の処理
+    // customCardsから直接「忘れたもの」を取得して追加
+    const customCardsRaw = localStorage.getItem("customCards");
+    if (customCardsRaw) {
+      try {
+        const customCards = JSON.parse(customCardsRaw);
+        if (customCards.things && Array.isArray(customCards.things)) {
+          customCards.things.forEach((thing: { id: string, name: string, emoji: string, categoryId: string }) => {
+            if (thing.name !== '忘れなかった' && thing.id !== 'forget_not') {
+              if (!thingMap.has(thing.id)) {
+                thingMap.set(thing.id, {
+                  id: thing.id,
+                  name: thing.name,
+                  emoji: thing.emoji || '📦',
+                  categoryId: thing.categoryId || 'forget_things'
+                });
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.error('カスタムカードの読み込みエラー:', error);
+      }
+    }
+    
     const result = Array.from(thingMap.values());
     console.log('生成された「忘れたもの」配列:', result);
     console.log('生成された配列の詳細:', result.map(t => ({ id: t.id, name: t.name, emoji: t.emoji, categoryId: t.categoryId })));
@@ -135,8 +236,16 @@ export default function AnalysisPage() {
       console.warn('重複したIDが検出されました:', duplicateIds);
     }
     
-    return result;
-  }, [customThings]);
+    // データが存在する「忘れたもの」のみを返す（「すべて」は除く）
+    const thingsWithData = result.filter(thing => {
+      if (thing.id === "") return true; // 「すべて」は常に表示
+      return thingsRecords.some(record => 
+        record.thingId === thing.id || record.thingType === thing.name
+      );
+    });
+    
+    return thingsWithData;
+  }, [thingsRecords, customThings]);
 
   const [customSituations, setCustomSituations] = useState<Array<{id: string, name: string, emoji: string}>>([]);
 
@@ -179,7 +288,7 @@ export default function AnalysisPage() {
     const situationMap = new Map<string, { id: string, name: string, emoji: string }>();
     const nameMap = new Map<string, { id: string, name: string, emoji: string }>();
     
-    // デフォルトの「すべて」を追加
+    // 「すべて」は常に表示
     const allSituation = { id: "", name: "すべて", emoji: "🌟" };
     situationMap.set("", allSituation);
     nameMap.set("すべて", allSituation);
@@ -254,7 +363,7 @@ export default function AnalysisPage() {
       }
     });
     
-    // カスタム「状況」も追加（重複チェックを強化）
+    // カスタム「状況」も追加
     customSituations.forEach(situation => {
       // 名前ベースで重複チェック
       if (!nameMap.has(situation.name)) {
@@ -264,6 +373,28 @@ export default function AnalysisPage() {
         console.log('名前重複を検出（カスタム）:', { existing: nameMap.get(situation.name), new: situation });
       }
     });
+    
+    // 新しく作成されたカードが入力で使用された場合の処理
+    // customCardsから直接「状況」を取得して追加
+    const customCardsRaw = localStorage.getItem("customCards");
+    if (customCardsRaw) {
+      try {
+        const customCards = JSON.parse(customCardsRaw);
+        if (customCards.situations && Array.isArray(customCards.situations)) {
+          customCards.situations.forEach((situation: { id: string, name: string, emoji: string }) => {
+            // 名前ベースで重複チェック
+            if (!nameMap.has(situation.name)) {
+              situationMap.set(situation.id, situation);
+              nameMap.set(situation.name, situation);
+            } else {
+              console.log('名前重複を検出（カスタムカード）:', { existing: nameMap.get(situation.name), new: situation });
+            }
+          });
+        }
+      } catch (error) {
+        console.error('カスタムカードの読み込みエラー:', error);
+      }
+    }
     
     const result = Array.from(situationMap.values());
     console.log('生成された「状況」配列:', result);
@@ -282,7 +413,21 @@ export default function AnalysisPage() {
     console.log('重複除去後の「状況」配列:', uniqueResult);
     console.log('重複除去後の詳細:', uniqueResult.map(s => ({ id: s.id, name: s.name, emoji: s.emoji })));
     
-    return uniqueResult;
+    // データが存在する「状況」のみを返す（「すべて」は除く）
+    const situationsWithData = uniqueResult.filter(situation => {
+      if (situation.id === "") return true; // 「すべて」は常に表示
+      return thingsRecords.some(record => {
+        if (!record.situation) return false;
+        const situationIds = record.situation;
+        if (Array.isArray(situationIds)) {
+          return situationIds.some(id => id === situation.id);
+        } else {
+          return situationIds === situation.id;
+        }
+      });
+    });
+    
+    return situationsWithData;
   }, [thingsRecords, customSituations]);
 
   useEffect(() => {
