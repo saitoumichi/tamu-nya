@@ -12,6 +12,10 @@ import {
   PieChart as PieChartIcon,
   Trophy,
 } from "lucide-react";
+import { apiClient } from '@/api/client';
+import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 interface ThingsRecord {
   id: string;
@@ -34,12 +38,15 @@ interface ThingsRecord {
 type TimeRange = "week" | "month";
 
 export default function AnalysisPage() {
+  const { user, token } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>("week");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedThingType, setSelectedThingType] = useState<string>("");
   const [selectedSituation, setSelectedSituation] = useState<string>("");
   const [thingsRecords, setThingsRecords] = useState<ThingsRecord[]>([]);
   const [baseFiltered, setBaseFiltered] = useState<ThingsRecord[]>([]);
+  const [apiData, setApiData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const timeRanges = [
     { id: "week", name: "週間", emoji: "📅" },
@@ -430,6 +437,32 @@ export default function AnalysisPage() {
     return situationsWithData;
   }, [thingsRecords, customSituations]);
 
+  // APIからデータを取得
+  const fetchAPIData = async () => {
+    if (!user || !token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const result = await apiClient.getForgottenItems();
+      if (result.success && result.data) {
+        setApiData(result.data);
+        console.log('分析画面API取得データ:', result.data);
+      }
+    } catch (error) {
+      console.error('分析画面API取得エラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // APIデータを取得
+    fetchAPIData();
+  }, [user, token]);
+
   useEffect(() => {
     const loadRecords = () => {
       const raw = localStorage.getItem("thingsRecords");
@@ -437,8 +470,32 @@ export default function AnalysisPage() {
         const records = raw ? (JSON.parse(raw) as ThingsRecord[]) : [];
         // 「忘れたもの」のみをフィルタリング（didForget === true のもの）
         const forgottenRecords = Array.isArray(records) ? records.filter(r => r.didForget === true) : [];
-        setThingsRecords(forgottenRecords);
-        setBaseFiltered(forgottenRecords);
+        
+        // APIデータをThingsRecord形式に変換
+        const apiRecords: ThingsRecord[] = apiData.map((item: any, index: number) => ({
+          id: `api_${item.id || index}`,
+          category: item.category || 'forget_things',
+          thingType: item.forgotten_item || item.title || '忘れ物',
+          thingId: `api_${item.forgotten_item?.toLowerCase().replace(/\s+/g, '_') || 'item'}`,
+          title: item.title || '',
+          content: item.details || '',
+          details: item.details || '',
+          difficulty: item.difficulty || 3,
+          location: item.location || '',
+          datetime: item.datetime || item.created_at || new Date().toISOString(),
+          createdAt: item.datetime || item.created_at || new Date().toISOString(),
+          situation: Array.isArray(item.situation) ? item.situation.join(',') : (item.situation || ''),
+          didForget: true,
+          categoryName: item.category || '忘れ物',
+          categoryEmoji: '📦'
+        }));
+
+        console.log('分析画面API変換後データ:', apiRecords);
+
+        // LocalStorageとAPIデータを統合
+        const allRecords = [...forgottenRecords, ...apiRecords];
+        setThingsRecords(allRecords);
+        setBaseFiltered(allRecords);
       } catch {
         setThingsRecords([]);
         setBaseFiltered([]);
@@ -517,7 +574,7 @@ export default function AnalysisPage() {
       window.removeEventListener("thingsRecordsChanged", handleCustomStorageChange as EventListener);
       window.removeEventListener("customCardsChanged", handleCustomStorageChange as EventListener);
     };
-  }, []);
+  }, [apiData]); // apiDataが変更されたら再実行
 
   useEffect(() => {
     let filtered = [...thingsRecords];
@@ -694,6 +751,45 @@ const difficultyRanking = useMemo(() => {
   };
 
 
+
+  // 未認証の場合
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="text-center py-12">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                分析機能を使うにはログインが必要です
+              </h2>
+              <p className="text-gray-600 mb-6">
+                忘れ物の傾向を分析してみましょう。
+              </p>
+              <div className="flex justify-center gap-4">
+                <Link href="/login">
+                  <Button>ログイン</Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="outline">新規登録</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // ローディング中
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

@@ -42,10 +42,16 @@ import { Chip } from '@/components/ui/chip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Filter, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { apiClient } from '@/api/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function EncyclopediaPage() {
+  const { user, token, loading: authLoading } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [monsters, setMonsters] = useState<Monster[]>([]);
+  const [apiData, setApiData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [monsterFeed, setMonsterFeed] = useState<{ [key: string]: { fed: number } } | null>(null);
 
   // monstersステートの変更を監視
   useEffect(() => {
@@ -185,6 +191,27 @@ export default function EncyclopediaPage() {
 
 
 
+  // APIからデータを取得
+  const fetchAPIData = async () => {
+    if (!user || !token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const result = await apiClient.getForgottenItems();
+      if (result.success && result.data) {
+        setApiData(result.data);
+        console.log('API取得データ:', result.data);
+      }
+    } catch (error) {
+      console.error('API取得エラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ------- データ生成 -------
   const generateMonsters = () => {
     // 既存のサンプル（固定）
@@ -272,10 +299,30 @@ export default function EncyclopediaPage() {
     console.log('図鑑で読み込まれたthingsデータ:', thingsRecords);
     console.log('didForget === true の記録数:', thingsRecords.filter(r => r.didForget === true).length);
 
+    // APIデータをthingsRecords形式に変換して統合
+    const apiRecords: ThingsRecord[] = apiData.map((item: any, index: number) => ({
+      id: `api_${item.id || index}`,
+      category: item.category || 'forget_things',
+      categoryName: item.category || '忘れ物',
+      categoryEmoji: '📦',
+      thingType: item.forgotten_item || item.title || '忘れ物',
+      thingId: `api_${item.forgotten_item?.toLowerCase().replace(/\s+/g, '_') || 'item'}`,
+      title: item.title || '',
+      difficulty: item.difficulty || 3,
+      situation: Array.isArray(item.situation) ? item.situation : [],
+      createdAt: item.datetime || item.created_at || new Date().toISOString(),
+      didForget: true
+    }));
+
+    console.log('API変換後データ:', apiRecords);
+
+    // LocalStorageとAPIデータを統合
+    const allRecords = [...thingsRecords.filter(r => r.didForget === true), ...apiRecords];
+
     // thingId ごとに 1 体生成（最新の記録時間、最大難易度 で代表化）
     const byThingId = new Map<string, { latestAt: string; maxDifficulty: number; sample: ThingsRecord }>();
 
-    for (const rec of thingsRecords) {
+    for (const rec of allRecords) {
       // didForget === true の記録のみを対象とする
       if (rec.didForget !== true) continue;
       
@@ -348,7 +395,13 @@ export default function EncyclopediaPage() {
     console.log('setMonsters 完了');
   };
 
-  // 初回読み込みとLocalStorageの変更を監視
+  // 初回読み込みとデータ更新を監視
+  useEffect(() => {
+    // APIデータを取得
+    fetchAPIData();
+  }, [user, token]);
+
+  // APIデータが更新されたらモンスター生成
   useEffect(() => {
     let isInitialized = false;
 
@@ -362,13 +415,12 @@ export default function EncyclopediaPage() {
       generateMonsters();
     };
 
-    // 初回読み込み
+    // APIデータまたはLocalStorageが更新されたら再生成
     loadAndGenerate();
 
     // LocalStorageの変更を監視
     const handleStorageChange = () => {
       console.log('LocalStorage変更を検知しました');
-      // 少し遅延を入れて実行
       setTimeout(() => {
         loadAndGenerate();
       }, 100);
@@ -380,6 +432,26 @@ export default function EncyclopediaPage() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('thingsRecordsChanged', handleStorageChange);
+    };
+  }, [apiData]); // apiDataが変更されたら再実行
+
+  // monsterFeed をクライアントで読み込み＆更新監視
+  useEffect(() => {
+    const load = () => {
+      try {
+        const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
+        setMonsterFeed(feed);
+      } catch {
+        setMonsterFeed({});
+      }
+    };
+    load();
+    const onChange = () => load();
+    window.addEventListener('storage', onChange);
+    window.addEventListener('feed:inventoryChanged', onChange);
+    return () => {
+      window.removeEventListener('storage', onChange);
+      window.removeEventListener('feed:inventoryChanged', onChange);
     };
   }, []);
 
@@ -458,6 +530,56 @@ export default function EncyclopediaPage() {
          };
       })
     });
+  }
+
+  // 認証ローディング中は安定したプレースホルダを表示
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // 未認証の場合
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="text-center py-12">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                図鑑を見るにはログインが必要です
+              </h2>
+              <p className="text-gray-600 mb-6">
+                忘れ物を記録してモンスターを収集しましょう。
+              </p>
+              <div className="flex justify-center gap-4">
+                <Link href="/login">
+                  <Button>ログイン</Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="secondary">新規登録</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // ローディング中
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
   }
 
   return (
@@ -556,12 +678,7 @@ export default function EncyclopediaPage() {
                           {/* レベル表示を追加 */}
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
-                              Lv.{(() => {
-                                // feedページと同様のレベル計算ロジック
-                                const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
-                                const fedCount = feed[monster.category]?.fed || 0;
-                                return Math.min(Math.floor(fedCount / 5), 100);
-                              })()}
+                              Lv.{monsterFeed === null ? '...' : Math.min(Math.floor(((monsterFeed[monster.category]?.fed || 0) / 5)), 100)}
                             </span>
                           </div>
                           <div className="text-xs text-gray-400">{monster.lastSeenAt}</div>

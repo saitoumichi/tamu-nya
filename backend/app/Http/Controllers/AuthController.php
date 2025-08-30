@@ -29,8 +29,8 @@ class AuthController extends Controller
                 'password' => Hash::make($validated['password']),
             ]);
 
-            // JWTトークンを生成（JWTパッケージがインストールされている場合）
-            $token = $this->generateToken($user);
+            // Sanctumトークンを生成
+            $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([
                 'success' => true,
@@ -66,7 +66,7 @@ class AuthController extends Controller
             }
 
             $user = Auth::user();
-            $token = $this->generateToken($user);
+            $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([
                 'success' => true,
@@ -90,7 +90,8 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         try {
-            Auth::logout();
+            // 現在のユーザーのトークンを削除
+            $request->user()->currentAccessToken()->delete();
             
             return response()->json([
                 'success' => true,
@@ -132,19 +133,4 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * JWTトークンを生成（簡易版）
-     * 実際の実装ではJWTパッケージを使用することを推奨
-     */
-    private function generateToken(User $user): string
-    {
-        // 簡易的なトークン生成（実際の実装ではJWTパッケージを使用）
-        $payload = [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'exp' => time() + (60 * 60 * 24), // 24時間有効
-        ];
-
-        return base64_encode(json_encode($payload));
-    }
 }
