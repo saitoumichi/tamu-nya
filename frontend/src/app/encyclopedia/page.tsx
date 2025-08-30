@@ -539,11 +539,21 @@ export default function EncyclopediaPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
                             <h3 className="font-semibold text-gray-900 truncate">{monster.name}</h3>
-
                           </div>
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-sm text-gray-500">{monster.categoryEmoji}</span>
                             <span className="text-sm text-gray-600">{monster.categoryName}</span>
+                          </div>
+                          {/* レベル表示を追加 */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
+                              Lv.{(() => {
+                                // feedページと同様のレベル計算ロジック
+                                const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
+                                const fedCount = feed[monster.category]?.fed || 0;
+                                return Math.min(Math.floor(fedCount / 5), 100);
+                              })()}
+                            </span>
                           </div>
                           <div className="text-xs text-gray-400">{monster.lastSeenAt}</div>
                         </div>
