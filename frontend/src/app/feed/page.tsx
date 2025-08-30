@@ -213,6 +213,19 @@ export default function FeedPage() {
                 えさ15個で成長
               </div>
             </div>
+            
+            {/* 今日のえさ受け取り状況 */}
+            <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-xs text-blue-800 text-center">
+                <span className="font-medium">📅 今日のえさ: </span>
+                {(() => {
+                  const today = new Date().toISOString().slice(0, 10);
+                  const lastClaimedDate = localStorage.getItem('dailyFeedClaimedAt');
+                  const hasClaimedToday = lastClaimedDate === today;
+                  return hasClaimedToday ? '✅ 受取済み' : '⏳ 未受取';
+                })()}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -360,7 +373,7 @@ export default function FeedPage() {
                   </Button>
                   
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => setSelectedFairy(null)}
                     className="w-full"
                   >
