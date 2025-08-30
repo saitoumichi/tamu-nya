@@ -5,7 +5,7 @@ import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-import { ArrowLeft, Plus, Save } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
 interface CardData {
@@ -61,21 +61,52 @@ export default function CreatePage() {
     if (saved) {
       try {
         const data = JSON.parse(saved);
-        if (data.categories && data.categories.length > 0) {
-          setCategories(data.categories);
-        } else {
-          setDefaultCategories();
-        }
-        if (data.things && data.things.length > 0) {
-          setThings(data.things);
-        } else {
-          setDefaultThings();
-        }
-        if (data.situations && data.situations.length > 0) {
-          setSituations(data.situations);
-        } else {
-          setDefaultSituations();
-        }
+        
+        // カテゴリカード：デフォルトとカスタムを統合
+        const defaultCategories = [
+          { id: 'forget_things', name: '物忘れ', emoji: '🔍', type: 'category' as const },
+          { id: 'forget_schedule', name: '予定忘れ', emoji: '📅', type: 'category' as const },
+          { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰', type: 'category' as const },
+          { id: 'another', name: 'その他', emoji: '😊', type: 'category' as const },
+        ];
+        
+        const customCategories = data.categories && data.categories.length > 0 ? data.categories : [];
+        const allCategories = [...defaultCategories, ...customCategories];
+        setCategories(allCategories);
+        
+        // 忘れたものカード：デフォルトとカスタムを統合
+        const defaultThings = [
+          { id: 'key', name: '鍵', emoji: '🔑', type: 'thing' as const, categoryId: 'forget_things' },
+          { id: 'medicine', name: '薬', emoji: '💊', type: 'thing' as const, categoryId: 'forget_things' },
+          { id: 'umbrella', name: '傘', emoji: '☔', type: 'thing' as const, categoryId: 'forget_things' },
+          { id: 'wallet', name: '財布', emoji: '👛', type: 'thing' as const, categoryId: 'forget_things' },
+          { id: 'smartphone', name: 'スマホ', emoji: '📱', type: 'thing' as const, categoryId: 'forget_things' },
+          { id: 'schedule', name: '予定', emoji: '📅', type: 'thing' as const, categoryId: 'forget_schedule' },
+          { id: 'time', name: '遅刻', emoji: '⏰', type: 'thing' as const, categoryId: 'oversleep_late' },
+          { id: 'homework', name: '宿題', emoji: '📄', type: 'thing' as const, categoryId: 'forget_things' },
+          { id: 'another', name: 'その他', emoji: '😊', type: 'thing' as const, categoryId: 'another' },
+        ];
+        
+        const customThings = data.things && data.things.length > 0 ? data.things : [];
+        const allThings = [...defaultThings, ...customThings];
+        setThings(allThings);
+        
+        // 状況カード：デフォルトとカスタムを統合
+        const defaultSituations = [
+          { id: 'morning', name: '朝', emoji: '🌅', type: 'situation' as const },
+          { id: 'home', name: '家', emoji: '🏠', type: 'situation' as const },
+          { id: 'before_going_out', name: '外出前', emoji: '🚪', type: 'situation' as const },
+          { id: 'in_a_hurry', name: '急いでた', emoji: '⏰', type: 'situation' as const },
+          { id: 'rain', name: '雨', emoji: '🌧️', type: 'situation' as const },
+          { id: 'work', name: '仕事', emoji: '💼', type: 'situation' as const },
+          { id: 'school', name: '学校', emoji: '🎒', type: 'situation' as const },
+          { id: 'another', name: 'その他', emoji: '😊', type: 'situation' as const },
+        ];
+        
+        const customSituations = data.situations && data.situations.length > 0 ? data.situations : [];
+        const allSituations = [...defaultSituations, ...customSituations];
+        setSituations(allSituations);
+        
       } catch (error) {
         console.error('データの読み込みに失敗しました:', error);
         setDefaultData();
@@ -87,85 +118,45 @@ export default function CreatePage() {
 
   // デフォルトデータを設定
   const setDefaultData = () => {
-    setDefaultCategories();
-    setDefaultThings();
-    setDefaultSituations();
-  };
+    const defaultCategories = [
+      { id: 'forget_things', name: '物忘れ', emoji: '🔍', type: 'category' as const },
+      { id: 'forget_schedule', name: '予定忘れ', emoji: '📅', type: 'category' as const },
+      { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰', type: 'category' as const },
+      { id: 'another', name: 'その他', emoji: '😊', type: 'category' as const },
+    ];
+    setCategories(defaultCategories);
 
-  const setDefaultCategories = () => {
-    setCategories([
-      { id: 'forget_things', name: '物忘れ', emoji: '🔍', type: 'category' },
-      { id: 'forget_schedule', name: '予定忘れ', emoji: '📅', type: 'category' },
-      { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰', type: 'category' },
-      { id: 'another', name: 'その他', emoji: '😊', type: 'category' },
-    ]);
-  };
+    const defaultThings = [
+      { id: 'key', name: '鍵', emoji: '🔑', type: 'thing' as const, categoryId: 'forget_things' },
+      { id: 'medicine', name: '薬', emoji: '💊', type: 'thing' as const, categoryId: 'forget_things' },
+      { id: 'umbrella', name: '傘', emoji: '☔', type: 'thing' as const, categoryId: 'forget_things' },
+      { id: 'wallet', name: '財布', emoji: '👛', type: 'thing' as const, categoryId: 'forget_things' },
+      { id: 'smartphone', name: 'スマホ', emoji: '📱', type: 'thing' as const, categoryId: 'forget_things' },
+      { id: 'schedule', name: '予定', emoji: '📅', type: 'thing' as const, categoryId: 'forget_schedule' },
+      { id: 'time', name: '遅刻', emoji: '⏰', type: 'thing' as const, categoryId: 'oversleep_late' },
+      { id: 'homework', name: '宿題', emoji: '📄', type: 'thing' as const, categoryId: 'forget_things' },
+      { id: 'another', name: 'その他', emoji: '😊', type: 'thing' as const, categoryId: 'another' },
+    ];
+    setThings(defaultThings);
 
-  const setDefaultThings = () => {
-    setThings([
-      { id: 'key', name: '鍵', emoji: '🔑', type: 'thing', categoryId: 'forget_things' },
-      { id: 'medicine', name: '薬', emoji: '💊', type: 'thing', categoryId: 'forget_things' },
-      { id: 'umbrella', name: '傘', emoji: '☔', type: 'thing', categoryId: 'forget_things' },
-      { id: 'wallet', name: '財布', emoji: '👛', type: 'thing', categoryId: 'forget_things' },
-      { id: 'smartphone', name: 'スマホ', emoji: '📱', type: 'thing', categoryId: 'forget_things' },
-      { id: 'schedule', name: '予定', emoji: '📅', type: 'thing', categoryId: 'forget_schedule' },
-      { id: 'time', name: '遅刻', emoji: '⏰', type: 'thing', categoryId: 'oversleep_late' },
-      { id: 'homework', name: '宿題', emoji: '📄', type: 'thing', categoryId: 'forget_things' },
-      { id: 'another', name: 'その他', emoji: '😊', type: 'thing', categoryId: 'another' },
-    ]);
-  };
-
-  const setDefaultSituations = () => {
-    setSituations([
-      { id: 'morning', name: '朝', emoji: '🌅', type: 'situation' },
-      { id: 'home', name: '家', emoji: '🏠', type: 'situation' },
-      { id: 'before_going_out', name: '外出前', emoji: '🚪', type: 'situation' },
-      { id: 'in_a_hurry', name: '急いでた', emoji: '⏰', type: 'situation' },
-      { id: 'rain', name: '雨', emoji: '🌧️', type: 'situation' },
-      { id: 'work', name: '仕事', emoji: '💼', type: 'situation' },
-      { id: 'school', name: '学校', emoji: '🎒', type: 'situation' },
-      { id: 'another', name: 'その他', emoji: '😊', type: 'situation' },
-    ]);
+    const defaultSituations = [
+      { id: 'morning', name: '朝', emoji: '🌅', type: 'situation' as const },
+      { id: 'home', name: '家', emoji: '🏠', type: 'situation' as const },
+      { id: 'before_going_out', name: '外出前', emoji: '🚪', type: 'situation' as const },
+      { id: 'in_a_hurry', name: '急いでた', emoji: '⏰', type: 'situation' as const },
+      { id: 'rain', name: '雨', emoji: '🌧️', type: 'situation' as const },
+      { id: 'work', name: '仕事', emoji: '💼', type: 'situation' as const },
+      { id: 'school', name: '学校', emoji: '🎒', type: 'situation' as const },
+      { id: 'another', name: 'その他', emoji: '😊', type: 'situation' as const },
+    ];
+    setSituations(defaultSituations);
   };
 
 
 
 
 
-  // データをLocalStorageに保存
-  const handleSaveToLocalStorage = () => {
-    const data = {
-      categories,
-      things,
-      situations,
-      lastUpdated: new Date().toISOString()
-    };
-    
-    localStorage.setItem('customCards', JSON.stringify(data));
-    
-    // 入力画面にデータ更新を通知
-    window.dispatchEvent(new CustomEvent('customCardsChanged'));
-    
-    alert('カードデータが保存されました！入力画面で新しいカードが使用できます。');
-  };
 
-  // LocalStorageからデータを読み込み
-  const handleLoadFromLocalStorage = () => {
-    const saved = localStorage.getItem('customCards');
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        if (data.categories) setCategories(data.categories);
-        if (data.things) setThings(data.things);
-        if (data.situations) setSituations(data.situations);
-        alert('カードデータを読み込みました！');
-      } catch (error) {
-        alert('データの読み込みに失敗しました');
-      }
-    } else {
-      alert('保存されたデータがありません');
-    }
-  };
 
   return (
     <MainLayout>

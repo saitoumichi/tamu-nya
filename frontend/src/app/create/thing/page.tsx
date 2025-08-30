@@ -136,7 +136,7 @@ export default function ThingCreatePage() {
                 戻る
               </Button>
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900 mt-2">忘れたもの作成・管理</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mt-2">カードの管理</h1>
           </div>
           <Button onClick={() => { setShowAddForm(true); setEditingCard(null); }}>
             <Plus className="mr-2 h-4 w-4" />
@@ -170,7 +170,7 @@ export default function ThingCreatePage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-gray-900">
-              🎯 忘れたものカード一覧
+              🎯 作成したカード一覧
             </CardTitle>
           </CardHeader>
           <CardContent>
