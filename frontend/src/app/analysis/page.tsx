@@ -10,6 +10,7 @@ import {
   TrendingUp,
   BarChart3,
   PieChart as PieChartIcon,
+  Trophy,
 } from "lucide-react";
 
 interface ThingsRecord {
@@ -56,6 +57,7 @@ export default function AnalysisPage() {
     
     // 入力されたデータからカテゴリを抽出
     thingsRecords.forEach(record => {
+      // カテゴリ情報がある場合
       if (record.categoryName && record.categoryEmoji) {
         const categoryId = record.category || record.thingId || 'unknown';
         if (!categoryMap.has(categoryId)) {
@@ -63,6 +65,28 @@ export default function AnalysisPage() {
             id: categoryId,
             name: record.categoryName,
             emoji: record.categoryEmoji
+          });
+        }
+      }
+      // カテゴリ情報がない場合でも、カテゴリIDが存在する場合は処理
+      else if (record.category || record.thingId) {
+        const categoryId = record.category || record.thingId;
+        if (!categoryMap.has(categoryId)) {
+          // デフォルトの絵文字を設定
+          let defaultEmoji = '📦';
+          if (categoryId === 'key') defaultEmoji = '🔑';
+          else if (categoryId === 'umbrella') defaultEmoji = '☂️';
+          else if (categoryId === 'wallet') defaultEmoji = '👛';
+          else if (categoryId === 'medicine') defaultEmoji = '💊';
+          else if (categoryId === 'smartphone') defaultEmoji = '📱';
+          else if (categoryId === 'homework') defaultEmoji = '📚';
+          else if (categoryId === 'schedule') defaultEmoji = '🗓️';
+          else if (categoryId === 'time') defaultEmoji = '⏰';
+          
+          categoryMap.set(categoryId, {
+            id: categoryId,
+            name: record.thingType || categoryId,
+            emoji: defaultEmoji
           });
         }
       }
@@ -86,21 +110,6 @@ export default function AnalysisPage() {
     
     // デフォルトの「すべて」を追加
     thingMap.set("", { id: "", name: "すべて", emoji: "🌟", categoryId: "" });
-    
-    // 入力されたデータから「忘れたもの」を抽出
-    thingsRecords.forEach(record => {
-      if (record.thingType && record.thingId) {
-        const thingId = record.thingId;
-        if (!thingMap.has(thingId)) {
-          thingMap.set(thingId, {
-            id: thingId,
-            name: record.thingType,
-            emoji: '📦', // デフォルト絵文字
-            categoryId: record.category || 'unknown'
-          });
-        }
-      }
-    });
     
     // カスタム「忘れたもの」も追加（ただし「忘れなかった」は除外）
     customThings.forEach(thing => {
@@ -127,7 +136,7 @@ export default function AnalysisPage() {
     }
     
     return result;
-  }, [thingsRecords, customThings]);
+  }, [customThings]);
 
   const [customSituations, setCustomSituations] = useState<Array<{id: string, name: string, emoji: string}>>([]);
 
@@ -763,10 +772,10 @@ const difficultyRanking = useMemo(() => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              困った度ランキング
-            </CardTitle>
+                      <CardTitle className="flex items-center gap-2 text-gray-900">
+            <Trophy className="h-5 w-5 text-primary" />
+            困った度ランキング
+          </CardTitle>
           </CardHeader>
           <CardContent>
             {difficultyRanking.length === 0 ? (
