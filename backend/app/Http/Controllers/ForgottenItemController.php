@@ -2,49 +2,45 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ForgottenItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 
 class ForgottenItemController extends Controller
 {
+    /**
+     * CORSヘッダーをレスポンスに追加
+     */
+    private function addCorsHeaders($response)
+    {
+        $response->header('Access-Control-Allow-Origin', '*');
+        $response->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        $response->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        return $response;
+    }
+
     /**
      * 忘れ物一覧を取得
      */
     public function index(): JsonResponse
     {
-        // 現在はダミーデータを返す（データベース接続後は実際のデータを取得）
-        $items = [
-            [
-                'id' => 1,
-                'category' => 'forget_things',
-                'title' => '鍵を家に忘れた',
-                'forgotten_item' => '鍵',
-                'details' => '朝急いでいた時に忘れた',
-                'difficulty' => 4,
-                'situation' => ['morning', 'in_a_hurry'],
-                'location' => '家',
-                'datetime' => '2024-08-27 08:00:00',
-                'created_at' => '2024-08-27 08:00:00'
-            ],
-            [
-                'id' => 2,
-                'category' => 'forget_schedule',
-                'title' => '会議の時間を忘れた',
-                'forgotten_item' => '会議の時間',
-                'details' => '午後の会議の時間を忘れていた',
-                'difficulty' => 3,
-                'situation' => ['work'],
-                'location' => 'オフィス',
-                'datetime' => '2024-08-27 14:00:00',
-                'created_at' => '2024-08-27 14:00:00'
-            ]
-        ];
+        try {
+            $items = ForgottenItem::orderBy('datetime', 'desc')->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $items,
-            'message' => '忘れ物一覧を取得しました'
-        ]);
+            $response = response()->json([
+                'success' => true,
+                'data' => $items,
+                'message' => '忘れ物一覧を取得しました'
+            ]);
+
+            return $this->addCorsHeaders($response);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '忘れ物一覧の取得に失敗しました: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -52,29 +48,39 @@ class ForgottenItemController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'category' => 'required|string|max:255',
-            'title' => 'required|string|max:255',
-            'forgotten_item' => 'required|string|max:255',
-            'details' => 'nullable|string|max:2000',
-            'difficulty' => 'required|integer|min:1|max:5',
-            'situation' => 'nullable|array',
-            'location' => 'nullable|string|max:255',
-            'datetime' => 'required|date'
-        ]);
+        try {
+            $validated = $request->validate([
+                'category' => 'required|string|max:255',
+                'title' => 'required|string|max:255',
+                'forgotten_item' => 'required|string|max:255',
+                'details' => 'nullable|string|max:2000',
+                'difficulty' => 'required|integer|min:1|max:5',
+                'situation' => 'nullable|array',
+                'situation.*' => 'string|max:255',
+                'location' => 'nullable|string|max:255',
+                'datetime' => 'required|date'
+            ]);
 
-        // 現在はダミーレスポンスを返す（データベース接続後は実際に保存）
-        $item = array_merge($validated, [
-            'id' => rand(1000, 9999),
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
+            // 認証されたユーザーのIDを取得（認証システムが実装されている場合）
+            $userId = Auth::id() ?? 1; // 一時的にデフォルトユーザーID
 
-        return response()->json([
-            'success' => true,
-            'data' => $item,
-            'message' => '忘れ物を記録しました'
-        ], 201);
+            $item = ForgottenItem::create(array_merge($validated, [
+                'user_id' => $userId
+            ]));
+
+            $response = response()->json([
+                'success' => true,
+                'data' => $item,
+                'message' => '忘れ物を記録しました'
+            ], 201);
+
+            return $this->addCorsHeaders($response);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '忘れ物の記録に失敗しました: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -82,25 +88,22 @@ class ForgottenItemController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        // 現在はダミーデータを返す
-        $item = [
-            'id' => $id,
-            'category' => 'forget_things',
-            'title' => '鍵を家に忘れた',
-            'forgotten_item' => '鍵',
-            'details' => '朝急いでいた時に忘れた',
-            'difficulty' => 4,
-            'situation' => ['morning', 'in_a_hurry'],
-            'location' => '家',
-            'datetime' => '2024-08-27 08:00:00',
-            'created_at' => '2024-08-27 08:00:00'
-        ];
+        try {
+            $item = ForgottenItem::findOrFail($id);
 
-        return response()->json([
-            'success' => true,
-            'data' => $item,
-            'message' => '忘れ物の詳細を取得しました'
-        ]);
+            $response = response()->json([
+                'success' => true,
+                'data' => $item,
+                'message' => '忘れ物の詳細を取得しました'
+            ]);
+
+            return $this->addCorsHeaders($response);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '忘れ物の詳細取得に失敗しました: ' . $e->getMessage()
+            ], 404);
+        }
     }
 
     /**
@@ -108,27 +111,35 @@ class ForgottenItemController extends Controller
      */
     public function update(Request $request, int $id): JsonResponse
     {
-        $validated = $request->validate([
-            'category' => 'sometimes|string|max:255',
-            'title' => 'sometimes|string|max:255',
-            'forgotten_item' => 'sometimes|string|max:255',
-            'details' => 'sometimes|nullable|string|max:2000',
-            'difficulty' => 'sometimes|integer|min:1|max:5',
-            'situation' => 'sometimes|nullable|array',
-            'location' => 'sometimes|nullable|string|max:255',
-            'datetime' => 'sometimes|date'
-        ]);
+        try {
+            $validated = $request->validate([
+                'category' => 'sometimes|string|max:255',
+                'title' => 'sometimes|string|max:255',
+                'forgotten_item' => 'sometimes|string|max:255',
+                'details' => 'nullable|string|max:2000',
+                'difficulty' => 'sometimes|integer|min:1|max:5',
+                'situation' => 'nullable|array',
+                'situation.*' => 'string|max:255',
+                'location' => 'nullable|string|max:255',
+                'datetime' => 'sometimes|date'
+            ]);
 
-        // 現在はダミーレスポンスを返す
-        $item = array_merge(['id' => $id], $validated, [
-            'updated_at' => now()
-        ]);
+            $item = ForgottenItem::findOrFail($id);
+            $item->update($validated);
 
-        return response()->json([
-            'success' => true,
-            'data' => $item,
-            'message' => '忘れ物を更新しました'
-        ]);
+            $response = response()->json([
+                'success' => true,
+                'data' => $item,
+                'message' => '忘れ物を更新しました'
+            ]);
+
+            return $this->addCorsHeaders($response);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '忘れ物の更新に失敗しました: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -136,57 +147,107 @@ class ForgottenItemController extends Controller
      */
     public function destroy(int $id): JsonResponse
     {
-        // 現在はダミーレスポンスを返す
-        return response()->json([
-            'success' => true,
-            'message' => "ID: {$id} の忘れ物を削除しました"
-        ]);
+        try {
+            $item = ForgottenItem::findOrFail($id);
+            $item->delete();
+
+            $response = response()->json([
+                'success' => true,
+                'message' => '忘れ物を削除しました'
+            ]);
+
+            return $this->addCorsHeaders($response);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '忘れ物の削除に失敗しました: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * ユーザー別の忘れ物を取得
+     * ユーザー別忘れ物取得
      */
-    public function getByUser(int $userId): JsonResponse
+    public function getUserItems(int $userId): JsonResponse
     {
-        // 現在はダミーデータを返す
-        $items = [
-            [
-                'id' => 1,
-                'user_id' => $userId,
-                'category' => 'forget_things',
-                'title' => '鍵を家に忘れた',
-                'forgotten_item' => '鍵',
-                'created_at' => '2024-08-27 08:00:00'
-            ]
-        ];
+        try {
+            $items = ForgottenItem::where('user_id', $userId)
+                ->orderBy('datetime', 'desc')
+                ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $items,
-            'message' => "ユーザーID: {$userId} の忘れ物を取得しました"
-        ]);
+            $response = response()->json([
+                'success' => true,
+                'data' => $items,
+                'message' => 'ユーザーの忘れ物一覧を取得しました'
+            ]);
+
+            return $this->addCorsHeaders($response);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ユーザーの忘れ物一覧取得に失敗しました: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * カテゴリ別の忘れ物を取得
+     * カテゴリ別忘れ物取得
      */
-    public function getByCategory(string $category): JsonResponse
+    public function getCategoryItems(string $category): JsonResponse
     {
-        // 現在はダミーデータを返す
-        $items = [
-            [
-                'id' => 1,
-                'category' => $category,
-                'title' => 'カテゴリ別の忘れ物',
-                'forgotten_item' => 'サンプルアイテム',
-                'created_at' => '2024-08-27 08:00:00'
-            ]
-        ];
+        try {
+            $items = ForgottenItem::where('category', $category)
+                ->orderBy('datetime', 'desc')
+                ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $items,
-            'message' => "カテゴリ: {$category} の忘れ物を取得しました"
-        ]);
+            $response = response()->json([
+                'success' => true,
+                'data' => $items,
+                'message' => 'カテゴリ別の忘れ物一覧を取得しました'
+            ]);
+
+            return $this->addCorsHeaders($response);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'カテゴリ別の忘れ物一覧取得に失敗しました: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 忘れ物の統計情報取得
+     */
+    public function getStats(): JsonResponse
+    {
+        try {
+            $stats = [
+                'total_count' => ForgottenItem::count(),
+                'category_distribution' => ForgottenItem::selectRaw('category, COUNT(*) as count')
+                    ->groupBy('category')
+                    ->get(),
+                'difficulty_average' => ForgottenItem::avg('difficulty'),
+                'monthly_trend' => ForgottenItem::selectRaw('DATE_FORMAT(datetime, "%Y-%m") as month, COUNT(*) as count')
+                    ->groupBy('month')
+                    ->orderBy('month', 'desc')
+                    ->limit(12)
+                    ->get(),
+                'recent_activity' => ForgottenItem::where('created_at', '>=', now()->subDays(7))
+                    ->count(),
+            ];
+
+            $response = response()->json([
+                'success' => true,
+                'data' => $stats,
+                'message' => '忘れ物の統計情報を取得しました'
+            ]);
+
+            return $this->addCorsHeaders($response);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '統計情報の取得に失敗しました: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

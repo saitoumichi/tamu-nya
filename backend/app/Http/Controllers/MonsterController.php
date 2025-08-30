@@ -2,263 +2,149 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Fairy;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 
 class MonsterController extends Controller
 {
     /**
-     * モンスター一覧を取得
+     * モンスター作成
      */
-    public function index()
-    {
-        try {
-            $monsters = [
-                [
-                    'id' => 1,
-                    'name' => '忘れ物モンスター',
-                    'type' => 'forget',
-                    'level' => 3,
-                    'affection' => 80,
-                    'evolved' => false,
-                    'image_url' => '/monsters/forget/monster-1.jpg'
-                ],
-                [
-                    'id' => 2,
-                    'name' => '記憶モンスター',
-                    'type' => 'memory',
-                    'level' => 2,
-                    'affection' => 65,
-                    'evolved' => false,
-                    'image_url' => '/monsters/memory/monster-2.jpg'
-                ]
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => $monsters,
-                'message' => 'モンスター一覧を取得しました'
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'モンスター一覧の取得に失敗しました'
-            ], 500);
-        }
-    }
-
-    /**
-     * モンスター詳細を取得
-     */
-    public function show($id)
-    {
-        try {
-            $monster = [
-                'id' => (int)$id,
-                'name' => '忘れ物モンスター',
-                'type' => 'forget',
-                'level' => 3,
-                'affection' => 80,
-                'evolved' => false,
-                'image_url' => '/monsters/forget/monster-1.jpg',
-                'description' => 'このモンスターは忘れ物から生まれました',
-                'created_at' => now()->subDays(10),
-                'updated_at' => now()
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => $monster,
-                'message' => 'モンスター詳細を取得しました'
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'モンスター詳細の取得に失敗しました'
-            ], 500);
-        }
-    }
-
-    /**
-     * モンスターを作成
-     */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'type' => 'required|string|max:255',
-                'level' => 'sometimes|integer|min:1|max:100',
-                'affection' => 'sometimes|integer|min:0|max:100'
+                'category' => 'required|string|max:255',
+                'forgotten_item' => 'required|string|max:255',
+                'difficulty' => 'required|integer|min:1|max:5',
+                'situation' => 'required|array',
+                'situation.*' => 'string|max:255',
+                'location' => 'nullable|string|max:255',
             ]);
 
-            $monster = array_merge($validated, [
-                'id' => rand(1000, 9999),
-                'level' => $validated['level'] ?? 1,
-                'affection' => $validated['affection'] ?? 0,
-                'evolved' => false,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
+
+            $monster = Fairy::create(array_merge($validated, [
+                'user_id' => $user->id,
+                'feed_count' => 0,
+                'level' => 1,
+            ]));
 
             return response()->json([
                 'success' => true,
                 'data' => $monster,
                 'message' => 'モンスターを作成しました'
             ], 201);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'バリデーションエラー',
-                'errors' => $e->errors()
-            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'モンスターの作成に失敗しました'
+                'message' => 'モンスターの作成に失敗しました: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * モンスターを更新
+     * ユーザーが所有するモンスター一覧取得
      */
-    public function update(Request $request, $id)
+    public function getUserMonsters(): JsonResponse
     {
         try {
-            $validated = $request->validate([
-                'name' => 'sometimes|string|max:255',
-                'type' => 'sometimes|string|max:255',
-                'level' => 'sometimes|integer|min:1|max:100',
-                'affection' => 'sometimes|integer|min:0|max:100'
-            ]);
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
 
-            $monster = array_merge(['id' => (int)$id], $validated, [
-                'updated_at' => now()
+            $monsters = Fairy::where('user_id', $user->id)
+                ->orderBy('updated_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $monsters,
+                'message' => 'ユーザーのモンスター一覧を取得しました'
             ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'モンスター一覧の取得に失敗しました: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * モンスターに餌やり
+     */
+    public function feed(int $id): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
+
+            $monster = Fairy::where('id', $id)
+                ->where('user_id', $user->id)
+                ->firstOrFail();
+
+            $monster->feed();
 
             return response()->json([
                 'success' => true,
                 'data' => $monster,
-                'message' => 'モンスターを更新しました'
-            ], 200);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'バリデーションエラー',
-                'errors' => $e->errors()
-            ], 422);
+                'message' => 'モンスターに餌を与えました'
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'モンスターの更新に失敗しました'
+                'message' => '餌やりに失敗しました: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * モンスターを削除
+     * モンスターレベルアップ
      */
-    public function destroy($id)
+    public function levelUp(int $id): JsonResponse
     {
         try {
-            return response()->json([
-                'success' => true,
-                'message' => "ID: {$id} のモンスターを削除しました"
-            ], 200);
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'モンスターの削除に失敗しました'
-            ], 500);
-        }
-    }
+            $monster = Fairy::where('id', $id)
+                ->where('user_id', $user->id)
+                ->firstOrFail();
 
-    /**
-     * モンスターのレベルアップ
-     */
-    public function levelUp($id)
-    {
-        try {
-            $monster = [
-                'id' => (int)$id,
-                'name' => '忘れ物モンスター',
-                'level' => 4, // レベルアップ後
-                'affection' => 85,
-                'updated_at' => now()
-            ];
+            $monster->levelUp();
 
             return response()->json([
                 'success' => true,
                 'data' => $monster,
                 'message' => 'モンスターがレベルアップしました！'
-            ], 200);
-
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'レベルアップに失敗しました'
-            ], 500);
-        }
-    }
-
-    /**
-     * モンスターの好感度アップ
-     */
-    public function affectionUp($id)
-    {
-        try {
-            $monster = [
-                'id' => (int)$id,
-                'name' => '忘れ物モンスター',
-                'level' => 3,
-                'affection' => 90, // 好感度アップ後
-                'updated_at' => now()
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => $monster,
-                'message' => 'モンスターの好感度が上がりました！'
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => '好感度アップに失敗しました'
-            ], 500);
-        }
-    }
-
-    /**
-     * モンスターの進化
-     */
-    public function evolve($id)
-    {
-        try {
-            $monster = [
-                'id' => (int)$id,
-                'name' => '進化した忘れ物モンスター',
-                'level' => 5,
-                'affection' => 100,
-                'evolved' => true, // 進化済み
-                'updated_at' => now()
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => $monster,
-                'message' => 'モンスターが進化しました！'
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => '進化に失敗しました'
+                'message' => 'レベルアップに失敗しました: ' . $e->getMessage()
             ], 500);
         }
     }
