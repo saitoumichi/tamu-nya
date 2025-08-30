@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Plus, Target, Clock, CheckCircle, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/api/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 // 忘れ物一覧を取得
 // const fetchForgottenItems = async () => {
@@ -43,6 +44,7 @@ interface ForgottenItem {
 }
 
 export default function HomePage() {
+  const { user, loading: authLoading } = useAuth();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [recentItems, setRecentItems] = useState<ForgottenItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +76,11 @@ export default function HomePage() {
   // 最近の忘れ物をAPIから取得
   useEffect(() => {
     const fetchRecentItems = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const result = await apiClient.getForgottenItems();
@@ -92,8 +99,10 @@ export default function HomePage() {
       }
     };
 
-    fetchRecentItems();
-  }, []);
+    if (!authLoading) {
+      fetchRecentItems();
+    }
+  }, [user, authLoading]);
 
   // ローカルストレージからミッションを読み込み
   useEffect(() => {
@@ -192,6 +201,50 @@ export default function HomePage() {
     setEditingMission(null);
     setShowAddMission(false);
   };
+
+  // 認証ローディング中
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // 未認証の場合
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="text-center py-12">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                忘れ物図鑑へようこそ！
+              </h2>
+              <p className="text-gray-600 mb-6">
+                忘れ物を記録してモンスターを育てましょう。<br />
+                まずはアカウントを作成してください。
+              </p>
+              <div className="flex justify-center gap-4">
+                <Link href="/register">
+                  <Button size="lg">
+                    新規登録
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button variant="outline" size="lg">
+                    ログイン
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

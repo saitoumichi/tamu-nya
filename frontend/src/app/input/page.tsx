@@ -9,6 +9,8 @@ import { Modal } from '@/components/ui/modal';
 import { Plus, Save, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { apiClient } from '@/api/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 // 追加ユーティリティ（ファイル内の上部に追記）
 const readFeedInventory = () => parseInt(localStorage.getItem('feedInventory') || '0');
@@ -20,6 +22,7 @@ const todayStr = () => {
 };
 
 export default function InputPage() {
+  const { user, token } = useAuth();
   const [formData, setFormData] = useState({
     category: '',
     title: '',
@@ -168,9 +171,37 @@ export default function InputPage() {
     return Array.from(monsterMap.values());
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // APIに忘れ物を送信する関数
+  const saveToAPI = async (itemData: {
+    category: string;
+    title: string;
+    forgotten_item: string;
+    details?: string;
+    difficulty: number;
+    situation?: string[];
+    location?: string;
+    datetime: string;
+  }) => {
+    try {
+      const result = await apiClient.createForgottenItem(itemData);
+      console.log('API保存成功:', result);
+      return result;
+    } catch (error) {
+      console.error('API保存エラー:', error);
+      throw error;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('handleSubmit called');
+    
+    // 認証チェック
+    if (!user || !token) {
+      alert('ログインが必要です。ログインページに移動します。');
+      window.location.href = '/login';
+      return;
+    }
     
     // 関数冒頭で const isClaim = !hasClaimedFeedToday; を定義
     const isClaim = !hasClaimedFeedToday;
@@ -269,6 +300,30 @@ export default function InputPage() {
           const selectedCategory = categories.find(cat => cat.id === formData.category);
           console.log('選択された忘れ物:', selectedThing);
           console.log('選択されたカテゴリ:', selectedCategory);
+          
+          // APIに送信するデータ
+          const apiData = {
+            category: formData.category,
+            title: formData.title || selectedThing?.name || '忘れ物',
+            forgotten_item: selectedThing?.name || '忘れ物',
+            details: `困った度: ${formData.difficulty}/5`,
+            difficulty: formData.difficulty,
+            situation: formData.situation.map(id => 
+              situations.find(s => s.id === id)?.name || id
+            ),
+            location: '',
+            datetime: new Date().toISOString()
+          };
+
+          try {
+            // APIに保存
+            await saveToAPI(apiData);
+            console.log('APIに保存成功');
+          } catch (error) {
+            console.error('APIへの保存に失敗:', error);
+            alert('データの保存に失敗しました。ネットワークを確認してください。');
+            return;
+          }
           
           // LocalStorageに保存（図鑑で読み込むため）
           const thingsRecord = {

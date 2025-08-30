@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Save, Trash2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { apiClient } from '@/api/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CategoryCard {
   id: string;
@@ -13,42 +15,99 @@ interface CategoryCard {
   emoji: string;
   description?: string;
   type: 'category';
+  serverId?: number;
 }
 
 export default function CategoryCreatePage() {
+  const { user } = useAuth();
   const [categories, setCategories] = useState<CategoryCard[]>([]);
   const [editingCard, setEditingCard] = useState<CategoryCard | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // LocalStorageからデータを読み込み
+  // データを読み込み（認証時はAPI、未認証はLocalStorage）
   useEffect(() => {
-    const saved = localStorage.getItem('customCards');
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        if (data.categories) {
-          setCategories(data.categories);
+    const load = async () => {
+      if (user) {
+        try {
+          const res = await apiClient.getCustomCards();
+          if (res?.success && res?.data?.categories) {
+            const mapped: CategoryCard[] = res.data.categories.map((c: any) => ({
+              id: c.card_id,
+              name: c.name,
+              emoji: c.emoji,
+              description: c.description || undefined,
+              type: 'category',
+              serverId: c.id,
+            }));
+            setCategories(mapped);
+            // キャッシュ
+            saveToLocalStorage(mapped);
+            return;
+          }
+        } catch (e) {
+          console.error('カテゴリのAPI取得に失敗:', e);
         }
-      } catch (error) {
-        console.error('データの読み込みに失敗しました:', error);
       }
-    }
-  }, []);
+      // Fallback: LocalStorage
+      const saved = localStorage.getItem('customCards');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.categories) {
+            setCategories(data.categories);
+          }
+        } catch (error) {
+          console.error('データの読み込みに失敗しました:', error);
+        }
+      }
+    };
+    load();
+  }, [user]);
 
   // カードを追加
-  const handleAddCard = (cardData: Omit<CategoryCard, 'id'>) => {
+  const handleAddCard = async (cardData: Omit<CategoryCard, 'id'>) => {
+    // 一意な card_id を生成（名前ベース + タイムスタンプ）
+    const cardId = `${cardData.name}-${Date.now()}`;
+
+    if (user) {
+      try {
+        const res = await apiClient.createCustomCard({
+          type: 'category',
+          name: cardData.name,
+          emoji: cardData.emoji,
+          card_id: cardId,
+          description: cardData.description,
+        });
+        if (res?.success && res?.data) {
+          const newCard: CategoryCard = {
+            id: res.data.card_id,
+            name: res.data.name,
+            emoji: res.data.emoji,
+            description: res.data.description || undefined,
+            type: 'category',
+            serverId: res.data.id,
+          };
+          const updated = [...categories, newCard];
+          setCategories(updated);
+          saveToLocalStorage(updated);
+          setShowAddForm(false);
+          setEditingCard(null);
+          return;
+        }
+      } catch (e) {
+        console.error('カテゴリのAPI作成に失敗:', e);
+      }
+    }
+
+    // 未認証/失敗時はLocalStorageに保存
     const newCard: CategoryCard = {
       ...cardData,
-      id: Date.now().toString(),
-      type: 'category'
+      id: cardId,
+      type: 'category',
     };
-
     const updatedCategories = [...categories, newCard];
     setCategories(updatedCategories);
-    
-    // LocalStorageに保存
     saveToLocalStorage(updatedCategories);
-    
     setShowAddForm(false);
     setEditingCard(null);
   };
@@ -60,34 +119,74 @@ export default function CategoryCreatePage() {
   };
 
   // カードを削除
-  const handleDeleteCard = (card: CategoryCard) => {
-    if (confirm(`「${card.name}」を削除しますか？`)) {
-      const updatedCategories = categories.filter(c => c.id !== card.id);
-      setCategories(updatedCategories);
-      
-      // LocalStorageに保存
-      saveToLocalStorage(updatedCategories);
+  const handleDeleteCard = async (card: CategoryCard) => {
+    if (!confirm(`「${card.name}」を削除しますか？`)) return;
+    // 楽観的更新
+    const prev = categories;
+    const updatedCategories = categories.filter(c => c.id !== card.id);
+    setCategories(updatedCategories);
+    saveToLocalStorage(updatedCategories);
+
+    if (user && card.serverId) {
+      try {
+        const res = await apiClient.deleteCustomCard(card.serverId);
+        if (!res?.success) {
+          throw new Error('削除失敗');
+        }
+      } catch (e) {
+        console.error('カテゴリのAPI削除に失敗:', e);
+        // ロールバック
+        setCategories(prev);
+        saveToLocalStorage(prev);
+        alert('サーバー削除に失敗しました');
+      }
     }
   };
 
   // カードを更新
-  const handleUpdateCard = (cardData: Omit<CategoryCard, 'id'>) => {
+  const handleUpdateCard = async (cardData: Omit<CategoryCard, 'id'>) => {
     if (!editingCard) return;
-    
+
+    if (user && editingCard.serverId) {
+      try {
+        const res = await apiClient.updateCustomCard(editingCard.serverId, {
+          name: cardData.name,
+          emoji: cardData.emoji,
+          description: cardData.description,
+        });
+        if (res?.success && res?.data) {
+          const updatedCard: CategoryCard = {
+            id: res.data.card_id,
+            name: res.data.name,
+            emoji: res.data.emoji,
+            description: res.data.description || undefined,
+            type: 'category',
+            serverId: res.data.id,
+          };
+          const updatedCategories = categories.map(c => c.id === editingCard.id ? updatedCard : c);
+          setCategories(updatedCategories);
+          saveToLocalStorage(updatedCategories);
+          setShowAddForm(false);
+          setEditingCard(null);
+          return;
+        }
+      } catch (e) {
+        console.error('カテゴリのAPI更新に失敗:', e);
+      }
+    }
+
+    // 未認証/失敗時はLocalStorage更新
     const updatedCard: CategoryCard = {
       ...cardData,
       id: editingCard.id,
-      type: 'category'
+      type: 'category',
+      serverId: editingCard.serverId,
     };
-
     const updatedCategories = categories.map(c => 
       c.id === updatedCard.id ? updatedCard : c
     );
     setCategories(updatedCategories);
-    
-    // LocalStorageに保存
     saveToLocalStorage(updatedCategories);
-    
     setShowAddForm(false);
     setEditingCard(null);
   };
@@ -99,7 +198,7 @@ export default function CategoryCreatePage() {
     
     const updatedData = {
       ...data,
-      categories: updatedCategories,
+      categories: updatedCategories.map((c: CategoryCard) => ({ id: c.id, name: c.name, emoji: c.emoji, description: c.description, type: 'category' })),
       lastUpdated: new Date().toISOString()
     };
     

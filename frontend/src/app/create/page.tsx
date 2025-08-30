@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiClient } from '@/api/client';
 
 interface CardData {
   id: string;
@@ -31,19 +33,31 @@ interface SituationCard extends CardData {
 type CardType = CategoryCard | ThingCard | SituationCard;
 
 export default function CreatePage() {
+  const { user } = useAuth();
   const [categories, setCategories] = useState<CategoryCard[]>([]);
   const [things, setThings] = useState<ThingCard[]>([]);
   const [situations, setSituations] = useState<SituationCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // LocalStorageからデータを読み込み
+  // 初期データロード
   useEffect(() => {
-    loadFromLocalStorage();
-  }, []);
+    if (user) {
+      loadData();
+    } else {
+      setDefaultData();
+      setLoading(false);
+    }
+  }, [user]);
 
   // データ更新イベントを監視
   useEffect(() => {
     const handleCustomCardsChanged = () => {
-      loadFromLocalStorage();
+      if (user) {
+        loadData();
+      } else {
+        loadFromLocalStorage();
+      }
     };
 
     window.addEventListener('customCardsChanged', handleCustomCardsChanged);
@@ -53,7 +67,106 @@ export default function CreatePage() {
       window.removeEventListener('customCardsChanged', handleCustomCardsChanged);
       window.removeEventListener('storage', handleCustomCardsChanged);
     };
-  }, []);
+  }, [user]);
+
+  // APIとLocalStorageからデータを読み込み
+  const loadData = async () => {
+    if (!user) {
+      loadFromLocalStorage();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // APIからカスタムカードを取得
+      const response = await apiClient.getCustomCards();
+      
+      if (response.success) {
+        const apiData = response.data;
+        
+        // デフォルトデータ
+        const defaultCategories = [
+          { id: 'forget_things', name: '物忘れ', emoji: '🔍', type: 'category' as const },
+          { id: 'forget_schedule', name: '予定忘れ', emoji: '📅', type: 'category' as const },
+          { id: 'oversleep_late', name: '寝坊・遅刻', emoji: '⏰', type: 'category' as const },
+          { id: 'another', name: 'その他', emoji: '😊', type: 'category' as const },
+        ];
+        
+        const defaultThings = [
+          { id: 'key', name: '鍵', emoji: '🔑', type: 'thing' as const, categoryId: 'forget_things' },
+          { id: 'medicine', name: '薬', emoji: '💊', type: 'thing' as const, categoryId: 'forget_things' },
+          { id: 'umbrella', name: '傘', emoji: '☔', type: 'thing' as const, categoryId: 'forget_things' },
+          { id: 'wallet', name: '財布', emoji: '👛', type: 'thing' as const, categoryId: 'forget_things' },
+          { id: 'smartphone', name: 'スマホ', emoji: '📱', type: 'thing' as const, categoryId: 'forget_things' },
+          { id: 'schedule', name: '予定', emoji: '📅', type: 'thing' as const, categoryId: 'forget_schedule' },
+          { id: 'time', name: '遅刻', emoji: '⏰', type: 'thing' as const, categoryId: 'oversleep_late' },
+          { id: 'homework', name: '宿題', emoji: '📄', type: 'thing' as const, categoryId: 'forget_things' },
+          { id: 'another', name: 'その他', emoji: '😊', type: 'thing' as const, categoryId: 'another' },
+        ];
+        
+        const defaultSituations = [
+          { id: 'morning', name: '朝', emoji: '🌅', type: 'situation' as const },
+          { id: 'home', name: '家', emoji: '🏠', type: 'situation' as const },
+          { id: 'before_going_out', name: '外出前', emoji: '🚪', type: 'situation' as const },
+          { id: 'in_a_hurry', name: '急いでた', emoji: '⏰', type: 'situation' as const },
+          { id: 'rain', name: '雨', emoji: '🌧️', type: 'situation' as const },
+          { id: 'work', name: '仕事', emoji: '💼', type: 'situation' as const },
+          { id: 'school', name: '学校', emoji: '🎒', type: 'situation' as const },
+          { id: 'another', name: 'その他', emoji: '😊', type: 'situation' as const },
+        ];
+
+        // APIデータをフォーマット変換
+        const customCategories = apiData.categories?.map((item: any) => ({
+          id: item.card_id,
+          name: item.name,
+          emoji: item.emoji,
+          type: 'category' as const,
+          description: item.description
+        })) || [];
+
+        const customThings = apiData.things?.map((item: any) => ({
+          id: item.card_id,
+          name: item.name,
+          emoji: item.emoji,
+          type: 'thing' as const,
+          categoryId: item.category_id,
+          description: item.description
+        })) || [];
+
+        const customSituations = apiData.situations?.map((item: any) => ({
+          id: item.card_id,
+          name: item.name,
+          emoji: item.emoji,
+          type: 'situation' as const,
+          description: item.description
+        })) || [];
+
+        // デフォルトとカスタムを統合
+        setCategories([...defaultCategories, ...customCategories]);
+        setThings([...defaultThings, ...customThings]);
+        setSituations([...defaultSituations, ...customSituations]);
+
+        // LocalStorageにも保存（フォールバック用）
+        const localData = {
+          categories: customCategories,
+          things: customThings,
+          situations: customSituations
+        };
+        localStorage.setItem('customCards', JSON.stringify(localData));
+      } else {
+        console.error('カスタムカードの取得に失敗:', response.message);
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error('カスタムカード取得エラー:', error);
+      setError('カスタムカードの取得に失敗しました');
+      loadFromLocalStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // LocalStorageからデータを読み込み
   const loadFromLocalStorage = () => {
@@ -157,6 +270,72 @@ export default function CreatePage() {
 
 
 
+
+  // ローディング中
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="text-center py-12">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                読み込み中...
+              </h2>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // エラー表示
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="text-center py-12">
+              <h2 className="text-2xl font-bold text-red-600 mb-4">
+                エラーが発生しました
+              </h2>
+              <p className="text-gray-600 mb-6">{error}</p>
+              <Button onClick={() => window.location.reload()}>
+                再読み込み
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // 未認証の場合
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="text-center py-12">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                カード作成機能を使うにはログインが必要です
+              </h2>
+              <p className="text-gray-600 mb-6">
+                カスタムカードを作成して忘れ物記録をカスタマイズしましょう。
+              </p>
+              <div className="flex justify-center gap-4">
+                <Link href="/login">
+                  <Button>ログイン</Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="outline">新規登録</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

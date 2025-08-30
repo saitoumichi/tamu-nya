@@ -17,13 +17,39 @@ interface UserData {
   password_confirmation: string;
 }
 
+interface CustomCard {
+  id?: number;
+  type: 'category' | 'thing' | 'situation';
+  name: string;
+  emoji: string;
+  card_id: string;
+  category_id?: string;
+  description?: string;
+}
+
 // APIクライアント
 class ApiClient {
   private baseURL = 'http://localhost:8000/api';
 
+  // 認証ヘッダーを取得
+  private getAuthHeaders(): HeadersInit {
+    const token = localStorage.getItem('auth_token');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return headers;
+  }
+
   // 忘れ物一覧の取得
   async getForgottenItems() {
-    const response = await fetch(`${this.baseURL}/forgotten-items`);
+    const response = await fetch(`${this.baseURL}/forgotten-items`, {
+      headers: this.getAuthHeaders(),
+    });
     return response.json();
   }
 
@@ -31,10 +57,65 @@ class ApiClient {
   async createForgottenItem(item: ForgottenItem) {
     const response = await fetch(`${this.baseURL}/forgotten-items`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getAuthHeaders(),
       body: JSON.stringify(item),
+    });
+    return response.json();
+  }
+
+  // 忘れ物の詳細取得
+  async getForgottenItem(id: number) {
+    const response = await fetch(`${this.baseURL}/forgotten-items/${id}`, {
+      headers: this.getAuthHeaders(),
+    });
+    return response.json();
+  }
+
+  // 忘れ物の更新
+  async updateForgottenItem(id: number, item: Partial<ForgottenItem>) {
+    const response = await fetch(`${this.baseURL}/forgotten-items/${id}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(item),
+    });
+    return response.json();
+  }
+
+  // 忘れ物の削除
+  async deleteForgottenItem(id: number) {
+    const response = await fetch(`${this.baseURL}/forgotten-items/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    return response.json();
+  }
+
+  // ユーザー別忘れ物取得
+  async getUserItems(userId: number) {
+    const response = await fetch(`${this.baseURL}/forgotten-items/user/${userId}`, {
+      headers: this.getAuthHeaders(),
+    });
+    return response.json();
+  }
+
+  // カテゴリ別忘れ物取得
+  async getCategoryItems(category: string) {
+    const response = await fetch(`${this.baseURL}/forgotten-items/category/${category}`, {
+      headers: this.getAuthHeaders(),
+    });
+    return response.json();
+  }
+
+  // 統計情報取得
+  async getStats() {
+    const response = await fetch(`${this.baseURL}/forgotten-items/stats`);
+    return response.json();
+  }
+
+  // ユーザープロフィール取得
+  async getProfile() {
+    const response = await fetch(`${this.baseURL}/users/profile`, {
+      headers: this.getAuthHeaders(),
     });
     return response.json();
   }
@@ -47,6 +128,64 @@ class ApiClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(userData),
+    });
+    return response.json();
+  }
+
+  // ログイン
+  async login(email: string, password: string) {
+    const response = await fetch(`${this.baseURL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+    return response.json();
+  }
+
+  // ログアウト
+  async logout() {
+    const response = await fetch(`${this.baseURL}/auth/logout`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+    });
+    return response.json();
+  }
+
+  // カスタムカード一覧取得
+  async getCustomCards() {
+    const response = await fetch(`${this.baseURL}/custom-cards`, {
+      headers: this.getAuthHeaders(),
+    });
+    return response.json();
+  }
+
+  // カスタムカード作成
+  async createCustomCard(card: Omit<CustomCard, 'id'>) {
+    const response = await fetch(`${this.baseURL}/custom-cards`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(card),
+    });
+    return response.json();
+  }
+
+  // カスタムカード更新
+  async updateCustomCard(id: number, card: Partial<CustomCard>) {
+    const response = await fetch(`${this.baseURL}/custom-cards/${id}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(card),
+    });
+    return response.json();
+  }
+
+  // カスタムカード削除
+  async deleteCustomCard(id: number) {
+    const response = await fetch(`${this.baseURL}/custom-cards/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
     });
     return response.json();
   }

@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { apiClient } from '@/api/client';
+import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 
 // 絵文字フォールバック用マップ
 const THING_EMOJI_MAP: { [key: string]: string } = {
@@ -19,6 +22,7 @@ const THING_EMOJI_MAP: { [key: string]: string } = {
 };
 
 export default function FeedPage() {
+  const { user, token, loading: authLoading } = useAuth();
   const [feedInventory, setFeedInventory] = useState(0);
   const [monsterFeed, setMonsterFeed] = useState<{ [thingId: string]: { fed: number } }>({});
   const [monsters, setMonsters] = useState<Array<{
@@ -35,6 +39,30 @@ export default function FeedPage() {
     stage: number;
     fedCount: number;
   } | null>(null);
+  const [apiData, setApiData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasClaimedToday, setHasClaimedToday] = useState<boolean | null>(null);
+
+  // APIからデータを取得
+  const fetchAPIData = async () => {
+    if (!user || !token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const result = await apiClient.getForgottenItems();
+      if (result.success && result.data) {
+        setApiData(result.data);
+        console.log('フィード画面API取得データ:', result.data);
+      }
+    } catch (error) {
+      console.error('フィード画面API取得エラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ユーティリティ関数
   const readFeedInventory = (): number => {
@@ -57,8 +85,18 @@ export default function FeedPage() {
     const existingRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
     const forgetRecords = existingRecords.filter((record: any) => record.didForget === true);
     
+    // APIデータをthingsRecords形式に変換
+    const apiRecords = apiData.map((item: any, index: number) => ({
+      thingId: `api_${item.forgotten_item?.toLowerCase().replace(/\s+/g, '_') || 'item'}`,
+      thingType: item.forgotten_item || item.title || '忘れ物',
+      didForget: true
+    }));
+
+    // LocalStorageとAPIデータを統合
+    const allRecords = [...forgetRecords, ...apiRecords];
+    
     const monsterMap = new Map();
-    forgetRecords.forEach((record: any) => {
+    allRecords.forEach((record: any) => {
       if (record.thingId && record.thingId !== 'none') {
         if (!monsterMap.has(record.thingId)) {
           monsterMap.set(record.thingId, {
@@ -72,6 +110,7 @@ export default function FeedPage() {
       }
     });
     
+    console.log('フィード画面生成モンスター:', Array.from(monsterMap.values()));
     return Array.from(monsterMap.values());
   };
 
@@ -140,12 +179,22 @@ export default function FeedPage() {
      }
   };
 
+  // APIデータを取得
+  useEffect(() => {
+    fetchAPIData();
+  }, [user, token]);
+
+  // APIデータが取得されたら初期化
+  useEffect(() => {
+    if (!loading) {
+      refreshInventory();
+      refreshMonsterFeed();
+      refreshMonsters();
+    }
+  }, [apiData, loading]);
+
   // 初期化とイベント購読
   useEffect(() => {
-    refreshInventory();
-    refreshMonsterFeed();
-    refreshMonsters();
-    
     // 画面サイズを設定
     const updateScreenWidth = () => {
       setScreenWidth(window.innerWidth);
@@ -180,6 +229,63 @@ export default function FeedPage() {
       window.removeEventListener('feed:claimed', handleFeedClaimed);
     };
   }, []);
+
+  // 今日の受け取り状態（クライアントでのみ算出）
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = typeof window !== 'undefined' ? localStorage.getItem('dailyFeedClaimedAt') : null;
+    setHasClaimedToday(last === today);
+  }, []);
+
+  // 認証ローディング中は安定したプレースホルダを表示
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // 未認証の場合
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="text-center py-12">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                モンスターのお世話をするにはログインが必要です
+              </h2>
+              <p className="text-gray-600 mb-6">
+                忘れ物モンスターにえさをあげて育てましょう。
+              </p>
+              <div className="flex justify-center gap-4">
+                <Link href="/login">
+                  <Button>ログイン</Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="secondary">新規登録</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // ローディング中
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -218,12 +324,7 @@ export default function FeedPage() {
             <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
               <div className="text-xs text-blue-800 text-center">
                 <span className="font-medium">📅 今日のえさ: </span>
-                {(() => {
-                  const today = new Date().toISOString().slice(0, 10);
-                  const lastClaimedDate = localStorage.getItem('dailyFeedClaimedAt');
-                  const hasClaimedToday = lastClaimedDate === today;
-                  return hasClaimedToday ? '✅ 受取済み' : '⏳ 未受取';
-                })()}
+                {hasClaimedToday === null ? '...' : (hasClaimedToday ? '✅ 受取済み' : '⏳ 未受取')}
               </div>
             </div>
           </div>

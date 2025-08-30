@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Save, Trash2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { apiClient } from '@/api/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SituationCard {
   id: string;
@@ -13,42 +15,91 @@ interface SituationCard {
   emoji: string;
   description?: string;
   type: 'situation';
+  serverId?: number;
 }
 
 export default function SituationCreatePage() {
+  const { user } = useAuth();
   const [situations, setSituations] = useState<SituationCard[]>([]);
   const [editingCard, setEditingCard] = useState<SituationCard | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // LocalStorageからデータを読み込み
+  // データを読み込み（認証時はAPI、未認証はLocalStorage）
   useEffect(() => {
-    const saved = localStorage.getItem('customCards');
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        if (data.situations) {
-          setSituations(data.situations);
+    const load = async () => {
+      if (user) {
+        try {
+          const res = await apiClient.getCustomCards();
+          if (res?.success && res?.data?.situations) {
+            const mapped: SituationCard[] = res.data.situations.map((s: any) => ({
+              id: s.card_id,
+              name: s.name,
+              emoji: s.emoji,
+              description: s.description || undefined,
+              type: 'situation',
+              serverId: s.id,
+            }));
+            setSituations(mapped);
+            saveToLocalStorage(mapped);
+            return;
+          }
+        } catch (e) {
+          console.error('状況のAPI取得に失敗:', e);
         }
-      } catch (error) {
-        console.error('データの読み込みに失敗しました:', error);
       }
-    }
-  }, []);
+      const saved = localStorage.getItem('customCards');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.situations) setSituations(data.situations);
+        } catch (error) {
+          console.error('データの読み込みに失敗しました:', error);
+        }
+      }
+    };
+    load();
+  }, [user]);
 
   // カードを追加
-  const handleAddCard = (cardData: Omit<SituationCard, 'id'>) => {
+  const handleAddCard = async (cardData: Omit<SituationCard, 'id'>) => {
+    const cardId = `${cardData.name}-${Date.now()}`;
+    if (user) {
+      try {
+        const res = await apiClient.createCustomCard({
+          type: 'situation',
+          name: cardData.name,
+          emoji: cardData.emoji,
+          card_id: cardId,
+          description: cardData.description,
+        });
+        if (res?.success && res?.data) {
+          const newCard: SituationCard = {
+            id: res.data.card_id,
+            name: res.data.name,
+            emoji: res.data.emoji,
+            description: res.data.description || undefined,
+            type: 'situation',
+            serverId: res.data.id,
+          };
+          const updated = [...situations, newCard];
+          setSituations(updated);
+          saveToLocalStorage(updated);
+          setShowAddForm(false);
+          setEditingCard(null);
+          return;
+        }
+      } catch (e) {
+        console.error('状況のAPI作成に失敗:', e);
+      }
+    }
     const newCard: SituationCard = {
       ...cardData,
-      id: Date.now().toString(),
-      type: 'situation'
+      id: cardId,
+      type: 'situation',
     };
-
     const updatedSituations = [...situations, newCard];
     setSituations(updatedSituations);
-    
-    // LocalStorageに保存
     saveToLocalStorage(updatedSituations);
-    
     setShowAddForm(false);
     setEditingCard(null);
   };
@@ -60,34 +111,64 @@ export default function SituationCreatePage() {
   };
 
   // カードを削除
-  const handleDeleteCard = (card: SituationCard) => {
-    if (confirm(`「${card.name}」を削除しますか？`)) {
-      const updatedSituations = situations.filter(s => s.id !== card.id);
-      setSituations(updatedSituations);
-      
-      // LocalStorageに保存
-      saveToLocalStorage(updatedSituations);
+  const handleDeleteCard = async (card: SituationCard) => {
+    if (!confirm(`「${card.name}」を削除しますか？`)) return;
+    const prev = situations;
+    const updatedSituations = situations.filter(s => s.id !== card.id);
+    setSituations(updatedSituations);
+    saveToLocalStorage(updatedSituations);
+    if (user && card.serverId) {
+      try {
+        const res = await apiClient.deleteCustomCard(card.serverId);
+        if (!res?.success) throw new Error('削除失敗');
+      } catch (e) {
+        console.error('状況のAPI削除に失敗:', e);
+        setSituations(prev);
+        saveToLocalStorage(prev);
+        alert('サーバー削除に失敗しました');
+      }
     }
   };
 
   // カードを更新
-  const handleUpdateCard = (cardData: Omit<SituationCard, 'id'>) => {
+  const handleUpdateCard = async (cardData: Omit<SituationCard, 'id'>) => {
     if (!editingCard) return;
-    
+    if (user && editingCard.serverId) {
+      try {
+        const res = await apiClient.updateCustomCard(editingCard.serverId, {
+          name: cardData.name,
+          emoji: cardData.emoji,
+          description: cardData.description,
+        });
+        if (res?.success && res?.data) {
+          const updatedCard: SituationCard = {
+            id: res.data.card_id,
+            name: res.data.name,
+            emoji: res.data.emoji,
+            description: res.data.description || undefined,
+            type: 'situation',
+            serverId: res.data.id,
+          };
+          const updatedSituations = situations.map(s => s.id === editingCard.id ? updatedCard : s);
+          setSituations(updatedSituations);
+          saveToLocalStorage(updatedSituations);
+          setShowAddForm(false);
+          setEditingCard(null);
+          return;
+        }
+      } catch (e) {
+        console.error('状況のAPI更新に失敗:', e);
+      }
+    }
     const updatedCard: SituationCard = {
       ...cardData,
       id: editingCard.id,
-      type: 'situation'
+      type: 'situation',
+      serverId: editingCard.serverId,
     };
-
-    const updatedSituations = situations.map(s => 
-      s.id === updatedCard.id ? updatedCard : s
-    );
+    const updatedSituations = situations.map(s => s.id === updatedCard.id ? updatedCard : s);
     setSituations(updatedSituations);
-    
-    // LocalStorageに保存
     saveToLocalStorage(updatedSituations);
-    
     setShowAddForm(false);
     setEditingCard(null);
   };
@@ -99,7 +180,7 @@ export default function SituationCreatePage() {
     
     const updatedData = {
       ...data,
-      situations: updatedSituations,
+      situations: updatedSituations.map((s: SituationCard) => ({ id: s.id, name: s.name, emoji: s.emoji, description: s.description, type: 'situation' })),
       lastUpdated: new Date().toISOString()
     };
     
