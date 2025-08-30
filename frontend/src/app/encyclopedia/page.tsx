@@ -326,6 +326,7 @@ export default function EncyclopediaPage() {
       return {
         id: 1000 + index,
         name: displayName,
+
         category: categoryId, // カテゴリIDを使用
         categoryName: categoryName,
         categoryEmoji: categoryEmoji,
