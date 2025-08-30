@@ -7,6 +7,20 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Plus, Target, Clock, CheckCircle, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { apiClient } from '@/api/client';
+
+// 忘れ物一覧を取得
+// const fetchForgottenItems = async () => {
+//   try {
+//     const result = await apiClient.getForgottenItems();
+//     if (result.success) {
+//       // データを表示
+//       console.log(result.data);
+//     }
+//   } catch (error) {
+//     console.error('エラー:', error);
+//   }
+// };
 
 interface Mission {
   id: number;
@@ -23,6 +37,9 @@ interface ForgottenItem {
   datetime: string;
   category: string;
   details?: string;
+  difficulty?: number; // 困った度 (1-5)
+  situation?: string[]; // 状況
+  location?: string; // 場所
 }
 
 export default function HomePage() {
@@ -59,18 +76,14 @@ export default function HomePage() {
     const fetchRecentItems = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/forgotten-items');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            // 最新の5件を取得し、日時でソート
-            const sortedItems = data.data
-              .sort((a: ForgottenItem, b: ForgottenItem) => 
-                new Date(b.datetime).getTime() - new Date(a.datetime).getTime()
-              )
-              .slice(0, 5);
-            setRecentItems(sortedItems);
-          }
+        const result = await apiClient.getForgottenItems();
+        if (result.success && result.data) {
+          const sortedItems = result.data
+            .sort((a: ForgottenItem, b: ForgottenItem) => 
+              new Date(b.datetime).getTime() - new Date(a.datetime).getTime()
+            )
+            .slice(0, 5);
+          setRecentItems(sortedItems);
         }
       } catch (error) {
         console.error('忘れ物の取得に失敗しました:', error);
@@ -353,6 +366,38 @@ export default function HomePage() {
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">{item.title}</h4>
                       <p className="text-sm text-gray-500">{formatDateTime(item.datetime)}</p>
+                      {item.difficulty && (
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="text-xs text-gray-500">困った度:</span>
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map((level) => (
+                              <div
+                                key={level}
+                                className={`w-2 h-2 rounded-full ${
+                                  level <= item.difficulty! ? 'bg-red-500' : 'bg-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {item.situation && item.situation.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {item.situation.map((situation, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
+                            >
+                              {situation}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {item.location && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          📍 {item.location}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
