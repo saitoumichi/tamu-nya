@@ -10,6 +10,15 @@ import { Plus, Save, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
+// 追加ユーティリティ（ファイル内の上部に追記）
+const readFeedInventory = () => parseInt(localStorage.getItem('feedInventory') || '0');
+const writeFeedInventory = (n: number) => localStorage.setItem('feedInventory', String(Math.max(0, n)));
+const todayStr = () => {
+  const d = new Date();
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+};
+
 export default function InputPage() {
   const [formData, setFormData] = useState({
     category: '',
@@ -163,6 +172,9 @@ export default function InputPage() {
     e.preventDefault();
     console.log('handleSubmit called');
     
+    // 関数冒頭で const isClaim = !hasClaimedFeedToday; を定義
+    const isClaim = !hasClaimedFeedToday;
+    
     if (formData.didForget === false) {
       // 忘れていない場合の処理
       const thingsRecord = {
@@ -199,10 +211,7 @@ export default function InputPage() {
       console.log('忘れなかった記録が保存されました:', thingsRecord);
       console.log('モンスター情報:', { encounterCount, intimacyLevel, rank: 'C' });
       
-      // 今日の分のえさを受取済みとして記録
-      const today = new Date().toISOString().slice(0, 10);
-      localStorage.setItem('dailyFeedClaimedAt', today);
-      setHasClaimedFeedToday(true);
+      // 今日の分のえさを受取済みとして記録（削除 - 新しい処理で統一）
     } else {
       // 忘れた場合の処理
       if (forgetMode === 'existing') {
@@ -252,10 +261,7 @@ export default function InputPage() {
         console.log('既存モンスター記録が保存されました:', thingsRecord);
         console.log('モンスター情報:', { encounterCount, intimacyLevel, rank });
         
-        // 今日の分のえさを受取済みとして記録
-        const today = new Date().toISOString().slice(0, 10);
-        localStorage.setItem('dailyFeedClaimedAt', today);
-        setHasClaimedFeedToday(true);
+        // 今日の分のえさを受取済みとして記録（削除 - 新しい処理で統一）
       } else {
         // 新規モンスターモード（従来どおり）
         if (formData.forgottenItem) {
@@ -309,12 +315,20 @@ export default function InputPage() {
           console.log('図鑑用データが保存されました:', thingsRecord);
           console.log('モンスター情報:', { encounterCount, intimacyLevel, rank });
           
-          // 今日の分のえさを受取済みとして記録
-          const today = new Date().toISOString().slice(0, 10);
-          localStorage.setItem('dailyFeedClaimedAt', today);
-          setHasClaimedFeedToday(true);
+          // 今日の分のえさを受取済みとして記録（削除 - 新しい処理で統一）
         }
       }
+    }
+    
+    // えさの受け取り処理を追加
+    if (isClaim) {
+      const inv = readFeedInventory();
+      writeFeedInventory(inv + 5); // ★ ここでちょうど5個だけ加算
+      const today = todayStr();
+      localStorage.setItem('dailyFeedClaimedAt', today); // 当日受取済みフラグ
+      localStorage.setItem('feedDaily', JSON.stringify({ date: today, count: 1 })); // 任意の当日カウンタ
+      setHasClaimedFeedToday(true); // ボタン表示を「送信」に切り替え
+      window.dispatchEvent(new CustomEvent('feed:claimed')); // ホーム等が在庫を即時反映
     }
     
     // 成長リザルトモーダルを表示
