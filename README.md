@@ -181,6 +181,37 @@ sleep 30
 docker exec tamu-nya-backend-1 php artisan migrate
 ```
 
+### Internal Server Errorが発生する場合
+
+```bash
+# 1. 環境設定ファイルの確認
+ls backend/.env frontend/.env
+
+# 2. .envファイルが存在しない場合
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+
+# 3. アプリケーションキーの生成
+docker exec tamu-nya-backend-1 php artisan key:generate
+
+# 4. 依存関係の再インストール
+docker exec tamu-nya-backend-1 composer install --no-dev --optimize-autoloader
+docker exec tamu-nya-frontend-1 npm install
+
+# 5. キャッシュクリア
+docker exec tamu-nya-backend-1 php artisan cache:clear
+docker exec tamu-nya-backend-1 php artisan config:clear
+docker exec tamu-nya-backend-1 php artisan route:clear
+docker exec tamu-nya-backend-1 php artisan view:clear
+
+# 6. ファイル権限の修正
+docker exec tamu-nya-backend-1 chmod -R 775 storage bootstrap/cache
+docker exec tamu-nya-backend-1 chown -R www-data:www-data storage bootstrap/cache
+
+# 7. デバッグログの確認
+docker exec tamu-nya-backend-1 tail -f storage/logs/laravel.log
+```
+
 ### フロントエンドが表示されない場合
 
 ```bash
