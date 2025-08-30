@@ -36,88 +36,112 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
     imageUrl: string;
   } | null>(null);
 
-  // LocalStorageからthingsデータを読み込んでモンスター情報を生成
+  // LocalStorageからモンスターデータを読み込んでモンスター情報を生成
   React.useEffect(() => {
     try {
       console.log('モンスター詳細ページ - ID:', id);
       console.log('IDの型:', typeof id);
       console.log('IDの値:', id);
       
-      const thingsRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
-      console.log('LocalStorageから読み込まれたthingsRecords:', thingsRecords);
-      console.log('thingsRecordsの長さ:', thingsRecords.length);
+      // 図鑑画面で生成されたモンスターデータを取得
+      const encyclopediaMonsters = JSON.parse(localStorage.getItem('encyclopediaMonsters') || '[]');
+      console.log('図鑑画面のモンスターデータ:', encyclopediaMonsters);
       
       // 指定されたIDのモンスターを検索
-      const targetRecords = thingsRecords.filter((record: { thingId: string; thingType: string; createdAt: string }) => {
-        console.log('検索中のrecord:', record);
-        console.log('record.thingId:', record.thingId);
-        console.log('検索条件のID:', id);
-        console.log('一致するか:', record.thingId === id);
-        return record.thingId === id;
-      });
-      console.log('検索されたtargetRecords:', targetRecords);
-    
-    if (targetRecords.length > 0) {
-      // 正しい遭遇回数を計算（特定のthingIdの記録数）
-      const encounterCount = targetRecords.length;
-      const intimacyLevel = encounterCount;
+      let targetMonster = null;
       
-      // レア度を計算（図鑑と同じロジック、5段階評価）
-      let rank: Rarity = 'C';
-      if (encounterCount > 20) rank = 'SS';
-      if (encounterCount > 15) rank = 'S';
-      if (encounterCount > 10) rank = 'A';
-      if (encounterCount > 5) rank = 'B';
-      // 5回以下はCランク
-      
-      // デバッグ用ログ
-      console.log('レア度計算:', {
-        thingId: id,
-        encounterCount,
-        intimacyLevel,
-        calculatedRank: rank
-      });
-      
-      // 画像パスを生成
-      let imageUrl = '/monsters/wallet/wallet-monster.jpg'; // デフォルト（存在する画像）
-      if (id === 'key') {
-        imageUrl = `/monsters/key/key-monster-${Math.min(Math.ceil(intimacyLevel / 5), 5)}.jpg`;
-      } else if (id === 'umbrella') {
-        imageUrl = `/monsters/umbrella/umbrella-monster-${Math.min(Math.ceil(intimacyLevel / 5), 5)}.jpg`;
-      } else if (id === 'wallet') {
-        imageUrl = `/monsters/wallet/wallet-monster${intimacyLevel > 5 ? `-${Math.min(Math.ceil(intimacyLevel / 5), 5)}` : ''}.jpg`;
-      } else if (id === 'medicine') {
-        imageUrl = `/monsters/medicine/medicine-monster-${Math.min(Math.ceil(intimacyLevel / 5), 5)}.jpg`;
-      } else if (id === 'smartphone') {
-        imageUrl = `/monsters/phone/phone_monsters${intimacyLevel > 5 ? Math.min(Math.ceil(intimacyLevel / 5), 5) : ''}.jpg`;
-      } else if (id === 'homework') {
-        imageUrl = `/monsters/homework/homework_monsters${intimacyLevel > 5 ? Math.min(Math.ceil(intimacyLevel / 5), 5) : ''}.jpg`;
-      } else if (id === 'schedule') {
-        imageUrl = '/monsters/schedule/schedule_monsters.png';
-      } else if (id === 'time') {
-        imageUrl = '/monsters/time/time_monster.png';
+      // 図鑑画面のモンスターデータから検索
+      if (encyclopediaMonsters.length > 0) {
+        const foundMonster = encyclopediaMonsters.find((m: { id: number | string }) => m.id.toString() === id);
+        console.log('図鑑画面から見つかったモンスター:', foundMonster);
+        
+        if (foundMonster) {
+          // 図鑑画面のモンスターデータを詳細画面用に変換
+          targetMonster = {
+            id: foundMonster.id.toString(),
+            name: foundMonster.name,
+            category: foundMonster.category,
+            categoryEmoji: foundMonster.categoryEmoji,
+            rank: foundMonster.rank,
+            firstSeen: foundMonster.lastSeenAt || '',
+            lastSeen: foundMonster.lastSeenAt || '',
+            encounterCount: 1, // 図鑑画面では遭遇回数が不明なため
+            intimacyLevel: 1,
+            evolutionCondition: `${foundMonster.name}を5回入力`,
+            evolutionProgress: 1,
+            evolutionTarget: 5,
+            lastLevelUp: foundMonster.lastSeenAt || '',
+            recommendation: `${foundMonster.name}をお忘れなく!`,
+            imageUrl: foundMonster.thumbUrl
+          };
+        }
       }
       
-      const monsterData = {
-        id: id,
-        name: targetRecords[0].thingType || '忘れ物',
-        category: id,
-        categoryEmoji: '🧠',
-        rank: rank,
-        firstSeen: targetRecords[targetRecords.length - 1]?.createdAt || '',
-        lastSeen: targetRecords[0]?.createdAt || '',
-        encounterCount: encounterCount,
-        intimacyLevel: intimacyLevel,
-        evolutionCondition: `${targetRecords[0].thingType || '忘れ物'}を${Math.ceil(intimacyLevel / 5) * 5}回入力`,
-        evolutionProgress: encounterCount,
-        evolutionTarget: Math.ceil(intimacyLevel / 5) * 5,
-        lastLevelUp: targetRecords[0]?.createdAt || '',
-        recommendation: `${targetRecords[0].thingType || '忘れ物'}をお忘れなく!`,
-        imageUrl: imageUrl
-      };
+      // 図鑑画面にない場合は、thingsRecordsから検索
+      if (!targetMonster) {
+        const thingsRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
+        console.log('LocalStorageから読み込まれたthingsRecords:', thingsRecords);
+        
+        // 指定されたIDのモンスターを検索
+        const targetRecords = thingsRecords.filter((record: { thingId: string; thingType: string; createdAt: string }) => {
+          return record.thingId === id;
+        });
+        console.log('検索されたtargetRecords:', targetRecords);
+        
+        if (targetRecords.length > 0) {
+          const encounterCount = targetRecords.length;
+          const intimacyLevel = encounterCount;
+          
+          // レア度を計算（図鑑と同じロジック、5段階評価）
+          let rank: Rarity = 'C';
+          if (encounterCount > 20) rank = 'SS';
+          if (encounterCount > 15) rank = 'S';
+          if (encounterCount > 10) rank = 'A';
+          if (encounterCount > 5) rank = 'B';
+          
+          // 画像パスを生成
+          let imageUrl = '/monsters/wallet/wallet-monster.jpg';
+          if (id === 'key') {
+            imageUrl = `/monsters/key/key-monster-${Math.min(Math.ceil(intimacyLevel / 5), 5)}.jpg`;
+          } else if (id === 'umbrella') {
+            imageUrl = `/monsters/umbrella/umbrella-monster-${Math.min(Math.ceil(intimacyLevel / 5), 5)}.jpg`;
+          } else if (id === 'wallet') {
+            imageUrl = `/monsters/wallet/wallet-monster${intimacyLevel > 5 ? `-${Math.min(Math.ceil(intimacyLevel / 5), 5)}` : ''}.jpg`;
+          } else if (id === 'medicine') {
+            imageUrl = `/monsters/medicine/medicine-monster-${Math.min(Math.ceil(intimacyLevel / 5), 5)}.jpg`;
+          } else if (id === 'smartphone') {
+            imageUrl = `/monsters/phone/phone_monsters${intimacyLevel > 5 ? Math.min(Math.ceil(intimacyLevel / 5), 5) : ''}.jpg`;
+          } else if (id === 'homework') {
+            imageUrl = `/monsters/homework/homework_monsters${intimacyLevel > 5 ? Math.min(Math.ceil(intimacyLevel / 5), 5) : ''}.jpg`;
+          } else if (id === 'schedule') {
+            imageUrl = '/monsters/schedule/schedule_monsters.png';
+          } else if (id === 'time') {
+            imageUrl = '/monsters/late/late_monsters.jpg';
+          }
+          
+          targetMonster = {
+            id: id,
+            name: targetRecords[0].thingType || '忘れ物',
+            category: id,
+            categoryEmoji: '🧠',
+            rank: rank,
+            firstSeen: targetRecords[targetRecords.length - 1]?.createdAt || '',
+            lastSeen: targetRecords[0]?.createdAt || '',
+            encounterCount: encounterCount,
+            intimacyLevel: intimacyLevel,
+            evolutionCondition: `${targetRecords[0].thingType || '忘れ物'}を${Math.ceil(intimacyLevel / 5) * 5}回入力`,
+            evolutionProgress: encounterCount,
+            evolutionTarget: Math.ceil(intimacyLevel / 5) * 5,
+            lastLevelUp: targetRecords[0]?.createdAt || '',
+            recommendation: `${targetRecords[0].thingType || '忘れ物'}をお忘れなく!`,
+            imageUrl: imageUrl
+          };
+        }
+      }
       
-      setMonster(monsterData);
-    }
+      if (targetMonster) {
+        setMonster(targetMonster);
+      }
     } catch (error) {
       console.error('モンスター詳細ページでエラーが発生:', error);
     }
@@ -312,7 +336,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
         {/* 下部アクションバー */}
         <div className="flex items-center justify-between p-4 bg-white border-t rounded-t-lg">
           <div className="text-sm text-gray-500">
-            {monster.lastSeen} {monster.lastLevelUp.split(' ')[1]}
+            {monster.lastSeen} {monster.lastLevelUp ? monster.lastLevelUp.split(' ')[1] : ''}
           </div>
           <Button variant="ghost" size="sm">
             履歴

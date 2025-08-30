@@ -10,6 +10,7 @@ import {
   TrendingUp,
   BarChart3,
   PieChart as PieChartIcon,
+  Trophy,
 } from "lucide-react";
 
 interface ThingsRecord {
@@ -18,13 +19,16 @@ interface ThingsRecord {
   thingType: string;
   thingId: string;
   title: string;
-  content: string;
-  details: string;
+  content?: string;
+  details?: string;
   difficulty: number;
-  location: string;
-  datetime: string;
+  location?: string;
+  datetime?: string;
   createdAt: string;
   situation?: string;
+  didForget?: boolean;
+  categoryName?: string;
+  categoryEmoji?: string;
 }
 
 type TimeRange = "week" | "month";
@@ -42,56 +46,331 @@ export default function AnalysisPage() {
     { id: "month", name: "月間", emoji: "📆" },
   ];
 
-  const categories = useMemo(() => [
-    { id: "", name: "すべて", emoji: "🌟" },
-    { id: "key", name: "鍵", emoji: "🔑" },
-    { id: "medicine", name: "薬", emoji: "💊" },
-    { id: "umbrella", name: "傘", emoji: "☔" },
-    { id: "wallet", name: "財布", emoji: "👛" },
-    { id: "smartphone", name: "スマホ", emoji: "📱" },
-  ], []);
+  const [customCategories, setCustomCategories] = useState<Array<{id: string, name: string, emoji: string}>>([]);
 
-  const situations = useMemo(() => [
-    { id: "", name: "すべて", emoji: "🌟" },
-    { id: "morning", name: "朝", emoji: "🌅" },
-    { id: "home", name: "家", emoji: "🏠" },
-    { id: "before-out", name: "外出前", emoji: "🚪" },
-    { id: "hurry", name: "急いでた", emoji: "⏰" },
-    { id: "rain", name: "雨", emoji: "🌧️" },
-    { id: "work", name: "仕事", emoji: "💼" },
-    { id: "school", name: "学校", emoji: "🎒" },
-    { id: "forget", name: "物忘れ", emoji: "🎒" },
-    { id: "schedule-miss", name: "予定忘れ", emoji: "🗓️" },
-    { id: "late", name: "寝坊・遅刻", emoji: "⏰" },
-    { id: "other", name: "その他", emoji: "😊" },
-  ], []);
+  const categories = useMemo(() => {
+    // 入力されたデータからカテゴリを動的に生成
+    const categoryMap = new Map<string, { id: string, name: string, emoji: string }>();
+    
+    // デフォルトカテゴリを追加
+    categoryMap.set("", { id: "", name: "すべて", emoji: "🌟" });
+    
+    // 入力されたデータからカテゴリを抽出
+    thingsRecords.forEach(record => {
+      // カテゴリ情報がある場合
+      if (record.categoryName && record.categoryEmoji) {
+        const categoryId = record.category || record.thingId || 'unknown';
+        if (!categoryMap.has(categoryId)) {
+          categoryMap.set(categoryId, {
+            id: categoryId,
+            name: record.categoryName,
+            emoji: record.categoryEmoji
+          });
+        }
+      }
+      // カテゴリ情報がない場合でも、カテゴリIDが存在する場合は処理
+      else if (record.category || record.thingId) {
+        const categoryId = record.category || record.thingId;
+        if (!categoryMap.has(categoryId)) {
+          // デフォルトの絵文字を設定
+          let defaultEmoji = '📦';
+          if (categoryId === 'key') defaultEmoji = '🔑';
+          else if (categoryId === 'umbrella') defaultEmoji = '☂️';
+          else if (categoryId === 'wallet') defaultEmoji = '👛';
+          else if (categoryId === 'medicine') defaultEmoji = '💊';
+          else if (categoryId === 'smartphone') defaultEmoji = '📱';
+          else if (categoryId === 'homework') defaultEmoji = '📚';
+          else if (categoryId === 'schedule') defaultEmoji = '🗓️';
+          else if (categoryId === 'time') defaultEmoji = '⏰';
+          
+          categoryMap.set(categoryId, {
+            id: categoryId,
+            name: record.thingType || categoryId,
+            emoji: defaultEmoji
+          });
+        }
+      }
+    });
+    
+    // カスタムカテゴリも追加
+    customCategories.forEach(cat => {
+      if (!categoryMap.has(cat.id)) {
+        categoryMap.set(cat.id, cat);
+      }
+    });
+    
+    return Array.from(categoryMap.values());
+  }, [thingsRecords, customCategories]);
+
+  const [customThings, setCustomThings] = useState<Array<{id: string, name: string, emoji: string, categoryId: string}>>([]);
+
+  const things = useMemo(() => {
+    // 入力されたデータから「忘れたもの」を動的に生成
+    const thingMap = new Map<string, { id: string, name: string, emoji: string, categoryId: string }>();
+    
+    // デフォルトの「すべて」を追加
+    thingMap.set("", { id: "", name: "すべて", emoji: "🌟", categoryId: "" });
+    
+    // カスタム「忘れたもの」も追加（ただし「忘れなかった」は除外）
+    customThings.forEach(thing => {
+      if (thing.name !== '忘れなかった' && thing.id !== 'forget_not') {
+        if (!thingMap.has(thing.id)) {
+          thingMap.set(thing.id, thing);
+        } else {
+          // 既存の「忘れたもの」がある場合は、カスタムのものを優先
+          thingMap.set(thing.id, thing);
+        }
+      }
+    });
+    
+    const result = Array.from(thingMap.values());
+    console.log('生成された「忘れたもの」配列:', result);
+    console.log('生成された配列の詳細:', result.map(t => ({ id: t.id, name: t.name, emoji: t.emoji, categoryId: t.categoryId })));
+    
+    // 重複チェックの最終確認
+    const duplicateIds = result.filter((item, index, self) => 
+      self.findIndex(s => s.id === item.id) !== index
+    );
+    if (duplicateIds.length > 0) {
+      console.warn('重複したIDが検出されました:', duplicateIds);
+    }
+    
+    return result;
+  }, [customThings]);
+
+  const [customSituations, setCustomSituations] = useState<Array<{id: string, name: string, emoji: string}>>([]);
+
+  const getDefaultSituationName = (situationId: string): string => {
+    const nameMap: { [key: string]: string } = {
+      "morning": "朝",
+      "home": "家",
+      "before-out": "外出前",
+      "hurry": "急いでた",
+      "rain": "雨",
+      "work": "仕事",
+      "school": "学校",
+      "forget": "物忘れ",
+      "schedule-miss": "予定忘れ",
+      "late": "寝坊・遅刻",
+      "other": "その他"
+    };
+    return nameMap[situationId] || situationId;
+  };
+
+  const getSituationEmoji = (situationName: string): string => {
+    const emojiMap: { [key: string]: string } = {
+      "朝": "🌅",
+      "家": "🏠",
+      "外出前": "🚪",
+      "急いでた": "⏰",
+      "雨": "🌧️",
+      "仕事": "💼",
+      "学校": "🎒",
+      "物忘れ": "🎒",
+      "予定忘れ": "🗓️",
+      "寝坊・遅刻": "⏰",
+      "その他": "😊"
+    };
+    return emojiMap[situationName] || "📋";
+  };
+
+  const situations = useMemo(() => {
+    // 入力されたデータから「状況」を動的に生成
+    const situationMap = new Map<string, { id: string, name: string, emoji: string }>();
+    const nameMap = new Map<string, { id: string, name: string, emoji: string }>();
+    
+    // デフォルトの「すべて」を追加
+    const allSituation = { id: "", name: "すべて", emoji: "🌟" };
+    situationMap.set("", allSituation);
+    nameMap.set("すべて", allSituation);
+    
+    // 入力されたデータから「状況」を抽出
+    const processedSituations = new Set<string>();
+    
+    thingsRecords.forEach(record => {
+      if (record.situation) {
+        const situationIds = record.situation;
+        
+        // situationIdが配列の場合はすべての要素を処理
+        if (Array.isArray(situationIds)) {
+          situationIds.forEach(situationId => {
+            if (typeof situationId === 'string' && !processedSituations.has(situationId)) {
+              processedSituations.add(situationId);
+              
+              // 英語のIDを日本語に変換
+              let displayName = getDefaultSituationName(situationId);
+              let displayId = situationId;
+              
+              if (situationId === 'before_going_out') {
+                displayName = '外出前';
+                displayId = 'before-out';
+              } else if (situationId === 'in_a_hurry') {
+                displayName = '急いでた';
+                displayId = 'hurry';
+              }
+              
+              // 名前ベースで重複チェック
+              if (!nameMap.has(displayName)) {
+                const newSituation = {
+                  id: displayId,
+                  name: displayName,
+                  emoji: getSituationEmoji(displayName)
+                };
+                situationMap.set(displayId, newSituation);
+                nameMap.set(displayName, newSituation);
+              } else {
+                console.log('名前重複を検出（入力データ）:', { existing: nameMap.get(displayName), new: { displayId, displayName } });
+              }
+            }
+          });
+        } else if (typeof situationIds === 'string' && !processedSituations.has(situationIds)) {
+          processedSituations.add(situationIds);
+          
+          // 英語のIDを日本語に変換
+          let displayName = getDefaultSituationName(situationIds);
+          let displayId = situationIds;
+          
+          if (situationIds === 'before_going_out') {
+            displayName = '外出前';
+            displayId = 'before-out';
+          } else if (situationIds === 'in_a_hurry') {
+            displayName = '急いでた';
+            displayId = 'hurry';
+          }
+          
+          // 名前ベースで重複チェック
+          if (!nameMap.has(displayName)) {
+            const newSituation = {
+              id: displayId,
+              name: displayName,
+              emoji: getSituationEmoji(displayName)
+            };
+            situationMap.set(displayId, newSituation);
+            nameMap.set(displayName, newSituation);
+          } else {
+            console.log('名前重複を検出（入力データ）:', { existing: nameMap.get(displayName), new: { displayId, displayName } });
+          }
+        }
+      }
+    });
+    
+    // カスタム「状況」も追加（重複チェックを強化）
+    customSituations.forEach(situation => {
+      // 名前ベースで重複チェック
+      if (!nameMap.has(situation.name)) {
+        situationMap.set(situation.id, situation);
+        nameMap.set(situation.name, situation);
+      } else {
+        console.log('名前重複を検出（カスタム）:', { existing: nameMap.get(situation.name), new: situation });
+      }
+    });
+    
+    const result = Array.from(situationMap.values());
+    console.log('生成された「状況」配列:', result);
+    console.log('「状況」の詳細:', result.map(s => ({ id: s.id, name: s.name, emoji: s.emoji })));
+    
+    // 最終的な重複チェックと除去
+    const uniqueResult = result.filter((item, index, self) => {
+      const firstIndex = self.findIndex(s => s.id === item.id);
+      if (firstIndex !== index) {
+        console.log('重複IDを除去:', { item, firstIndex, index });
+        return false;
+      }
+      return true;
+    });
+    
+    console.log('重複除去後の「状況」配列:', uniqueResult);
+    console.log('重複除去後の詳細:', uniqueResult.map(s => ({ id: s.id, name: s.name, emoji: s.emoji })));
+    
+    return uniqueResult;
+  }, [thingsRecords, customSituations]);
 
   useEffect(() => {
     const loadRecords = () => {
       const raw = localStorage.getItem("thingsRecords");
       try {
         const records = raw ? (JSON.parse(raw) as ThingsRecord[]) : [];
-        setThingsRecords(Array.isArray(records) ? records : []);
-        setBaseFiltered(Array.isArray(records) ? records : []);
+        // 「忘れたもの」のみをフィルタリング（didForget === true のもの）
+        const forgottenRecords = Array.isArray(records) ? records.filter(r => r.didForget === true) : [];
+        setThingsRecords(forgottenRecords);
+        setBaseFiltered(forgottenRecords);
       } catch {
         setThingsRecords([]);
         setBaseFiltered([]);
       }
     };
 
+    const loadCustomCategories = () => {
+      const customCardsRaw = localStorage.getItem("customCards");
+      try {
+        if (customCardsRaw) {
+          const customCards = JSON.parse(customCardsRaw);
+          if (customCards.categories && Array.isArray(customCards.categories)) {
+            setCustomCategories(customCards.categories);
+          }
+          if (customCards.things && Array.isArray(customCards.things)) {
+            // 「忘れなかった」を除外してカスタム「忘れたもの」を設定
+            const filteredThings = customCards.things.filter((thing: {name?: string, id?: string}) => 
+              thing.name !== '忘れなかった' && 
+              thing.id !== 'forget_not'
+            );
+            
+            // カスタム「忘れたもの」のデータ構造を正しく変換
+            const processedThings = filteredThings.map((thing: {id?: string, name?: string, emoji?: string, categoryId?: string}) => ({
+              id: thing.id || '',
+              name: thing.name || '',
+              emoji: thing.emoji || '📦', // デフォルト絵文字を設定
+              categoryId: thing.categoryId || 'forget_things' // デフォルトカテゴリを設定
+            }));
+            
+            // 重複を除外してカスタム「忘れたもの」を設定
+            const uniqueThings = processedThings.filter((thing: {id?: string}, index: number, self: {id?: string}[]) => 
+              index === self.findIndex(t => t.id === thing.id)
+            );
+            
+            console.log('カスタム「忘れたもの」:', filteredThings);
+            console.log('カスタム「忘れたもの」の詳細:', filteredThings.map((t: {id?: string, name?: string, emoji?: string}) => ({ id: t.id, name: t.name, emoji: t.emoji })));
+            console.log('処理後のカスタム「忘れたもの」:', processedThings);
+            console.log('重複除外後のカスタム「忘れたもの」:', uniqueThings);
+            setCustomThings(uniqueThings);
+          }
+          if (customCards.situations && Array.isArray(customCards.situations)) {
+            // 重複を除外してカスタム「状況」を設定
+            const uniqueSituations = customCards.situations.filter((situation: {id?: string}, index: number, self: {id?: string}[]) => 
+              index === self.findIndex(s => s.id === situation.id)
+            );
+            console.log('カスタム「状況」:', customCards.situations);
+            console.log('重複除外後のカスタム「状況」:', uniqueSituations);
+            setCustomSituations(uniqueSituations);
+          }
+        }
+      } catch {
+        setCustomCategories([]);
+        setCustomThings([]);
+        setCustomSituations([]);
+      }
+    };
+
     loadRecords();
+    loadCustomCategories();
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "thingsRecords") loadRecords();
+      if (e.key === "customCards") loadCustomCategories();
     };
-    const handleCustomStorageChange = () => loadRecords();
+    const handleCustomStorageChange = () => {
+      loadRecords();
+      loadCustomCategories();
+    };
 
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("thingsRecordsChanged", handleCustomStorageChange as EventListener);
+    window.addEventListener("customCardsChanged", handleCustomStorageChange as EventListener);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("thingsRecordsChanged", handleCustomStorageChange as EventListener);
+      window.removeEventListener("customCardsChanged", handleCustomStorageChange as EventListener);
     };
   }, []);
 
@@ -104,7 +383,7 @@ export default function AnalysisPage() {
       );
     }
 
-    if (selectedThingType !== "") {
+    if (selectedThingType !== "" && selectedThingType !== "すべて") {
       filtered = filtered.filter((r) => r.thingType === selectedThingType);
     }
 
@@ -269,11 +548,7 @@ const difficultyRanking = useMemo(() => {
     );
   };
 
-  const thingTypeOptions = useMemo(() => {
-    const set = new Set<string>();
-    thingsRecords.forEach((r) => r.thingType && set.add(r.thingType));
-    return ["", ...Array.from(set)];
-  }, [thingsRecords]);
+
 
   return (
     <MainLayout>
@@ -332,13 +607,13 @@ const difficultyRanking = useMemo(() => {
                 忘れたもの種類
               </label>
               <div className="flex flex-wrap gap-2">
-                {thingTypeOptions.map((type) => (
+                {things.map((thing) => (
                   <Chip
-                    key={type || "all"}
-                    label={type === "" ? "すべて" : type}
-                    emoji={type === "" ? "🌟" : "📦"}
-                    selected={selectedThingType === type}
-                    onClick={() => setSelectedThingType(type)}
+                    key={thing.id || "all"}
+                    label={thing.name}
+                    emoji={thing.emoji}
+                    selected={thing.name === "すべて" ? selectedThingType === "" : selectedThingType === thing.name}
+                    onClick={() => setSelectedThingType(thing.name === "すべて" ? "" : thing.name)}
                   />
                 ))}
               </div>
@@ -497,10 +772,10 @@ const difficultyRanking = useMemo(() => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              困った度ランキング
-            </CardTitle>
+                      <CardTitle className="flex items-center gap-2 text-gray-900">
+            <Trophy className="h-5 w-5 text-primary" />
+            困った度ランキング
+          </CardTitle>
           </CardHeader>
           <CardContent>
             {difficultyRanking.length === 0 ? (

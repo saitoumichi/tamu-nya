@@ -10,6 +10,15 @@ import { Plus, Save, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
+// 追加ユーティリティ（ファイル内の上部に追記）
+const readFeedInventory = () => parseInt(localStorage.getItem('feedInventory') || '0');
+const writeFeedInventory = (n: number) => localStorage.setItem('feedInventory', String(Math.max(0, n)));
+const todayStr = () => {
+  const d = new Date();
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+};
+
 export default function InputPage() {
   const [formData, setFormData] = useState({
     category: '',
@@ -90,9 +99,33 @@ export default function InputPage() {
       if (saved) {
         try {
           const data = JSON.parse(saved);
-          if (data.categories) setCategories(data.categories);
-          if (data.things) setThings(data.things);
-          if (data.situations) setSituations(data.situations);
+          if (Array.isArray(data.categories) && data.categories.length > 0) {
+            setCategories((prev) => {
+              const map = new Map(prev.map((item) => [item.id, item]));
+              for (const item of data.categories) {
+                map.set(item.id, { ...map.get(item.id), ...item });
+              }
+              return Array.from(map.values());
+            });
+          }
+          if (Array.isArray(data.things) && data.things.length > 0) {
+            setThings((prev) => {
+              const map = new Map(prev.map((item) => [item.id, item]));
+              for (const item of data.things) {
+                map.set(item.id, { ...map.get(item.id), ...item });
+              }
+              return Array.from(map.values());
+            });
+          }
+          if (Array.isArray(data.situations) && data.situations.length > 0) {
+            setSituations((prev) => {
+              const map = new Map(prev.map((item) => [item.id, item]));
+              for (const item of data.situations) {
+                map.set(item.id, { ...map.get(item.id), ...item });
+              }
+              return Array.from(map.values());
+            });
+          }
         } catch (error) {
           console.error('カスタムカードデータの読み込みに失敗:', error);
         }
@@ -139,6 +172,9 @@ export default function InputPage() {
     e.preventDefault();
     console.log('handleSubmit called');
     
+    // 関数冒頭で const isClaim = !hasClaimedFeedToday; を定義
+    const isClaim = !hasClaimedFeedToday;
+    
     if (formData.didForget === false) {
       // 忘れていない場合の処理
       const thingsRecord = {
@@ -175,10 +211,7 @@ export default function InputPage() {
       console.log('忘れなかった記録が保存されました:', thingsRecord);
       console.log('モンスター情報:', { encounterCount, intimacyLevel, rank: 'C' });
       
-      // 今日の分のえさを受取済みとして記録
-      const today = new Date().toISOString().slice(0, 10);
-      localStorage.setItem('dailyFeedClaimedAt', today);
-      setHasClaimedFeedToday(true);
+      // 今日の分のえさを受取済みとして記録（削除 - 新しい処理で統一）
     } else {
       // 忘れた場合の処理
       if (forgetMode === 'existing') {
@@ -228,10 +261,7 @@ export default function InputPage() {
         console.log('既存モンスター記録が保存されました:', thingsRecord);
         console.log('モンスター情報:', { encounterCount, intimacyLevel, rank });
         
-        // 今日の分のえさを受取済みとして記録
-        const today = new Date().toISOString().slice(0, 10);
-        localStorage.setItem('dailyFeedClaimedAt', today);
-        setHasClaimedFeedToday(true);
+        // 今日の分のえさを受取済みとして記録（削除 - 新しい処理で統一）
       } else {
         // 新規モンスターモード（従来どおり）
         if (formData.forgottenItem) {
@@ -285,12 +315,20 @@ export default function InputPage() {
           console.log('図鑑用データが保存されました:', thingsRecord);
           console.log('モンスター情報:', { encounterCount, intimacyLevel, rank });
           
-          // 今日の分のえさを受取済みとして記録
-          const today = new Date().toISOString().slice(0, 10);
-          localStorage.setItem('dailyFeedClaimedAt', today);
-          setHasClaimedFeedToday(true);
+          // 今日の分のえさを受取済みとして記録（削除 - 新しい処理で統一）
         }
       }
+    }
+    
+    // えさの受け取り処理を追加
+    if (isClaim) {
+      const inv = readFeedInventory();
+      writeFeedInventory(inv + 5); // ★ ここでちょうど5個だけ加算
+      const today = todayStr();
+      localStorage.setItem('dailyFeedClaimedAt', today); // 当日受取済みフラグ
+      localStorage.setItem('feedDaily', JSON.stringify({ date: today, count: 1 })); // 任意の当日カウンタ
+      setHasClaimedFeedToday(true); // ボタン表示を「送信」に切り替え
+      window.dispatchEvent(new CustomEvent('feed:claimed')); // ホーム等が在庫を即時反映
     }
     
     // 成長リザルトモーダルを表示
@@ -313,6 +351,30 @@ export default function InputPage() {
         ? prev.situation.filter(id => id !== situationId)
         : [...prev.situation, situationId]
     }));
+  };
+
+  // 画像パスを生成する関数
+  const getImagePathByThingId = (thingId: string): string => {
+    switch (thingId) {
+      case 'key':
+        return '/monsters/key/key-monster-1.jpg';
+      case 'umbrella':
+        return '/monsters/umbrella/umbrella-monster-1.jpg';
+      case 'wallet':
+        return '/monsters/wallet/wallet-monster.jpg';
+      case 'medicine':
+        return '/monsters/medicine/medicine-monster-1.jpg';
+      case 'smartphone':
+        return '/monsters/phone/phone_monsters.jpg';
+      case 'homework':
+        return '/monsters/homework/homework_monsters.jpg';
+      case 'schedule':
+        return '/monsters/schedule/schedule_monsters.png';
+      case 'time':
+        return '/monsters/late/late_monsters.jpg';
+      default:
+        return '/monsters/wallet/wallet-monster.jpg';
+    }
   };
 
   const handleDifficultyChange = (difficulty: number) => {
@@ -464,7 +526,23 @@ export default function InputPage() {
                         onClick={() => handleExistingMonsterSelect(monster)}
                       >
                         <div className="text-center">
-                          <div className="text-3xl mb-2">{monster.emoji}</div>
+                          {/* 画像表示 */}
+                          <div className="w-16 h-16 mx-auto mb-2">
+                            <img
+                              src={getImagePathByThingId(monster.thingId)}
+                              alt={monster.thingType}
+                              className="w-full h-full object-cover rounded-lg"
+                              onError={(e) => {
+                                // 画像読み込みエラー時は絵文字を表示
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const fallback = document.createElement('div');
+                                fallback.className = 'text-3xl flex items-center justify-center w-full h-full';
+                                fallback.textContent = monster.emoji;
+                                target.parentNode?.appendChild(fallback);
+                              }}
+                            />
+                          </div>
                           <div className="font-medium text-sm text-gray-800 mb-1">
                             {monster.thingType}
                           </div>

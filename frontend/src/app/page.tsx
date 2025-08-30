@@ -318,6 +318,15 @@ export default function HomePage() {
             )}
           </CardContent>
         </Card>
+
+        {/* えさあげボタン */}
+        <div className="flex justify-center">
+          <Link href="/feed">
+            <Button size="lg" className="px-8">
+              🍽️ モンスターにえさをあげに行く
+            </Button>
+          </Link>
+        </div>
       </div>
     </MainLayout>
   );
