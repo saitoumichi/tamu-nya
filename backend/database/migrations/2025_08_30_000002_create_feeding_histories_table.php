@@ -11,16 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('push_subscriptions', function (Blueprint $table) {
+        Schema::create('feeding_histories', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->text('endpoint');
-            $table->string('p256dh', 255);
-            $table->string('auth', 255);
-            $table->string('ua', 255)->nullable();
+            $table->foreignId('fairy_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('item_code');
+            $table->timestamp('applied_at');
+            $table->string('request_id')->unique();
             $table->timestamps();
-
-            $table->unique('endpoint', 'uq_endpoint');
         });
     }
 
@@ -29,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('push_subscriptions');
+        Schema::dropIfExists('feeding_histories');
     }
 };
