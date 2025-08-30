@@ -11,13 +11,13 @@ interface ThingsRecord {
   thingType: string;
   thingId: string; // 例: 'key' | 'umbrella' | 'wallet' | 'medicine' | 'smartphone' | 'homework' | 'schedule' | 'time'
   title?: string;
-  difficulty: number; // 1〜10想定（難易度でランク判定）
+  difficulty: number; // 1〜10想定
   situation?: string[];
   createdAt: string;
   didForget: boolean;
 }
 
-// ランク定義（SSランク、Sランク、Aランク、Bランク、Cランク）
+// ランク定義
 type Rank = 'SS' | 'S' | 'A' | 'B' | 'C';
 
 interface Monster {
@@ -26,7 +26,7 @@ interface Monster {
   category: string; // 元の thingId（例: 'wallet'）
   categoryName: string; // 表示名
   categoryEmoji: string;
-  rank: Rank; // ← 親密度ではなくランク
+  rank: Rank;
   lastSeenAt: string;
   thumbUrl: string;
 }
@@ -49,7 +49,6 @@ import Link from 'next/link';
 
 export default function EncyclopediaPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedRank, setSelectedRank] = useState<Rank | ''>('');
   const [monsters, setMonsters] = useState<Monster[]>([]);
 
   // monstersステートの変更を監視
@@ -180,15 +179,7 @@ export default function EncyclopediaPage() {
     };
   }, []);
 
-  // ランクフィルタ一覧（5段階評価）
-  const ranks: { value: Rank | ''; label: string }[] = [
-    { value: '', label: 'すべて' },
-    { value: 'SS', label: 'SSランク' },
-    { value: 'S', label: 'Sランク' },
-    { value: 'A', label: 'Aランク' },
-    { value: 'B', label: 'Bランク' },
-    { value: 'C', label: 'Cランク' },
-  ];
+
 
   // ------- データ生成 -------
   const generateMonsters = () => {
@@ -434,15 +425,13 @@ export default function EncyclopediaPage() {
 
   const filteredMonsters = monsters.filter((m) => {
     const categoryMatch = matchesNewCategory(m, selectedCategory);
-    const rankMatch = !selectedRank || m.rank === selectedRank;
     
     // フィルタリング結果をログに出力
-    if (selectedCategory || selectedRank) {
-      console.log(`フィルタリング結果: ${m.name} (${m.category}) - カテゴリ: ${categoryMatch}, ランク: ${rankMatch}`);
+    if (selectedCategory) {
+      console.log(`フィルタリング結果: ${m.name} (${m.category}) - カテゴリ: ${categoryMatch}`);
     }
     
     if (!categoryMatch) return false;
-    if (!rankMatch) return false;
     return true;
   });
 
@@ -450,15 +439,13 @@ export default function EncyclopediaPage() {
   console.log('フィルター前のモンスター数:', monsters.length);
   console.log('フィルター後のモンスター数:', filteredMonsters.length);
   console.log('選択中のカテゴリ(新3分類):', selectedCategory);
-  console.log('選択中のランク:', selectedRank);
   
   // フィルタリング詳細（フィルターが適用されている場合のみ）
-  if (selectedCategory || selectedRank) {
+  if (selectedCategory) {
     console.log('フィルタリング詳細:', {
       totalMonsters: monsters.length,
       filteredCount: filteredMonsters.length,
       selectedCategory,
-      selectedRank,
       monsters: filteredMonsters.map(m => {
         // カテゴリIDを正しく取得
         let categoryId: string;
@@ -521,20 +508,6 @@ export default function EncyclopediaPage() {
               </div>
             </div>
 
-            {/* ランクフィルター */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">ランク</label>
-              <div className="flex flex-wrap gap-2">
-                {ranks.map((r) => (
-                  <Chip
-                    key={r.value || 'all'}
-                    label={r.label}
-                    selected={selectedRank === r.value}
-                    onClick={() => setSelectedRank(r.value)}
-                  />
-                ))}
-              </div>
-            </div>
           </CardContent>
         </Card>
 
@@ -566,24 +539,7 @@ export default function EncyclopediaPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
                             <h3 className="font-semibold text-gray-900 truncate">{monster.name}</h3>
-                            {/* SS/S/A/B/C ランク表示（5段階評価）*/}
-                            <span
-                              className={
-                                'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border ' +
-                                (monster.rank === 'SS'
-                                  ? 'border-yellow-500 text-yellow-600 bg-yellow-50'
-                                  : monster.rank === 'S'
-                                  ? 'border-purple-500 text-purple-600 bg-purple-50'
-                                  : monster.rank === 'A'
-                                  ? 'border-blue-500 text-blue-600 bg-blue-50'
-                                  : monster.rank === 'B'
-                                  ? 'border-green-500 text-green-600 bg-green-50'
-                                  : 'border-gray-400 text-gray-600 bg-gray-50')
-                              }
-                              aria-label={`${monster.rank}ランク`}
-                            >
-                              {monster.rank}ランク
-                            </span>
+
                           </div>
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-sm text-gray-500">{monster.categoryEmoji}</span>
