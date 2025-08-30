@@ -9,6 +9,8 @@ import { Modal } from '@/components/ui/modal';
 import { Plus, Save, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { apiClient } from '@/api/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 // 追加ユーティリティ（ファイル内の上部に追記）
 const readFeedInventory = () => parseInt(localStorage.getItem('feedInventory') || '0');
@@ -20,6 +22,7 @@ const todayStr = () => {
 };
 
 export default function InputPage() {
+  const { user, token } = useAuth();
   const [formData, setFormData] = useState({
     category: '',
     title: '',
@@ -168,9 +171,37 @@ export default function InputPage() {
     return Array.from(monsterMap.values());
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // APIに忘れ物を送信する関数
+  const saveToAPI = async (itemData: {
+    category: string;
+    title: string;
+    forgotten_item: string;
+    details?: string;
+    difficulty: number;
+    situation?: string[];
+    location?: string;
+    datetime: string;
+  }) => {
+    try {
+      const result = await apiClient.createForgottenItem(itemData);
+      console.log('API保存成功:', result);
+      return result;
+    } catch (error) {
+      console.error('API保存エラー:', error);
+      throw error;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('handleSubmit called');
+    
+    // 認証チェック
+    if (!user || !token) {
+      alert('ログインが必要です。ログインページに移動します。');
+      window.location.href = '/login';
+      return;
+    }
     
     // 関数冒頭で const isClaim = !hasClaimedFeedToday; を定義
     const isClaim = !hasClaimedFeedToday;
@@ -269,6 +300,30 @@ export default function InputPage() {
           const selectedCategory = categories.find(cat => cat.id === formData.category);
           console.log('選択された忘れ物:', selectedThing);
           console.log('選択されたカテゴリ:', selectedCategory);
+          
+          // APIに送信するデータ
+          const apiData = {
+            category: formData.category,
+            title: formData.title || selectedThing?.name || '忘れ物',
+            forgotten_item: selectedThing?.name || '忘れ物',
+            details: `困った度: ${formData.difficulty}/5`,
+            difficulty: formData.difficulty,
+            situation: formData.situation.map(id => 
+              situations.find(s => s.id === id)?.name || id
+            ),
+            location: '',
+            datetime: new Date().toISOString()
+          };
+
+          try {
+            // APIに保存
+            await saveToAPI(apiData);
+            console.log('APIに保存成功');
+          } catch (error) {
+            console.error('APIへの保存に失敗:', error);
+            alert('データの保存に失敗しました。ネットワークを確認してください。');
+            return;
+          }
           
           // LocalStorageに保存（図鑑で読み込むため）
           const thingsRecord = {
@@ -389,13 +444,13 @@ export default function InputPage() {
   return (
     <MainLayout>
       <div className="max-w-2xl mx-auto">
-        <Card>
-          <CardHeader>
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-black">
-                <Plus className="h-5 w-5 text-primary" />
+              <h2 className="flex items-center gap-2 text-forest-primary text-xl font-bold">
+                <Plus className="h-5 w-5 text-emerald-600" />
                 忘れ物を記録
-              </CardTitle>
+              </h2>
               <Link href="/create">
                 <Button variant="ghost" size="sm">
                   <Plus className="mr-2 h-4 w-4" />
@@ -403,12 +458,12 @@ export default function InputPage() {
                 </Button>
               </Link>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* 今日の状態 - 最上部に移動 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium forest-label mb-3">
                   今日の状態
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -438,7 +493,7 @@ export default function InputPage() {
               {/* 忘れた場合のモード選択 */}
               {formData.didForget && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium forest-label mb-3">
                     モード選択
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -469,7 +524,7 @@ export default function InputPage() {
               {/* カテゴリ選択 - 新規モードのときだけ表示 */}
               {formData.didForget && forgetMode === 'new' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium forest-label mb-3">
                     カテゴリ
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -489,7 +544,7 @@ export default function InputPage() {
               {/* タイトル - 新規モードのときだけ表示 */}
               {formData.didForget && forgetMode === 'new' && (
                 <div>
-                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="title" className="block text-sm font-medium forest-label mb-2">
                     タイトル
                   </label>
                   <input
@@ -497,11 +552,11 @@ export default function InputPage() {
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full forest-input px-3 py-2"
                     placeholder="忘れ物のタイトル"
                     maxLength={120}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-forest-secondary mt-1">
                     {formData.title.length}/120文字
                   </p>
                 </div>
@@ -510,7 +565,7 @@ export default function InputPage() {
               {/* 既存モンスター一覧 - 既存モードのときだけ表示 */}
               {formData.didForget && forgetMode === 'existing' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium forest-label mb-3">
                     既存モンスターを選択
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -554,7 +609,7 @@ export default function InputPage() {
                     ))}
                   </div>
                   {getExistingMonsters().length === 0 && (
-                    <p className="text-sm text-gray-500 text-center py-4">
+                    <p className="text-sm text-forest-secondary text-center py-4">
                       既存のモンスターがありません。新規モードで作成してください。
                     </p>
                   )}
@@ -564,7 +619,7 @@ export default function InputPage() {
               {/* 忘れたもの - 新規モードのときだけ表示 */}
               {formData.didForget && forgetMode === 'new' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium forest-label mb-3">
                     忘れたもの
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -605,7 +660,7 @@ export default function InputPage() {
                       </button>
                     ))}
                   </div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-forest-secondary">
                     レベル {formData.difficulty}: {formData.difficulty === 1 ? '全然困らなかった' :
                       formData.difficulty === 2 ? '少し困った' :
                       formData.difficulty === 3 ? '困った' :
@@ -617,7 +672,7 @@ export default function InputPage() {
               {/* 状況 - didForget === true のときだけ表示 */}
               {formData.didForget && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium forest-label mb-3">
                     状況
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -635,18 +690,18 @@ export default function InputPage() {
               )}
 
               {/* 送信ボタン */}
-              <Button 
+              <button 
                 type="button" 
                 onClick={handleSubmit} 
-                className="w-full"
+                className="forest-button w-full px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 disabled={formData.didForget && forgetMode === 'existing' && !selectedExistingMonster}
               >
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="h-4 w-4" />
                 {hasClaimedFeedToday ? '送信' : '今日の分のえさをもらう'}
-              </Button>
+              </button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* 結果モーダル */}
         <Modal

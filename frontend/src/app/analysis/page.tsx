@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { MainLayout } from "@/components/layout/main-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -12,6 +11,9 @@ import {
   PieChart as PieChartIcon,
   Trophy,
 } from "lucide-react";
+import { apiClient } from '@/api/client';
+import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 
 interface ThingsRecord {
   id: string;
@@ -33,13 +35,32 @@ interface ThingsRecord {
 
 type TimeRange = "week" | "month";
 
+// forgotten_itemの名前から絵文字を取得する関数
+const getItemEmoji = (itemName: string): string => {
+  const emojiMap: { [key: string]: string } = {
+    '鍵': '🔑',
+    '薬': '💊', 
+    '傘': '☔',
+    '財布': '👛',
+    'スマホ': '📱',
+    '予定': '📅',
+    '遅刻': '⏰',
+    '宿題': '📄',
+    'その他': '😊'
+  };
+  return emojiMap[itemName] || '📦';
+};
+
 export default function AnalysisPage() {
+  const { user, token } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>("week");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedThingType, setSelectedThingType] = useState<string>("");
   const [selectedSituation, setSelectedSituation] = useState<string>("");
   const [thingsRecords, setThingsRecords] = useState<ThingsRecord[]>([]);
   const [baseFiltered, setBaseFiltered] = useState<ThingsRecord[]>([]);
+  const [apiData, setApiData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const timeRanges = [
     { id: "week", name: "週間", emoji: "📅" },
@@ -49,90 +70,90 @@ export default function AnalysisPage() {
   const [customCategories, setCustomCategories] = useState<Array<{id: string, name: string, emoji: string}>>([]);
 
   const categories = useMemo(() => {
-    // 入力画面と同じ定義のカテゴリ
-    const categoryMap = new Map<string, { id: string, name: string, emoji: string }>();
-    const nameEmojiMap = new Map<string, { id: string, name: string, emoji: string }>();
+    // より厳密な重複管理のため、名前+絵文字をキーとした一意マップを使用
+    const uniqueCategories = new Map<string, { id: string, name: string, emoji: string }>();
     
     // 「すべて」は常に表示
-    categoryMap.set("", { id: "", name: "すべて", emoji: "🌟" });
-    nameEmojiMap.set("すべて🌟", { id: "", name: "すべて", emoji: "🌟" });
+    uniqueCategories.set("すべて🌟", { id: "", name: "すべて", emoji: "🌟" });
     
     // 入力されたデータからカテゴリを抽出
+    console.log('分析処理対象レコード:', thingsRecords);
+    
     thingsRecords.forEach(record => {
-      // カテゴリ情報がある場合
+      console.log('処理中レコード:', { 
+        category: record.category, 
+        thingId: record.thingId, 
+        categoryName: record.categoryName, 
+        categoryEmoji: record.categoryEmoji,
+        thingType: record.thingType
+      });
+      
+      let categoryName = '';
+      let categoryEmoji = '';
+      let categoryId = '';
+      
+      // APIデータの場合、categoryName と categoryEmoji が設定されている
       if (record.categoryName && record.categoryEmoji) {
-        const categoryId = record.category || record.thingId || 'unknown';
-        // 名前と絵文字の両方が一致した場合のみ重複とみなす
-        const nameEmojiKey = `${record.categoryName}${record.categoryEmoji}`;
-        if (!nameEmojiMap.has(nameEmojiKey)) {
-          categoryMap.set(categoryId, {
-            id: categoryId,
-            name: record.categoryName,
-            emoji: record.categoryEmoji
-          });
-          nameEmojiMap.set(nameEmojiKey, {
-            id: categoryId,
-            name: record.categoryName,
-            emoji: record.categoryEmoji
-          });
+        categoryName = record.categoryName;
+        categoryEmoji = record.categoryEmoji;
+        categoryId = record.category || record.thingId || 'unknown';
+      }
+      // LocalStorageデータの場合の処理
+      else if (record.category || record.thingId) {
+        categoryId = record.category || record.thingId;
+        categoryName = record.thingType || categoryId;
+        
+        // thingTypeから絵文字を推定
+        if (record.thingType) {
+          categoryEmoji = getItemEmoji(record.thingType);
+        } else {
+          // デフォルトの絵文字設定
+          if (categoryId === 'key') categoryEmoji = '🔑';
+          else if (categoryId === 'umbrella') categoryEmoji = '☔';
+          else if (categoryId === 'wallet') categoryEmoji = '👛';
+          else if (categoryId === 'medicine') categoryEmoji = '💊';
+          else if (categoryId === 'smartphone') categoryEmoji = '📱';
+          else if (categoryId === 'homework') categoryEmoji = '📄';
+          else if (categoryId === 'schedule') categoryEmoji = '📅';
+          else if (categoryId === 'time') categoryEmoji = '⏰';
+          else categoryEmoji = '📦';
         }
       }
-      // カテゴリ情報がない場合でも、カテゴリIDが存在する場合は処理
-      else if (record.category || record.thingId) {
-        const categoryId = record.category || record.thingId;
-        // デフォルトの絵文字を設定
-        let defaultEmoji = '📦';
-        if (categoryId === 'key') defaultEmoji = '🔑';
-        else if (categoryId === 'umbrella') defaultEmoji = '☂️';
-        else if (categoryId === 'wallet') defaultEmoji = '👛';
-        else if (categoryId === 'medicine') defaultEmoji = '💊';
-        else if (categoryId === 'smartphone') defaultEmoji = '📱';
-        else if (categoryId === 'homework') defaultEmoji = '📚';
-        else if (categoryId === 'schedule') defaultEmoji = '🗓️';
-        else if (categoryId === 'time') defaultEmoji = '⏰';
-        
-        const displayName = record.thingType || categoryId;
-        
-        // 名前と絵文字の両方が一致した場合のみ重複とみなす
-        const nameEmojiKey = `${displayName}${defaultEmoji}`;
-        if (!nameEmojiMap.has(nameEmojiKey)) {
-          categoryMap.set(categoryId, {
+      
+      // カテゴリ情報がある場合のみ追加
+      if (categoryName && categoryEmoji) {
+        const uniqueKey = `${categoryName}${categoryEmoji}`;
+        if (!uniqueCategories.has(uniqueKey)) {
+          uniqueCategories.set(uniqueKey, {
             id: categoryId,
-            name: displayName,
-            emoji: defaultEmoji
+            name: categoryName,
+            emoji: categoryEmoji
           });
-          nameEmojiMap.set(nameEmojiKey, {
-            id: categoryId,
-            name: displayName,
-            emoji: defaultEmoji
-          });
+          console.log('カテゴリ追加:', { uniqueKey, categoryId, categoryName, categoryEmoji });
         }
       }
     });
     
-    // カスタムカテゴリも追加（新しく作成されたカードも表示）
+    // カスタムカテゴリも追加
     customCategories.forEach(cat => {
-      // 名前と絵文字の両方が一致した場合のみ重複とみなす
-      const nameEmojiKey = `${cat.name}${cat.emoji}`;
-      if (!nameEmojiMap.has(nameEmojiKey)) {
-        categoryMap.set(cat.id, cat);
-        nameEmojiMap.set(nameEmojiKey, cat);
+      const uniqueKey = `${cat.name}${cat.emoji}`;
+      if (!uniqueCategories.has(uniqueKey)) {
+        uniqueCategories.set(uniqueKey, cat);
+        console.log('カスタムカテゴリ追加:', { uniqueKey, cat });
       }
     });
     
     // 新しく作成されたカードが入力で使用された場合の処理
-    // customCardsから直接カテゴリを取得して追加
     const customCardsRaw = localStorage.getItem("customCards");
     if (customCardsRaw) {
       try {
         const customCards = JSON.parse(customCardsRaw);
         if (customCards.categories && Array.isArray(customCards.categories)) {
           customCards.categories.forEach((cat: { id: string, name: string, emoji: string }) => {
-            // 名前と絵文字の両方が一致した場合のみ重複とみなす
-            const nameEmojiKey = `${cat.name}${cat.emoji}`;
-            if (!nameEmojiMap.has(nameEmojiKey)) {
-              categoryMap.set(cat.id, cat);
-              nameEmojiMap.set(nameEmojiKey, cat);
+            const uniqueKey = `${cat.name}${cat.emoji}`;
+            if (!uniqueCategories.has(uniqueKey)) {
+              uniqueCategories.set(uniqueKey, cat);
+              console.log('カスタムカード（localStorage）カテゴリ追加:', { uniqueKey, cat });
             }
           });
         }
@@ -141,13 +162,17 @@ export default function AnalysisPage() {
       }
     }
     
-    // データが存在するカテゴリのみを返す（「すべて」は除く）
-    const categoriesWithData = Array.from(categoryMap.values()).filter(cat => {
+    // データが存在するカテゴリのみを返す
+    const allCategories = Array.from(uniqueCategories.values());
+    const categoriesWithData = allCategories.filter(cat => {
       if (cat.id === "") return true; // 「すべて」は常に表示
       return thingsRecords.some(record => 
         record.category === cat.id || record.thingId === cat.id
       );
     });
+    
+    // デバッグログ
+    console.log('最終的なカテゴリ配列:', categoriesWithData);
     
     return categoriesWithData;
   }, [thingsRecords, customCategories]);
@@ -430,6 +455,32 @@ export default function AnalysisPage() {
     return situationsWithData;
   }, [thingsRecords, customSituations]);
 
+  // APIからデータを取得
+  const fetchAPIData = async () => {
+    if (!user || !token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const result = await apiClient.getForgottenItems();
+      if (result.success && result.data) {
+        setApiData(result.data);
+        console.log('分析画面API取得データ:', result.data);
+      }
+    } catch (error) {
+      console.error('分析画面API取得エラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // APIデータを取得
+    fetchAPIData();
+  }, [user, token]);
+
   useEffect(() => {
     const loadRecords = () => {
       const raw = localStorage.getItem("thingsRecords");
@@ -437,8 +488,55 @@ export default function AnalysisPage() {
         const records = raw ? (JSON.parse(raw) as ThingsRecord[]) : [];
         // 「忘れたもの」のみをフィルタリング（didForget === true のもの）
         const forgottenRecords = Array.isArray(records) ? records.filter(r => r.didForget === true) : [];
-        setThingsRecords(forgottenRecords);
-        setBaseFiltered(forgottenRecords);
+        
+
+        // forgotten_itemの名前からカテゴリIDを取得する関数
+        const getItemCategoryId = (itemName: string): string => {
+          const categoryMap: { [key: string]: string } = {
+            '鍵': 'key',
+            '薬': 'medicine',
+            '傘': 'umbrella', 
+            '財布': 'wallet',
+            'スマホ': 'smartphone',
+            '予定': 'schedule',
+            '遅刻': 'time',
+            '宿題': 'homework',
+            'その他': 'another'
+          };
+          return categoryMap[itemName] || 'other';
+        };
+
+        // APIデータをThingsRecord形式に変換
+        const apiRecords: ThingsRecord[] = apiData.map((item: any, index: number) => {
+          const forgottenItemName = item.forgotten_item || item.title || '忘れ物';
+          const actualCategoryId = getItemCategoryId(forgottenItemName);
+          const itemEmoji = getItemEmoji(forgottenItemName);
+          
+          return {
+            id: `api_${item.id || index}`,
+            category: actualCategoryId,  // forgotten_itemから推定したカテゴリID
+            thingType: forgottenItemName,
+            thingId: actualCategoryId,   // カテゴリIDをthingIdとして使用
+            title: item.title || '',
+            content: item.details || '',
+            details: item.details || '',
+            difficulty: item.difficulty || 3,
+            location: item.location || '',
+            datetime: item.datetime || item.created_at || new Date().toISOString(),
+            createdAt: item.datetime || item.created_at || new Date().toISOString(),
+            situation: Array.isArray(item.situation) ? item.situation.join(',') : (item.situation || ''),
+            didForget: true,
+            categoryName: forgottenItemName,  // forgotten_itemの名前をそのまま使用
+            categoryEmoji: itemEmoji         // forgotten_itemから推定した絵文字
+          };
+        });
+
+        console.log('分析画面API変換後データ:', apiRecords);
+
+        // LocalStorageとAPIデータを統合
+        const allRecords = [...forgottenRecords, ...apiRecords];
+        setThingsRecords(allRecords);
+        setBaseFiltered(allRecords);
       } catch {
         setThingsRecords([]);
         setBaseFiltered([]);
@@ -517,7 +615,7 @@ export default function AnalysisPage() {
       window.removeEventListener("thingsRecordsChanged", handleCustomStorageChange as EventListener);
       window.removeEventListener("customCardsChanged", handleCustomStorageChange as EventListener);
     };
-  }, []);
+  }, [apiData]); // apiDataが変更されたら再実行
 
   useEffect(() => {
     let filtered = [...thingsRecords];
@@ -695,26 +793,67 @@ const difficultyRanking = useMemo(() => {
 
 
 
+  // 未認証の場合
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <div className="forest-card p-8 rounded-xl text-center">
+            <h2 className="text-2xl font-bold text-forest-primary mb-4">
+              分析機能を使うにはログインが必要です
+            </h2>
+            <p className="text-forest-secondary mb-6">
+              忘れ物の傾向を分析してみましょう。
+            </p>
+            <div className="flex justify-center gap-4">
+              <Link href="/login">
+                <button className="forest-button px-6 py-2 rounded-lg">ログイン</button>
+              </Link>
+              <Link href="/register">
+                <button className="forest-button px-6 py-2 rounded-lg">新規登録</button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // ローディング中
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">分析</h1>
-            <p className="text-gray-600">忘れ物の傾向と統計</p>
+        <div className="forest-card p-6 rounded-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-forest-primary flex items-center gap-2">
+                📊 分析
+              </h1>
+              <p className="text-forest-secondary">忘れ物の傾向と統計</p>
+            </div>
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <Calendar className="h-5 w-5 text-primary" />
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <Calendar className="h-5 w-5 text-forest-accent" />
               {timeRange === "week" ? "週間カテゴリー" : "月間カテゴリー"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+            </h2>
+          </div>
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium forest-label mb-2">
                 期間
               </label>
               <div className="flex gap-2">
@@ -731,7 +870,7 @@ const difficultyRanking = useMemo(() => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium forest-label mb-2">
                 カテゴリ
               </label>
               <div className="flex flex-wrap gap-2">
@@ -748,7 +887,7 @@ const difficultyRanking = useMemo(() => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium forest-label mb-2">
                 忘れたもの種類
               </label>
               <div className="flex flex-wrap gap-2">
@@ -765,7 +904,7 @@ const difficultyRanking = useMemo(() => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium forest-label mb-2">
                 状況（シチュエーション）
               </label>
               <div className="flex flex-wrap gap-2">
@@ -780,59 +919,55 @@ const difficultyRanking = useMemo(() => {
                 ))}
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <TrendingUp className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">総記録数</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <BarChart3 className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">1日平均</p>
-                  <p className="text-2xl font-bold text-gray-900">{averagePerDay}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <TrendingUp className="h-5 w-5 text-primary" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="forest-card p-6 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-900/30 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-forest-accent" />
+              </div>
+              <div>
+                <p className="text-sm text-forest-secondary">総記録数</p>
+                <p className="text-2xl font-bold text-forest-primary">{totalCount}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="forest-card p-6 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-900/30 rounded-lg">
+                <BarChart3 className="h-6 w-6 text-forest-accent" />
+              </div>
+              <div>
+                <p className="text-sm text-forest-secondary">1日平均</p>
+                <p className="text-2xl font-bold text-forest-primary">{averagePerDay}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <TrendingUp className="h-5 w-5 text-forest-accent" />
               {timeRange === "week" ? "週間トレンド" : "月間トレンド"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </h2>
+          </div>
+          <div>
             {timeRange === "week" ? (
               <div className="space-y-4">
                 {weeklyData.map((d) => {
                   const pct = weeklyMaxCount > 0 ? (d.count / weeklyMaxCount) * 100 : 0;
                   return (
                     <div key={d.day} className="flex items-center gap-4">
-                      <div className="w-12 text-sm font-medium text-gray-600">{d.day}</div>
+                      <div className="w-12 text-sm font-medium text-forest-secondary">{d.day}</div>
                       <div className="flex-1">
 
                         <Progress value={pct} max={100} />
                       </div>
-                      <div className="w-16 text-right text-sm font-medium text-gray-900">
+                      <div className="w-16 text-right text-sm font-medium text-forest-primary">
                         {d.count}件
                       </div>
                     </div>
@@ -843,7 +978,7 @@ const difficultyRanking = useMemo(() => {
               <div className="space-y-4">
                 <div className="grid grid-cols-7 gap-1 text-center">
                   {["日", "月", "火", "水", "木", "金", "土"].map((day) => (
-                    <div key={day} className="text-sm font-medium text-gray-600 py-2">
+                    <div key={day} className="text-sm font-medium text-forest-secondary py-2">
                       {day}
                     </div>
                   ))}
@@ -853,16 +988,16 @@ const difficultyRanking = useMemo(() => {
                     <div
                       key={idx}
                       className={`aspect-square border rounded-lg p-1 text-xs ${
-                        date ? "bg-white border-gray-200" : "bg-gray-50 border-gray-100"
-                      } ${date && getDateCount(date) > 0 ? "border-blue-300 bg-blue-50" : ""}`}
+                        date ? "bg-emerald-900/20 border-emerald-400/30" : "bg-emerald-900/10 border-emerald-400/20"
+                      } ${date && getDateCount(date) > 0 ? "border-emerald-400 bg-emerald-900/30" : ""}`}
                     >
                       {date && (
                         <>
-                          <div className="text-gray-900 font-medium">
+                          <div className="text-forest-primary font-medium">
                             {new Date(date).getDate()}
                           </div>
                           {getDateCount(date) > 0 && (
-                            <div className="text-blue-600 font-bold text-center">
+                            <div className="text-forest-accent font-bold text-center">
                               {getDateCount(date)}件
                             </div>
                           )}
@@ -873,19 +1008,19 @@ const difficultyRanking = useMemo(() => {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <PieChartIcon className="h-5 w-5 text-primary" />
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <PieChartIcon className="h-5 w-5 text-forest-accent" />
               {timeRange === "week" ? "週間カテゴリー（円グラフ）" : "月間カテゴリー（円グラフ）"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </h2>
+          </div>
+          <div>
             {totalCount === 0 ? (
-              <div className="text-sm text-gray-500">データがありません。</div>
+              <div className="text-sm text-forest-secondary">データがありません。</div>
             ) : (
               <div className="flex flex-col md:flex-row items-center gap-6">
                 <PieChart data={categoryStats} />
@@ -893,64 +1028,64 @@ const difficultyRanking = useMemo(() => {
                   {categoryStats.map((c) => (
                     <div
                       key={c.id}
-                      className="flex items-center justify-between border rounded-lg px-3 py-2"
+                      className="flex items-center justify-between border-2 border-emerald-400/30 bg-emerald-900/20 rounded-lg px-3 py-2"
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{c.emoji}</span>
-                        <span className="text-sm font-medium text-gray-900">{c.name}</span>
+                        <span className="text-sm font-medium text-forest-primary">{c.name}</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-medium text-gray-900">{c.count}件</div>
-                        <div className="text-xs text-gray-500">{c.pct.toFixed(0)}%</div>
+                        <div className="text-sm font-medium text-forest-primary">{c.count}件</div>
+                        <div className="text-xs text-forest-secondary">{c.pct.toFixed(0)}%</div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
 
 
         {/* 困った度ランキング */}
 
-        <Card>
-          <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-gray-900">
-            <Trophy className="h-5 w-5 text-primary" />
-            困った度ランキング
-          </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <Trophy className="h-5 w-5 text-forest-accent" />
+              困った度ランキング
+            </h2>
+          </div>
+          <div>
             {difficultyRanking.length === 0 ? (
-              <div className="text-sm text-gray-500">データがありません。</div>
+              <div className="text-sm text-forest-secondary">データがありません。</div>
             ) : (
               <div className="space-y-3">
                 {difficultyRanking.map((item, index) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between border rounded-lg px-3 py-2"
+                    className="flex items-center justify-between border-2 border-emerald-400/30 bg-emerald-900/20 rounded-lg px-3 py-2"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 text-sm font-medium text-gray-600">
+                      <div className="w-8 text-sm font-medium text-forest-secondary">
                         {index + 1}位
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{item.emoji}</span>
-                        <span className="text-sm font-medium text-gray-900">{item.name}</span>
+                        <span className="text-sm font-medium text-forest-primary">{item.name}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900">合計{item.sum}点</div>
-                      <div className="text-xs text-gray-500">{item.count}件</div>
+                      <div className="text-sm font-medium text-forest-primary">合計{item.sum}点</div>
+                      <div className="text-xs text-forest-secondary">{item.count}件</div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </MainLayout>
   );

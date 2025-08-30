@@ -42,10 +42,16 @@ import { Chip } from '@/components/ui/chip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Filter, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { apiClient } from '@/api/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function EncyclopediaPage() {
+  const { user, token, loading: authLoading } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [monsters, setMonsters] = useState<Monster[]>([]);
+  const [apiData, setApiData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [monsterFeed, setMonsterFeed] = useState<{ [key: string]: { fed: number } } | null>(null);
 
   // monstersステートの変更を監視
   useEffect(() => {
@@ -185,6 +191,27 @@ export default function EncyclopediaPage() {
 
 
 
+  // APIからデータを取得
+  const fetchAPIData = async () => {
+    if (!user || !token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const result = await apiClient.getForgottenItems();
+      if (result.success && result.data) {
+        setApiData(result.data);
+        console.log('API取得データ:', result.data);
+      }
+    } catch (error) {
+      console.error('API取得エラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ------- データ生成 -------
   const generateMonsters = () => {
     // 既存のサンプル（固定）
@@ -272,10 +299,30 @@ export default function EncyclopediaPage() {
     console.log('図鑑で読み込まれたthingsデータ:', thingsRecords);
     console.log('didForget === true の記録数:', thingsRecords.filter(r => r.didForget === true).length);
 
+    // APIデータをthingsRecords形式に変換して統合
+    const apiRecords: ThingsRecord[] = apiData.map((item: any, index: number) => ({
+      id: `api_${item.id || index}`,
+      category: item.category || 'forget_things',
+      categoryName: item.category || '忘れ物',
+      categoryEmoji: '📦',
+      thingType: item.forgotten_item || item.title || '忘れ物',
+      thingId: `api_${item.forgotten_item?.toLowerCase().replace(/\s+/g, '_') || 'item'}`,
+      title: item.title || '',
+      difficulty: item.difficulty || 3,
+      situation: Array.isArray(item.situation) ? item.situation : [],
+      createdAt: item.datetime || item.created_at || new Date().toISOString(),
+      didForget: true
+    }));
+
+    console.log('API変換後データ:', apiRecords);
+
+    // LocalStorageとAPIデータを統合
+    const allRecords = [...thingsRecords.filter(r => r.didForget === true), ...apiRecords];
+
     // thingId ごとに 1 体生成（最新の記録時間、最大難易度 で代表化）
     const byThingId = new Map<string, { latestAt: string; maxDifficulty: number; sample: ThingsRecord }>();
 
-    for (const rec of thingsRecords) {
+    for (const rec of allRecords) {
       // didForget === true の記録のみを対象とする
       if (rec.didForget !== true) continue;
       
@@ -348,7 +395,13 @@ export default function EncyclopediaPage() {
     console.log('setMonsters 完了');
   };
 
-  // 初回読み込みとLocalStorageの変更を監視
+  // 初回読み込みとデータ更新を監視
+  useEffect(() => {
+    // APIデータを取得
+    fetchAPIData();
+  }, [user, token]);
+
+  // APIデータが更新されたらモンスター生成
   useEffect(() => {
     let isInitialized = false;
 
@@ -362,13 +415,12 @@ export default function EncyclopediaPage() {
       generateMonsters();
     };
 
-    // 初回読み込み
+    // APIデータまたはLocalStorageが更新されたら再生成
     loadAndGenerate();
 
     // LocalStorageの変更を監視
     const handleStorageChange = () => {
       console.log('LocalStorage変更を検知しました');
-      // 少し遅延を入れて実行
       setTimeout(() => {
         loadAndGenerate();
       }, 100);
@@ -380,6 +432,26 @@ export default function EncyclopediaPage() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('thingsRecordsChanged', handleStorageChange);
+    };
+  }, [apiData]); // apiDataが変更されたら再実行
+
+  // monsterFeed をクライアントで読み込み＆更新監視
+  useEffect(() => {
+    const load = () => {
+      try {
+        const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
+        setMonsterFeed(feed);
+      } catch {
+        setMonsterFeed({});
+      }
+    };
+    load();
+    const onChange = () => load();
+    window.addEventListener('storage', onChange);
+    window.addEventListener('feed:inventoryChanged', onChange);
+    return () => {
+      window.removeEventListener('storage', onChange);
+      window.removeEventListener('feed:inventoryChanged', onChange);
     };
   }, []);
 
@@ -460,44 +532,99 @@ export default function EncyclopediaPage() {
     });
   }
 
+  // 認証ローディング中は安定したプレースホルダを表示
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-accent"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // 未認証の場合
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <div className="forest-card p-8 rounded-xl">
+            <div className="text-center">
+              <div className="text-6xl mb-4">📚</div>
+              <h2 className="text-2xl font-bold text-forest-primary mb-4">
+                図鑑を見るにはログインが必要です
+              </h2>
+              <p className="text-forest-secondary mb-6">
+                忘れ物を記録してモンスターを収集しましょう。
+              </p>
+              <div className="flex justify-center gap-4">
+                <Link href="/login">
+                  <button className="forest-button px-6 py-2 rounded-lg">ログイン</button>
+                </Link>
+                <Link href="/register">
+                  <button className="forest-button px-6 py-2 rounded-lg">新規登録</button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // ローディング中
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-accent"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="space-y-6">
         {/* ヘッダー */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">図鑑</h1>
-            <p className="text-gray-600">
-              収集したモンスターたち ({filteredMonsters.length}体)
-              {selectedCategory && (
-                <span className="ml-2 text-blue-600 font-medium">
-                  • {categories.find(c => c.id === selectedCategory)?.name}カテゴリ
-                </span>
-              )}
-            </p>
-            <p className="text-sm text-gray-500 mt-1">
-              カテゴリを選択して、特定の種類の忘れ物モンスターを絞り込めます
-            </p>
+        <div className="forest-card p-6 rounded-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-forest-primary flex items-center gap-2">
+                📚 図鑑
+              </h1>
+              <p className="text-forest-secondary">
+                収集したモンスターたち ({filteredMonsters.length}体)
+                {selectedCategory && (
+                  <span className="ml-2 text-forest-accent font-medium">
+                    • {categories.find(c => c.id === selectedCategory)?.name}カテゴリ
+                  </span>
+                )}
+              </p>
+              <p className="text-sm text-forest-secondary mt-1">
+                カテゴリを選択して、特定の種類の忘れ物モンスターを絞り込めます
+              </p>
+            </div>
+            <Link href="/input">
+              <button className="forest-button px-4 py-2 rounded-lg flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                忘れ物を記録
+              </button>
+            </Link>
           </div>
-          <Link href="/input">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              忘れ物を記録
-            </Button>
-          </Link>
         </div>
 
         {/* カテゴリフィルター */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              <Filter className="h-5 w-5 text-primary" />
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <Filter className="h-5 w-5 text-forest-accent" />
               カテゴリで絞り込み
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            </h2>
+          </div>
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium forest-label mb-3">
                 忘れ物の種類を選択してください
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -513,15 +640,15 @@ export default function EncyclopediaPage() {
                 ))}
               </div>
               {selectedCategory && (
-                <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="text-sm text-blue-700 text-center">
+                <div className="mt-3 p-2 bg-emerald-900/30 rounded-lg border-2 border-emerald-400/40">
+                  <div className="text-sm text-forest-accent text-center">
                     📍 選択中: {categories.find(c => c.id === selectedCategory)?.name}
                   </div>
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* モンスター一覧 */}
         {filteredMonsters.length > 0 ? (
@@ -530,8 +657,7 @@ export default function EncyclopediaPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredMonsters.map((monster) => (
                 <Link key={monster.id} href={`/monster/${monster.id}`}>
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardContent className="p-4">
+                  <div className="forest-card p-4 rounded-xl hover:scale-105 transition-all cursor-pointer">
                       <div className="flex items-start gap-3">
                         <div className="w-16 h-16 flex-shrink-0">
                           <img
@@ -550,42 +676,39 @@ export default function EncyclopediaPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-gray-900 truncate">{monster.name}</h3>
+                            <h3 className="font-semibold text-forest-primary truncate">{monster.name}</h3>
                           </div>
                           
                           {/* レベル表示を追加 */}
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
-                              Lv.{(() => {
-                                // feedページと同様のレベル計算ロジック
-                                const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
-                                const fedCount = feed[monster.category]?.fed || 0;
-                                return Math.min(Math.floor(fedCount / 5), 100);
-                              })()}
+                            <span className="text-xs bg-emerald-900/40 text-forest-accent px-2 py-1 rounded-full font-medium border border-emerald-400/30">
+                              Lv.{monsterFeed === null ? '...' : Math.min(Math.floor(((monsterFeed[monster.category]?.fed || 0) / 5)), 100)}
                             </span>
                           </div>
-                          <div className="text-xs text-gray-400">{monster.lastSeenAt}</div>
+                          <div className="text-xs text-forest-secondary">{monster.lastSeenAt}</div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                  </div>
                 </Link>
               ))}
             </div>
           </div>
         ) : (
-          <EmptyState
-            title="モンスターが見つかりません"
-            description="フィルターを調整するか、新しい忘れ物を記録してみてください"
-            action={
-              <Link href="/input">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  忘れ物を記録
-                </Button>
-              </Link>
-            }
-          />
+          <div className="forest-card p-8 rounded-xl text-center">
+            <div className="text-6xl mb-4">👾</div>
+            <h3 className="text-xl font-bold text-forest-primary mb-2">
+              モンスターが見つかりません
+            </h3>
+            <p className="text-forest-secondary mb-6">
+              フィルターを調整するか、新しい忘れ物を記録してみてください
+            </p>
+            <Link href="/input">
+              <button className="forest-button px-6 py-2 rounded-lg flex items-center gap-2 mx-auto">
+                <Plus className="h-4 w-4" />
+                忘れ物を記録
+              </button>
+            </Link>
+          </div>
         )}
       </div>
     </MainLayout>

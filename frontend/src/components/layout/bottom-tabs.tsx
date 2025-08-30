@@ -41,7 +41,7 @@ const BottomTabs = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t-0 forest-card md:hidden">
       <div className="flex h-16 items-center justify-around">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -50,16 +50,13 @@ const BottomTabs = () => {
               key={tab.name}
               href={tab.href}
               className={cn(
-                'flex flex-col items-center justify-center space-y-1 px-3 py-2 transition-colors',
+                'flex flex-col items-center justify-center space-y-1 px-3 py-2 transition-all duration-300 rounded-lg',
                 tab.active
-                  ? 'text-primary'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'text-forest-accent transform scale-110'
+                  : 'text-forest-secondary hover:text-forest-primary hover:transform hover:scale-105'
               )}
             >
-              <Icon className={cn(
-                'h-5 w-5',
-                tab.active ? 'text-primary' : 'text-gray-500'
-              )} />
+              <Icon className="h-5 w-5" />
               <span className="text-xs font-medium">{tab.name}</span>
             </Link>
           );

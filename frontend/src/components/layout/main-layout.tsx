@@ -9,11 +9,18 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="forest-background forest-theme">
+      {/* 森の背景レイヤー */}
+      <div className="forest-layers">
+        <div className="forest-layer forest-back"></div>
+        <div className="forest-layer forest-mid"></div>
+        <div className="forest-layer forest-front"></div>
+      </div>
+      
       {/* ヘッダー */}
       <Header />
       
-      <div className="flex">
+      <div className="flex relative z-10">
         {/* サイドバー（デスクトップ） */}
         <Sidebar />
         
