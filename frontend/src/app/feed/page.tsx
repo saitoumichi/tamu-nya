@@ -255,10 +255,10 @@ export default function FeedPage() {
         <div className="space-y-6">
           <Card>
             <CardContent className="text-center py-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              <h2 className="text-2xl font-bold text-forest-primary mb-4">
                 モンスターのお世話をするにはログインが必要です
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-forest-secondary mb-6">
                 忘れ物モンスターにえさをあげて育てましょう。
               </p>
               <div className="flex justify-center gap-4">
@@ -288,34 +288,50 @@ export default function FeedPage() {
   }
 
   return (
-    <MainLayout>
-      <div className="relative min-h-screen overflow-hidden forest-background">
-        {/* 森の背景レイヤー */}
-        <div className="absolute inset-0 forest-layers">
-          <div className="forest-layer forest-back"></div>
-          <div className="forest-layer forest-mid"></div>
-          <div className="forest-layer forest-front"></div>
-        </div>
+    <div className="feed-background">
+      {/* Feed専用森レイヤー */}
+      <div className="feed-forest-layers">
+        <div className="forest-layer forest-back"></div>
+        <div className="forest-layer forest-mid"></div>
+        <div className="forest-layer forest-front"></div>
+      </div>
+      
+      <div className="relative min-h-screen overflow-hidden z-10">
+        {/* ナビゲーション */}
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-emerald-900/20 backdrop-blur-md border-b border-emerald-400/30">
+          <div className="flex justify-between items-center p-4">
+            <Link href="/" className="text-xl font-bold text-forest-primary">🦖 TAMU-NYA</Link>
+            <div className="flex gap-4">
+              <Link href="/" className="text-forest-secondary hover:text-forest-primary">ホーム</Link>
+              <Link href="/input" className="text-forest-secondary hover:text-forest-primary">入力</Link>
+              <Link href="/analysis" className="text-forest-secondary hover:text-forest-primary">分析</Link>
+              <Link href="/encyclopedia" className="text-forest-secondary hover:text-forest-primary">図鑑</Link>
+              <Link href="/feed" className="text-forest-primary font-bold">フィード</Link>
+            </div>
+          </div>
+        </nav>
+        
+        {/* フィードコンテンツ */}
 
         {/* フローティングヘッダー */}
-        <div className="relative z-10 p-6">
-          <div className="glass-card p-4 rounded-xl mb-6">
-            <h1 className="text-2xl font-bold text-emerald-800 mb-2 flex items-center gap-2">
+        <div className="relative z-10 pt-24 p-6">
+          <div className="bg-emerald-900/10 backdrop-blur-sm border-2 border-emerald-400/20 p-4 rounded-xl mb-6">
+            <h1 className="text-2xl font-bold text-forest-primary mb-2 flex items-center gap-2">
               🌲 妖精の森
             </h1>
-            <p className="text-emerald-600 mb-4">忘れ物から生まれた妖精たちがさまよっています</p>
+            <p className="text-forest-secondary mb-4">忘れ物から生まれた妖精たちがさまよっています</p>
             
             {/* えさと妖精数の表示 */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <div className="px-3 py-1 bg-yellow-100 rounded-full border border-yellow-300">
-                  <span className="text-yellow-800 font-medium">🌰 えさ: {feedInventory}</span>
+                <div className="px-3 py-1 bg-emerald-900/20 rounded-full border border-emerald-400/40">
+                  <span className="text-forest-primary font-medium">🌰 えさ: {feedInventory}</span>
                 </div>
-                <div className="px-3 py-1 bg-purple-100 rounded-full border border-purple-300">
-                  <span className="text-purple-800 font-medium">🧚‍♀️ 妖精: {monsters.length}</span>
+                <div className="px-3 py-1 bg-emerald-900/20 rounded-full border border-emerald-400/40">
+                  <span className="text-forest-primary font-medium">🧚‍♀️ 妖精: {monsters.length}</span>
                 </div>
               </div>
-              <div className="text-xs text-emerald-600">
+              <div className="text-xs text-forest-secondary">
                 えさ5個で成長
               </div>
             </div>
@@ -372,7 +388,7 @@ export default function FeedPage() {
                   <div className="text-xs font-bold text-white bg-emerald-600 px-2 py-1 rounded-full">
                     {monster.thingType}
                   </div>
-                  <div className="text-xs text-emerald-800 mt-1">
+                  <div className="text-xs text-forest-primary mt-1">
                     Lv.{monster.stage}
                   </div>
                 </div>
@@ -401,12 +417,12 @@ export default function FeedPage() {
           </div>
 
           {monsters.length === 0 && (
-            <div className="glass-card p-8 text-center mt-8">
+            <div className="bg-emerald-900/10 backdrop-blur-sm border-2 border-emerald-400/20 p-8 text-center mt-8 rounded-xl">
               <div className="text-6xl mb-4">🌲</div>
-              <div className="text-emerald-700 font-medium mb-2">
+              <div className="text-forest-secondary font-medium mb-2">
                 森には妖精がいません
               </div>
-              <div className="text-emerald-600 text-sm">
+              <div className="text-forest-secondary text-sm">
                 忘れ物をすると妖精が生まれます
               </div>
             </div>
@@ -420,36 +436,36 @@ export default function FeedPage() {
             onClick={() => setSelectedFairy(null)}
           >
             <div 
-              className="glass-card p-6 m-4 max-w-sm w-full"
+              className="bg-emerald-900/10 backdrop-blur-sm border-2 border-emerald-400/20 p-6 m-4 max-w-sm w-full rounded-xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="text-center">
                 <div className="text-4xl mb-4">
                   {THING_EMOJI_MAP[selectedFairy.thingId] || '🧚‍♀️'}
                 </div>
-                <h3 className="text-xl font-bold text-emerald-800 mb-4">
+                <h3 className="text-xl font-bold text-forest-primary mb-4">
                   妖精の詳細
                 </h3>
                 
                 <div className="space-y-3 text-left">
                   <div className="flex justify-between items-center">
-                    <span className="text-emerald-700 font-medium">名前:</span>
-                    <span className="text-emerald-900">{selectedFairy.thingType}</span>
+                    <span className="text-forest-secondary font-medium">名前:</span>
+                    <span className="text-forest-primary">{selectedFairy.thingType}</span>
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-emerald-700 font-medium">ランク:</span>
-                    <span className="text-emerald-900">Lv.{selectedFairy.stage}</span>
+                    <span className="text-forest-secondary font-medium">ランク:</span>
+                    <span className="text-forest-primary">Lv.{selectedFairy.stage}</span>
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-emerald-700 font-medium">えさ回数:</span>
-                    <span className="text-emerald-900">{selectedFairy.fedCount}回</span>
+                    <span className="text-forest-secondary font-medium">えさ回数:</span>
+                    <span className="text-forest-primary">{selectedFairy.fedCount}回</span>
                   </div>
                   
                                      <div className="flex justify-between items-center">
-                     <span className="text-emerald-700 font-medium">次の成長まで:</span>
-                     <span className="text-emerald-900">
+                     <span className="text-forest-secondary font-medium">次の成長まで:</span>
+                     <span className="text-forest-primary">
                        {selectedFairy.stage >= 100 ? '最大レベル' : `${5 - (selectedFairy.fedCount % 5)}回`}
                      </span>
                    </div>
@@ -771,6 +787,6 @@ export default function FeedPage() {
           }
         `}</style>
       </div>
-    </MainLayout>
+    </div>
   );
 }
