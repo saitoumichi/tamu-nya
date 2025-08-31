@@ -299,21 +299,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
         </Card>
         </div>
 
-        {/* 推奨対策 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              推奨対策
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-700 mb-4">{monster.recommendation}</p>
-            <Button className="w-full">
-              アラート作成
-            </Button>
-          </CardContent>
-        </Card>
+
 
         {/* 履歴 */}
         <Card>
@@ -365,15 +351,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
           </CardContent>
         </Card>
 
-        {/* 下部アクションバー */}
-        <div className="flex items-center justify-between p-4 bg-white border-t rounded-t-lg">
-          <div className="text-sm text-gray-500">
-            {monster.lastSeen} {monster.lastLevelUp ? monster.lastLevelUp.split(' ')[1] : ''}
-          </div>
-          <Button variant="ghost" size="sm">
-            履歴
-          </Button>
-        </div>
+
       </div>
     </MainLayout>
   );
