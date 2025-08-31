@@ -48,15 +48,15 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function EncyclopediaPage() {
   const { user, token, loading: authLoading } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [monsters, setMonsters] = useState<Monster[]>([]);
+  const [fairies, setFairies] = useState<Monster[]>([]);
   const [apiData, setApiData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [monsterFeed, setMonsterFeed] = useState<{ [key: string]: { fed: number } } | null>(null);
+  const [fairyFeed, setFairyFeed] = useState<{ [key: string]: { fed: number } } | null>(null);
 
-  // monstersステートの変更を監視
+  // fairiesステートの変更を監視
   useEffect(() => {
-    console.log('monstersステートが変更されました:', monsters.length, '件');
-  }, [monsters]);
+    console.log('fairiesステートが変更されました:', fairies.length, '件');
+  }, [fairies]);
 
   // ------- ユーティリティ -------
   // 経過時間表示
@@ -75,27 +75,27 @@ export default function EncyclopediaPage() {
     return created.toLocaleDateString('ja-JP');
   };
 
-  // 画像パス（固定: 親密度の概念は削除）
+  // 画像パス（妖精の画像を使用）
   const getImagePathByThingId = (thingId: string): string => {
     switch (thingId) {
       case 'key':
-        return '/monsters/key/key-monster-1.jpg';
+        return '/fairies/key/key1.jpg';
       case 'umbrella':
-        return '/monsters/umbrella/umbrella-monster-1.jpg';
+        return '/fairies/umbrella/umbrella1.jpg';
       case 'wallet':
-        return '/monsters/wallet/wallet-monster.jpg';
+        return '/fairies/wallet/wallet1.jpg';
       case 'medicine':
-        return '/monsters/medicine/medicine-monster-1.jpg';
+        return '/fairies/medicine/medicine1.jpg';
       case 'smartphone':
-        return '/monsters/phone/phone_monsters.jpg';
+        return '/fairies/phone/phone1.jpg';
       case 'homework':
-        return '/monsters/homework/homework_monsters.jpg';
+        return '/fairies/homework/homework1.jpg';
       case 'schedule':
-        return '/monsters/schedule/schedule_monsters.png';
+        return '/fairies/schedule/schedule1.jpg';
       case 'time':
-        return '/monsters/late/late_monsters.jpg'; // lateディレクトリを使用
+        return '/fairies/time/time1.jpg';
       default:
-        return '/monsters/wallet/wallet-monster.jpg';
+        return '/fairies/wallet/wallet1.jpg';
     }
   };
 
@@ -213,9 +213,9 @@ export default function EncyclopediaPage() {
   };
 
   // ------- データ生成 -------
-  const generateMonsters = () => {
+  const generateFairies = () => {
     // 既存のサンプル（固定）
-    const baseMonsters: Monster[] = [
+    const baseFairies: Monster[] = [
       {
         id: 1,
         name: '鍵の精',
@@ -223,7 +223,7 @@ export default function EncyclopediaPage() {
         categoryName: '鍵',
         categoryEmoji: '🔑',
         lastSeenAt: '2時間前',
-        thumbUrl: '/monsters/key/key-monster-1.jpg',
+        thumbUrl: '/fairies/key/key1.jpg',
       },
       {
         id: 2,
@@ -232,7 +232,7 @@ export default function EncyclopediaPage() {
         categoryName: '傘',
         categoryEmoji: '☔',
         lastSeenAt: '1日前',
-        thumbUrl: '/monsters/umbrella/umbrella-monster-1.jpg'
+        thumbUrl: '/fairies/umbrella/umbrella1.jpg'
       },
       {
         id: 3,
@@ -241,12 +241,12 @@ export default function EncyclopediaPage() {
         categoryName: '財布',
         categoryEmoji: '👛',
         lastSeenAt: '3日前',
-        thumbUrl: '/monsters/wallet/wallet-monster.jpg',
+        thumbUrl: '/fairies/wallet/wallet1.jpg',
       },
     ];
 
-    // 既存のモンスターを読み込み（入力画面で作成されたもの）
-    const existingMonsters: Monster[] = [
+    // 既存の妖精を読み込み（入力画面で作成されたもの）
+    const existingFairies: Monster[] = [
       {
         id: 100,
         name: '薬の精',
@@ -254,7 +254,7 @@ export default function EncyclopediaPage() {
         categoryName: '薬',
         categoryEmoji: '💊',
         lastSeenAt: '1週間前',
-        thumbUrl: '/monsters/medicine/medicine-monster-1.jpg',
+        thumbUrl: '/fairies/medicine/medicine1.jpg',
       },
       {
         id: 101,
@@ -263,7 +263,7 @@ export default function EncyclopediaPage() {
         categoryName: 'スマホ',
         categoryEmoji: '📱',
         lastSeenAt: '3日前',
-        thumbUrl: '/monsters/phone/phone_monsters.jpg',
+        thumbUrl: '/fairies/phone/phone1.jpg',
       },
       {
         id: 102,
@@ -272,7 +272,7 @@ export default function EncyclopediaPage() {
         categoryName: '宿題',
         categoryEmoji: '📄',
         lastSeenAt: '5日前',
-        thumbUrl: '/monsters/homework/homework_monsters.jpg',
+        thumbUrl: '/fairies/homework/homework1.jpg',
       },
       {
         id: 103,
@@ -281,7 +281,7 @@ export default function EncyclopediaPage() {
         categoryName: '予定',
         categoryEmoji: '📅',
         lastSeenAt: '2週間前',
-        thumbUrl: '/monsters/schedule/schedule_monsters.png',
+        thumbUrl: '/fairies/schedule/schedule1.jpg',
       },
       {
         id: 104,
@@ -290,7 +290,7 @@ export default function EncyclopediaPage() {
         categoryName: '遅刻',
         categoryEmoji: '⏰',
         lastSeenAt: '1週間前',
-        thumbUrl: '/monsters/time/time_monster.png',
+        thumbUrl: '/fairies/time/time1.jpg',
       },
     ];
 
@@ -337,9 +337,9 @@ export default function EncyclopediaPage() {
     }
 
     console.log('byThingId のサイズ:', byThingId.size);
-    console.log('生成されるモンスター数:', byThingId.size);
+    console.log('生成される妖精数:', byThingId.size);
 
-    const thingsMonsters: Monster[] = Array.from(byThingId.entries()).map(([thingId, info], index) => {
+    const thingsFairies: Monster[] = Array.from(byThingId.entries()).map(([thingId, info], index) => {
       const sample = info.sample;
       const displayName = sample.thingType || '忘れ物';
       
@@ -377,22 +377,22 @@ export default function EncyclopediaPage() {
        };
     });
 
-    const finalMonsters = [...baseMonsters, ...existingMonsters, ...thingsMonsters];
-    console.log('最終的なモンスター数:', finalMonsters.length);
-    console.log('baseMonsters:', baseMonsters.length, 'existingMonsters:', existingMonsters.length, 'thingsMonsters:', thingsMonsters.length);
-    console.log('setMonsters を呼び出します:', finalMonsters);
+    const finalFairies = [...baseFairies, ...existingFairies, ...thingsFairies];
+    console.log('最終的な妖精数:', finalFairies.length);
+    console.log('baseFairies:', baseFairies.length, 'existingFairies:', existingFairies.length, 'thingsFairies:', thingsFairies.length);
+    console.log('setFairies を呼び出します:', finalFairies);
     
-         // モンスターの詳細もログに出力
-     finalMonsters.forEach((monster, index) => {
-       console.log(`モンスター${index + 1}:`, monster.name, monster.category);
+         // 妖精の詳細もログに出力
+     finalFairies.forEach((fairy, index) => {
+       console.log(`妖精${index + 1}:`, fairy.name, fairy.category);
      });
     
-    setMonsters(finalMonsters);
+    setFairies(finalFairies);
     
-    // モンスターデータをLocalStorageに保存（詳細画面で使用）
-    localStorage.setItem('encyclopediaMonsters', JSON.stringify(finalMonsters));
+    // 妖精データをLocalStorageに保存（詳細画面で使用）
+    localStorage.setItem('encyclopediaFairies', JSON.stringify(finalFairies));
     
-    console.log('setMonsters 完了');
+    console.log('setFairies 完了');
   };
 
   // 初回読み込みとデータ更新を監視
@@ -401,18 +401,18 @@ export default function EncyclopediaPage() {
     fetchAPIData();
   }, [user, token]);
 
-  // APIデータが更新されたらモンスター生成
+  // APIデータが更新されたら妖精生成
   useEffect(() => {
     let isInitialized = false;
 
     const loadAndGenerate = () => {
       if (isInitialized) {
-        console.log('generateMonsters が実行されました（更新）');
+        console.log('generateFairies が実行されました（更新）');
       } else {
-        console.log('generateMonsters が実行されました（初回）');
+        console.log('generateFairies が実行されました（初回）');
         isInitialized = true;
       }
-      generateMonsters();
+      generateFairies();
     };
 
     // APIデータまたはLocalStorageが更新されたら再生成
@@ -435,14 +435,14 @@ export default function EncyclopediaPage() {
     };
   }, [apiData]); // apiDataが変更されたら再実行
 
-  // monsterFeed をクライアントで読み込み＆更新監視
+  // fairyFeed をクライアントで読み込み＆更新監視
   useEffect(() => {
     const load = () => {
       try {
-        const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
-        setMonsterFeed(feed);
+        const feed = JSON.parse(localStorage.getItem('fairyFeed') || '{}');
+        setFairyFeed(feed);
       } catch {
-        setMonsterFeed({});
+        setFairyFeed({});
       }
     };
     load();
@@ -456,46 +456,46 @@ export default function EncyclopediaPage() {
   }, []);
 
   // ------- フィルタ処理 -------
-  const matchesNewCategory = (monster: Monster, selected: string) => {
+  const matchesNewCategory = (fairy: Monster, selected: string) => {
     if (!selected) return true; // すべて
     
-    // モンスターのカテゴリ情報を取得
-    let monsterCategoryId: string;
+    // 妖精のカテゴリ情報を取得
+    let fairyCategoryId: string;
     
     // デバッグ用ログ
-    console.log(`フィルタリング処理開始: ${monster.name}`, {
-      category: monster.category,
-      categoryName: monster.categoryName,
-      categoryEmoji: monster.categoryEmoji,
+    console.log(`フィルタリング処理開始: ${fairy.name}`, {
+      category: fairy.category,
+      categoryName: fairy.categoryName,
+      categoryEmoji: fairy.categoryEmoji,
       selected: selected
     });
     
-    if (monster.categoryName && monster.categoryEmoji && monster.category !== monster.categoryName) {
+    if (fairy.categoryName && fairy.categoryEmoji && fairy.category !== fairy.categoryName) {
       // 新しいデータ構造（入力画面から保存されたデータ）
       // categoryプロパティにカテゴリIDが保存されている
-      monsterCategoryId = monster.category;
-      console.log(`新しいデータ構造を使用: ${monsterCategoryId}`);
+      fairyCategoryId = fairy.category;
+      console.log(`新しいデータ構造を使用: ${fairyCategoryId}`);
     } else {
       // 古いデータ構造（サンプルデータ）
       // thingIdをカテゴリIDにマッピング
-      monsterCategoryId = NEW_CATEGORY_MAP[monster.category] || 'forget_things';
-      console.log(`古いデータ構造を使用: ${monster.category} -> ${monsterCategoryId}`);
+      fairyCategoryId = NEW_CATEGORY_MAP[fairy.category] || 'forget_things';
+      console.log(`古いデータ構造を使用: ${fairy.category} -> ${fairyCategoryId}`);
     }
     
     // 選択されたカテゴリと一致するかチェック
-    const categoryMatch = monsterCategoryId === selected;
+    const categoryMatch = fairyCategoryId === selected;
     
-    console.log(`フィルタリング結果: モンスター ${monster.name} (${monster.category}) -> カテゴリID: ${monsterCategoryId}, 選択: ${selected}, 一致: ${categoryMatch}`);
+    console.log(`フィルタリング結果: 妖精 ${fairy.name} (${fairy.category}) -> カテゴリID: ${fairyCategoryId}, 選択: ${selected}, 一致: ${categoryMatch}`);
     
     return categoryMatch;
   };
 
-  const filteredMonsters = monsters.filter((m) => {
-    const categoryMatch = matchesNewCategory(m, selectedCategory);
+  const filteredFairies = fairies.filter((f) => {
+    const categoryMatch = matchesNewCategory(f, selectedCategory);
     
     // フィルタリング結果をログに出力
     if (selectedCategory) {
-      console.log(`フィルタリング結果: ${m.name} (${m.category}) - カテゴリ: ${categoryMatch}`);
+      console.log(`フィルタリング結果: ${f.name} (${f.category}) - カテゴリ: ${categoryMatch}`);
     }
     
     if (!categoryMatch) return false;
@@ -503,30 +503,30 @@ export default function EncyclopediaPage() {
   });
 
   // デバッグ
-  console.log('フィルター前のモンスター数:', monsters.length);
-  console.log('フィルター後のモンスター数:', filteredMonsters.length);
+  console.log('フィルター前の妖精数:', fairies.length);
+  console.log('フィルター後の妖精数:', filteredFairies.length);
   console.log('選択中のカテゴリ(新3分類):', selectedCategory);
   
   // フィルタリング詳細（フィルターが適用されている場合のみ）
   if (selectedCategory) {
     console.log('フィルタリング詳細:', {
-      totalMonsters: monsters.length,
-      filteredCount: filteredMonsters.length,
+      totalFairies: fairies.length,
+      filteredCount: filteredFairies.length,
       selectedCategory,
-      monsters: filteredMonsters.map(m => {
+      fairies: filteredFairies.map(f => {
         // カテゴリIDを正しく取得
         let categoryId: string;
-        if (m.categoryName && m.categoryEmoji && m.category !== m.categoryName) {
-          categoryId = m.category; // 新しいデータ構造
+        if (f.categoryName && f.categoryEmoji && f.category !== f.categoryName) {
+          categoryId = f.category; // 新しいデータ構造
         } else {
-          categoryId = NEW_CATEGORY_MAP[m.category] || 'forget_things'; // 古いデータ構造
+          categoryId = NEW_CATEGORY_MAP[f.category] || 'forget_things'; // 古いデータ構造
         }
         
                  return {
-           name: m.name, 
-           category: m.category, 
+           name: f.name, 
+           category: f.category, 
            categoryId: categoryId,
-           categoryName: m.categoryName
+           categoryName: f.categoryName
          };
       })
     });
@@ -594,7 +594,7 @@ export default function EncyclopediaPage() {
                 📚 図鑑
               </h1>
               <p className="text-forest-secondary">
-                収集したモンスターたち ({filteredMonsters.length}体)
+                収集した妖精たち ({filteredFairies.length}体)
                 {selectedCategory && (
                   <span className="ml-2 text-forest-accent font-medium">
                     • {categories.find(c => c.id === selectedCategory)?.name}カテゴリ
@@ -602,7 +602,7 @@ export default function EncyclopediaPage() {
                 )}
               </p>
               <p className="text-sm text-forest-secondary mt-1">
-                カテゴリを選択して、特定の種類の忘れ物モンスターを絞り込めます
+                カテゴリを選択して、特定の種類の忘れ物妖精を絞り込めます
               </p>
             </div>
             <Link href="/input">
@@ -650,42 +650,42 @@ export default function EncyclopediaPage() {
           </div>
         </div>
 
-        {/* モンスター一覧 */}
-        {filteredMonsters.length > 0 ? (
+        {/* 妖精一覧 */}
+        {filteredFairies.length > 0 ? (
           <div className="space-y-4">
             {/* 時系列順で横並びに表示 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredMonsters.map((monster) => (
-                <Link key={monster.id} href={`/monster/${monster.id}`}>
+              {filteredFairies.map((fairy) => (
+                <Link key={fairy.id} href={`/monster/${fairy.id}`}>
                   <div className="forest-card p-4 rounded-xl hover:scale-105 transition-all cursor-pointer">
                       <div className="flex items-start gap-3">
                         <div className="w-16 h-16 flex-shrink-0">
                           <img
-                            src={monster.thumbUrl}
-                            alt={monster.name}
+                            src={fairy.thumbUrl}
+                            alt={fairy.name}
                             className="w-full h-full object-cover rounded-lg"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.style.display = 'none';
                               const fallback = document.createElement('div');
                               fallback.className = 'text-4xl flex items-center justify-center w-full h-full';
-                              fallback.textContent = monster.categoryEmoji;
+                              fallback.textContent = fairy.categoryEmoji;
                               target.parentNode?.appendChild(fallback);
                             }}
                           />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-forest-primary truncate">{monster.name}</h3>
+                            <h3 className="font-semibold text-forest-primary truncate">{fairy.name}</h3>
                           </div>
                           
                           {/* レベル表示を追加 */}
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-xs bg-emerald-900/40 text-forest-accent px-2 py-1 rounded-full font-medium border border-emerald-400/30">
-                              Lv.{monsterFeed === null ? '...' : Math.min(Math.floor(((monsterFeed[monster.category]?.fed || 0) / 5)), 100)}
+                              Lv.{fairyFeed === null ? '...' : Math.min(Math.floor(((fairyFeed[fairy.category]?.fed || 0) / 5)), 100)}
                             </span>
                           </div>
-                          <div className="text-xs text-forest-secondary">{monster.lastSeenAt}</div>
+                          <div className="text-xs text-forest-secondary">{fairy.lastSeenAt}</div>
                         </div>
                       </div>
                   </div>
@@ -694,14 +694,14 @@ export default function EncyclopediaPage() {
             </div>
           </div>
         ) : (
-          <div className="forest-card p-8 rounded-xl text-center">
-            <div className="text-6xl mb-4">👾</div>
-            <h3 className="text-xl font-bold text-forest-primary mb-2">
-              モンスターが見つかりません
-            </h3>
-            <p className="text-forest-secondary mb-6">
-              フィルターを調整するか、新しい忘れ物を記録してみてください
-            </p>
+                      <div className="forest-card p-8 rounded-xl text-center">
+              <div className="text-6xl mb-4">🧚</div>
+              <h3 className="text-xl font-bold text-forest-primary mb-2">
+                妖精が見つかりません
+              </h3>
+              <p className="text-forest-secondary mb-6">
+                フィルターを調整するか、新しい忘れ物を記録してみてください
+              </p>
             <Link href="/input">
               <button className="forest-button px-6 py-2 rounded-lg flex items-center gap-2 mx-auto">
                 <Plus className="h-4 w-4" />
