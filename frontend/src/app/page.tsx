@@ -133,7 +133,31 @@ export default function HomePage() {
     }
   };
 
-  // カテゴリに応じた絵文字を取得する関数
+  // 画像パスを生成する関数（図鑑と同じ）
+  const getImagePathByThingId = (thingId: string): string => {
+    switch (thingId) {
+      case 'key':
+        return '/fairies/key/key1.jpg';
+      case 'umbrella':
+        return '/fairies/umbrella/umbrella1.jpg';
+      case 'wallet':
+        return '/fairies/wallet/wallet1.jpg';
+      case 'medicine':
+        return '/fairies/medicine/medicine1.jpg';
+      case 'smartphone':
+        return '/fairies/phone/phone1.jpg';
+      case 'homework':
+        return '/fairies/homework/homework1.jpg';
+      case 'schedule':
+        return '/fairies/schedule/schedule1.jpg';
+      case 'time':
+        return '/fairies/time/time1.jpg';
+      default:
+        return '/fairies/wallet/wallet1.jpg';
+    }
+  };
+
+  // カテゴリに応じた絵文字を取得する関数（フォールバック用）
   const getCategoryEmoji = (category: string) => {
     const emojiMap: { [key: string]: string } = {
       'forget_things': '🔑',
@@ -421,7 +445,22 @@ export default function HomePage() {
                     key={item.id}
                     className="flex items-center gap-3 p-3 rounded-lg border-2 border-emerald-400/30 bg-emerald-900/20 hover:bg-emerald-900/30 transition-colors backdrop-filter backdrop-blur-sm"
                   >
-                    <span className="text-2xl">{getCategoryEmoji(item.category)}</span>
+                    <div className="w-12 h-12 flex-shrink-0">
+                      <img
+                        src={getImagePathByThingId(item.category)}
+                        alt={item.title}
+                        className="w-full h-full object-cover rounded-lg"
+                        onError={(e) => {
+                          // 画像読み込みエラー時は絵文字を表示
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallback = document.createElement('div');
+                          fallback.className = 'text-2xl flex items-center justify-center w-full h-full';
+                          fallback.textContent = getCategoryEmoji(item.category);
+                          target.parentNode?.appendChild(fallback);
+                        }}
+                      />
+                    </div>
                     <div className="flex-1">
                       <h4 className="font-medium text-forest-primary">{item.title}</h4>
                       <p className="text-sm text-forest-secondary">{formatDateTime(item.datetime)}</p>
