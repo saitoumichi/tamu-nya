@@ -187,7 +187,6 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
             </Link>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-forest-primary">{monster.name}</h1>
-              <p className="text-forest-secondary">入力回数 {monster.encounterCount}回</p>
             </div>
           </div>
         </div>
@@ -237,10 +236,6 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
                   <Clock className="h-4 w-4 text-forest-accent" />
                   <span>最終出現日: {monster.lastSeen}</span>
                 </div>
-              </div>
-              
-              <div className="text-sm text-forest-secondary">
-                遭遇回数: {monster.encounterCount}回
               </div>
             </div>
           </div>
