@@ -157,16 +157,37 @@ export default function HomePage() {
     }
   };
 
-  // カテゴリに応じた絵文字を取得する関数（フォールバック用）
-  const getCategoryEmoji = (category: string) => {
-    const emojiMap: { [key: string]: string } = {
-      'forget_things': '🔑',
-      'electronics': '📱',
-      'documents': '📄',
-      'clothing': '👕',
-      'other': '📦'
+  // 忘れ物名をthingIdに正規化する関数（図鑑と同じ）
+  const normalizeThingId = (itemName: string): string => {
+    const normalized = itemName?.toLowerCase().replace(/\s+/g, '_') || 'item';
+    // APIの忘れ物名を標準的なthingIdにマッピング
+    const mapping: { [key: string]: string } = {
+      '鍵': 'key',
+      '傘': 'umbrella', 
+      '財布': 'wallet',
+      '薬': 'medicine',
+      'スマホ': 'smartphone',
+      '宿題': 'homework',
+      '予定': 'schedule',
+      '遅刻': 'time',
+      '時間': 'time'
     };
-    return emojiMap[category] || '📦';
+    return mapping[itemName] || normalized;
+  };
+
+  // カテゴリに応じた絵文字を取得する関数（フォールバック用）
+  const getCategoryEmoji = (thingId: string) => {
+    const emojiMap: { [key: string]: string } = {
+      'key': '🔑',
+      'umbrella': '☔',
+      'wallet': '👛',
+      'medicine': '💊',
+      'smartphone': '📱',
+      'homework': '📄',
+      'schedule': '📅',
+      'time': '⏰'
+    };
+    return emojiMap[thingId] || '📦';
   };
 
   const handleMissionToggle = (missionId: number) => {
@@ -446,20 +467,26 @@ export default function HomePage() {
                     className="flex items-center gap-3 p-3 rounded-lg border-2 border-emerald-400/30 bg-emerald-900/20 hover:bg-emerald-900/30 transition-colors backdrop-filter backdrop-blur-sm"
                   >
                     <div className="w-12 h-12 flex-shrink-0">
-                      <img
-                        src={getImagePathByThingId(item.category)}
-                        alt={item.title}
-                        className="w-full h-full object-cover rounded-lg"
-                        onError={(e) => {
-                          // 画像読み込みエラー時は絵文字を表示
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const fallback = document.createElement('div');
-                          fallback.className = 'text-2xl flex items-center justify-center w-full h-full';
-                          fallback.textContent = getCategoryEmoji(item.category);
-                          target.parentNode?.appendChild(fallback);
-                        }}
-                      />
+                      {(() => {
+                        // forgotten_itemから正しいthingIdを取得
+                        const thingId = normalizeThingId(item.forgotten_item || item.title);
+                        return (
+                          <img
+                            src={getImagePathByThingId(thingId)}
+                            alt={item.title}
+                            className="w-full h-full object-cover rounded-lg"
+                            onError={(e) => {
+                              // 画像読み込みエラー時は絵文字を表示
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const fallback = document.createElement('div');
+                              fallback.className = 'text-2xl flex items-center justify-center w-full h-full';
+                              fallback.textContent = getCategoryEmoji(thingId);
+                              target.parentNode?.appendChild(fallback);
+                            }}
+                          />
+                        );
+                      })()}
                     </div>
                     <div className="flex-1">
                       <h4 className="font-medium text-forest-primary">{item.title}</h4>
