@@ -147,6 +147,8 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
     }
   }, [id]);
 
+
+
   const history = [
     {
       id: 1,
@@ -246,9 +248,7 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
                   </div>
                 </div>
                 
-                <div className="text-sm text-gray-600">
-                  遭遇回数: {monster.encounterCount}回
-                </div>
+                
               </div>
             </div>
           </CardContent>
