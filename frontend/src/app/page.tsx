@@ -31,7 +31,7 @@ interface Mission {
 }
 
 interface ForgottenItem {
-  id: number;
+  id: number | string;
   title: string;
   forgotten_item: string;
   datetime: string;
@@ -40,6 +40,17 @@ interface ForgottenItem {
   difficulty?: number; // 困った度 (1-5)
   situation?: string[]; // 状況
   location?: string; // 場所
+}
+
+interface LocalStorageRecord {
+  id: string;
+  thingType: string;
+  didForget: boolean;
+  createdAt?: string;
+  category?: string;
+  difficulty?: number;
+  situation?: string[];
+  location?: string;
 }
 
 export default function HomePage() {
@@ -84,12 +95,37 @@ export default function HomePage() {
         setLoading(true);
         const result = await apiClient.getForgottenItems();
         if (result.success && result.data) {
-          const sortedItems = result.data
+          console.log('取得した忘れ物データ:', result.data);
+          
+          // LocalStorageからも忘れ物データを取得
+          const localStorageItems = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
+          const forgetRecords = localStorageItems.filter((record: LocalStorageRecord) => record.didForget === true);
+          console.log('LocalStorageの忘れ物データ:', forgetRecords);
+          
+          // APIデータとLocalStorageデータを統合
+          const allItems = [
+            ...result.data,
+            ...forgetRecords.map((record: LocalStorageRecord) => ({
+              id: `local_${record.id}`,
+              title: record.thingType || '忘れ物',
+              forgotten_item: record.thingType || '忘れ物',
+              datetime: record.createdAt || new Date().toISOString(),
+              category: record.category || 'forget_things',
+              difficulty: record.difficulty || 3,
+              situation: record.situation || [],
+              location: record.location || ''
+            }))
+          ];
+          
+          const sortedItems = allItems
             .sort((a: ForgottenItem, b: ForgottenItem) => 
               new Date(b.datetime).getTime() - new Date(a.datetime).getTime()
             )
-            .slice(0, 5);
+            .slice(0, 2);
+          console.log('最近の忘れ物（上位2件）:', sortedItems);
           setRecentItems(sortedItems);
+        } else {
+          console.log('APIからデータが取得できませんでした:', result);
         }
       } catch (error) {
         console.error('忘れ物の取得に失敗しました:', error);
