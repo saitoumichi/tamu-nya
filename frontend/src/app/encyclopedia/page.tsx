@@ -214,85 +214,6 @@ export default function EncyclopediaPage() {
 
   // ------- データ生成 -------
   const generateFairies = () => {
-    // 既存のサンプル（固定）
-    const baseFairies: Monster[] = [
-      {
-        id: 1,
-        name: '鍵の精',
-        category: 'key',
-        categoryName: '鍵',
-        categoryEmoji: '🔑',
-        lastSeenAt: '2時間前',
-        thumbUrl: '/fairies/key/key1.jpg',
-      },
-      {
-        id: 2,
-        name: '傘の守護者',
-        category: 'umbrella',
-        categoryName: '傘',
-        categoryEmoji: '☔',
-        lastSeenAt: '1日前',
-        thumbUrl: '/fairies/umbrella/umbrella1.jpg'
-      },
-      {
-        id: 3,
-        name: '財布の精霊',
-        category: 'wallet',
-        categoryName: '財布',
-        categoryEmoji: '👛',
-        lastSeenAt: '3日前',
-        thumbUrl: '/fairies/wallet/wallet1.jpg',
-      },
-    ];
-
-    // 既存の妖精を読み込み（入力画面で作成されたもの）
-    const existingFairies: Monster[] = [
-      {
-        id: 100,
-        name: '薬の精',
-        category: 'medicine',
-        categoryName: '薬',
-        categoryEmoji: '💊',
-        lastSeenAt: '1週間前',
-        thumbUrl: '/fairies/medicine/medicine1.jpg',
-      },
-      {
-        id: 101,
-        name: 'スマホの精',
-        category: 'smartphone',
-        categoryName: 'スマホ',
-        categoryEmoji: '📱',
-        lastSeenAt: '3日前',
-        thumbUrl: '/fairies/phone/phone1.jpg',
-      },
-      {
-        id: 102,
-        name: '宿題の精',
-        category: 'homework',
-        categoryName: '宿題',
-        categoryEmoji: '📄',
-        lastSeenAt: '5日前',
-        thumbUrl: '/fairies/homework/homework1.jpg',
-      },
-      {
-        id: 103,
-        name: '予定の精',
-        category: 'schedule',
-        categoryName: '予定',
-        categoryEmoji: '📅',
-        lastSeenAt: '2週間前',
-        thumbUrl: '/fairies/schedule/schedule1.jpg',
-      },
-      {
-        id: 104,
-        name: '時間の精',
-        category: 'time',
-        categoryName: '遅刻',
-        categoryEmoji: '⏰',
-        lastSeenAt: '1週間前',
-        thumbUrl: '/fairies/time/time1.jpg',
-      },
-    ];
 
     // LocalStorage から things を読み込む
     const thingsRecords: ThingsRecord[] = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
@@ -300,46 +221,78 @@ export default function EncyclopediaPage() {
     console.log('didForget === true の記録数:', thingsRecords.filter(r => r.didForget === true).length);
 
     // APIデータをthingsRecords形式に変換して統合
-    const apiRecords: ThingsRecord[] = apiData.map((item: any, index: number) => ({
-      id: `api_${item.id || index}`,
-      category: item.category || 'forget_things',
-      categoryName: item.category || '忘れ物',
-      categoryEmoji: '📦',
-      thingType: item.forgotten_item || item.title || '忘れ物',
-      thingId: `api_${item.forgotten_item?.toLowerCase().replace(/\s+/g, '_') || 'item'}`,
-      title: item.title || '',
-      difficulty: item.difficulty || 3,
-      situation: Array.isArray(item.situation) ? item.situation : [],
-      createdAt: item.datetime || item.created_at || new Date().toISOString(),
-      didForget: true
-    }));
+    // thingIdの正規化関数
+    const normalizeThingId = (itemName: string): string => {
+      const normalized = itemName?.toLowerCase().replace(/\s+/g, '_') || 'item';
+      // APIの忘れ物名を標準的なthingIdにマッピング
+      const mapping: { [key: string]: string } = {
+        '鍵': 'key',
+        '傘': 'umbrella', 
+        '財布': 'wallet',
+        '薬': 'medicine',
+        'スマホ': 'smartphone',
+        '宿題': 'homework',
+        '予定': 'schedule',
+        '遅刻': 'time',
+        '時間': 'time'
+      };
+      return mapping[itemName] || normalized;
+    };
+
+    const apiRecords: ThingsRecord[] = apiData.map((item: any, index: number) => {
+      const itemName = item.forgotten_item || item.title || '忘れ物';
+      return {
+        id: `api_${item.id || index}`,
+        category: item.category || 'forget_things',
+        categoryName: item.category || '忘れ物',
+        categoryEmoji: '📦',
+        thingType: itemName,
+        thingId: normalizeThingId(itemName), // 正規化されたthingIdを使用
+        title: item.title || '',
+        difficulty: item.difficulty || 3,
+        situation: Array.isArray(item.situation) ? item.situation : [],
+        createdAt: item.datetime || item.created_at || new Date().toISOString(),
+        didForget: true
+      };
+    });
 
     console.log('API変換後データ:', apiRecords);
 
     // LocalStorageとAPIデータを統合
     const allRecords = [...thingsRecords.filter(r => r.didForget === true), ...apiRecords];
 
+    console.log('統合前のLocalStorageデータ数:', thingsRecords.filter(r => r.didForget === true).length);
+    console.log('統合前のAPIデータ数:', apiRecords.length);
+    console.log('統合後の全レコード数:', allRecords.length);
+
     // thingId ごとに 1 体生成（最新の記録時間、最大難易度 で代表化）
-    const byThingId = new Map<string, { latestAt: string; maxDifficulty: number; sample: ThingsRecord }>();
+    // 重複を完全に排除するため、thingIdとcategory両方でキーを作成
+    const byUniqueKey = new Map<string, { latestAt: string; maxDifficulty: number; sample: ThingsRecord }>();
 
     for (const rec of allRecords) {
       // didForget === true の記録のみを対象とする
       if (rec.didForget !== true) continue;
       
-      const prev = byThingId.get(rec.thingId);
+      // thingIdとカテゴリの組み合わせでユニークキーを作成
+      const uniqueKey = `${rec.thingId}_${rec.category || 'default'}`;
+      console.log(`処理中のレコード: ${rec.thingType} (${rec.thingId}) -> キー: ${uniqueKey}`);
+      
+      const prev = byUniqueKey.get(uniqueKey);
       if (!prev) {
-        byThingId.set(rec.thingId, { latestAt: rec.createdAt, maxDifficulty: rec.difficulty ?? 3, sample: rec });
+        byUniqueKey.set(uniqueKey, { latestAt: rec.createdAt, maxDifficulty: rec.difficulty ?? 3, sample: rec });
       } else {
         const latestAt = new Date(rec.createdAt) > new Date(prev.latestAt) ? rec.createdAt : prev.latestAt;
         const maxDifficulty = Math.max(prev.maxDifficulty, rec.difficulty ?? 3);
-        byThingId.set(rec.thingId, { latestAt, maxDifficulty, sample: rec });
+        byUniqueKey.set(uniqueKey, { latestAt, maxDifficulty, sample: rec });
       }
     }
 
-    console.log('byThingId のサイズ:', byThingId.size);
-    console.log('生成される妖精数:', byThingId.size);
+    console.log('byUniqueKey のサイズ:', byUniqueKey.size);
+    console.log('生成される妖精数:', byUniqueKey.size);
 
-    const thingsFairies: Monster[] = Array.from(byThingId.entries()).map(([thingId, info], index) => {
+    const thingsFairies: Monster[] = Array.from(byUniqueKey.entries()).map(([uniqueKey, info], index) => {
+      // uniqueKeyから元のthingIdを取得
+      const thingId = uniqueKey.split('_')[0];
       const sample = info.sample;
       const displayName = sample.thingType || '忘れ物';
       
@@ -377,15 +330,16 @@ export default function EncyclopediaPage() {
        };
     });
 
-    const finalFairies = [...baseFairies, ...existingFairies, ...thingsFairies];
+    // 実際の記録があるものだけを表示し、重複を排除
+    const finalFairies = thingsFairies;
     console.log('最終的な妖精数:', finalFairies.length);
-    console.log('baseFairies:', baseFairies.length, 'existingFairies:', existingFairies.length, 'thingsFairies:', thingsFairies.length);
+    console.log('thingsFairies:', thingsFairies.length);
     console.log('setFairies を呼び出します:', finalFairies);
     
-         // 妖精の詳細もログに出力
-     finalFairies.forEach((fairy, index) => {
-       console.log(`妖精${index + 1}:`, fairy.name, fairy.category);
-     });
+    // 妖精の詳細もログに出力
+    finalFairies.forEach((fairy, index) => {
+      console.log(`妖精${index + 1}:`, fairy.name, fairy.category);
+    });
     
     setFairies(finalFairies);
     
