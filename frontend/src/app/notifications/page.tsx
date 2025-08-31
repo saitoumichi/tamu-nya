@@ -262,7 +262,7 @@ export default function NotificationsPage() {
                 </span>
               </div>
             </div>
-            {typeof window !== 'undefined' && window.Notification?.permission === 'default' && (
+            {permissionStatus.text === '未設定' && (
               <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-700">
                   通知を有効にするには、ブラウザの通知許可を許可してください。
