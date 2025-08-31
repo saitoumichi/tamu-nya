@@ -28,7 +28,7 @@ Route::prefix('monsters')->middleware('auth:sanctum')->group(function () {
 
 // 忘れ物管理のAPI
 Route::prefix('forgotten-items')->group(function () {
-    // 公開エンドポイント（認証不要）
+    // 公開エンドポイント（一時的に認証不要）
     Route::get('stats', [ForgottenItemController::class, 'getStats']);
     
     // 認証が必要なエンドポイント

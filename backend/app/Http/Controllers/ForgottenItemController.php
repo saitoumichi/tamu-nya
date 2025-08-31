@@ -26,7 +26,17 @@ class ForgottenItemController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $items = ForgottenItem::orderBy('datetime', 'desc')->get();
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
+
+            $items = ForgottenItem::where('user_id', $userId)
+                ->orderBy('datetime', 'desc')
+                ->get();
 
             // 各アイテムに表示用の属性を追加
             $formattedItems = $items->map(function ($item) {
@@ -83,8 +93,13 @@ class ForgottenItemController extends Controller
                 'datetime' => 'required|date'
             ]);
 
-            // 認証されたユーザーのIDを取得（認証システムが実装されている場合）
-            $userId = Auth::id() ?? 1; // 一時的にデフォルトユーザーID
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
 
             $item = ForgottenItem::create(array_merge($validated, [
                 'user_id' => $userId
@@ -111,7 +126,17 @@ class ForgottenItemController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $item = ForgottenItem::findOrFail($id);
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
+
+            $item = ForgottenItem::where('id', $id)
+                ->where('user_id', $userId)
+                ->firstOrFail();
 
             $response = response()->json([
                 'success' => true,
@@ -134,6 +159,14 @@ class ForgottenItemController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         try {
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
+
             $validated = $request->validate([
                 'category' => 'sometimes|string|max:255',
                 'title' => 'sometimes|string|max:255',
@@ -146,7 +179,9 @@ class ForgottenItemController extends Controller
                 'datetime' => 'sometimes|date'
             ]);
 
-            $item = ForgottenItem::findOrFail($id);
+            $item = ForgottenItem::where('id', $id)
+                ->where('user_id', $userId)
+                ->firstOrFail();
             $item->update($validated);
 
             $response = response()->json([
@@ -170,7 +205,17 @@ class ForgottenItemController extends Controller
     public function destroy(int $id): JsonResponse
     {
         try {
-            $item = ForgottenItem::findOrFail($id);
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
+
+            $item = ForgottenItem::where('id', $id)
+                ->where('user_id', $userId)
+                ->firstOrFail();
             $item->delete();
 
             $response = response()->json([
@@ -243,20 +288,44 @@ class ForgottenItemController extends Controller
     public function getStats(): JsonResponse
     {
         try {
-            $stats = [
-                'total_count' => ForgottenItem::count(),
-                'category_distribution' => ForgottenItem::selectRaw('category, COUNT(*) as count')
-                    ->groupBy('category')
-                    ->get(),
-                'difficulty_average' => ForgottenItem::avg('difficulty'),
-                'monthly_trend' => ForgottenItem::selectRaw('DATE_FORMAT(datetime, "%Y-%m") as month, COUNT(*) as count')
-                    ->groupBy('month')
-                    ->orderBy('month', 'desc')
-                    ->limit(12)
-                    ->get(),
-                'recent_activity' => ForgottenItem::where('created_at', '>=', now()->subDays(7))
-                    ->count(),
-            ];
+            $userId = Auth::id();
+            
+            // 認証されている場合はユーザー個人の統計、されていない場合は全体統計
+            if ($userId) {
+                $stats = [
+                    'total_count' => ForgottenItem::where('user_id', $userId)->count(),
+                    'category_distribution' => ForgottenItem::where('user_id', $userId)
+                        ->selectRaw('category, COUNT(*) as count')
+                        ->groupBy('category')
+                        ->get(),
+                    'difficulty_average' => ForgottenItem::where('user_id', $userId)->avg('difficulty'),
+                    'monthly_trend' => ForgottenItem::where('user_id', $userId)
+                        ->selectRaw('DATE_FORMAT(datetime, "%Y-%m") as month, COUNT(*) as count')
+                        ->groupBy('month')
+                        ->orderBy('month', 'desc')
+                        ->limit(12)
+                        ->get(),
+                    'recent_activity' => ForgottenItem::where('user_id', $userId)
+                        ->where('created_at', '>=', now()->subDays(7))
+                        ->count(),
+                ];
+            } else {
+                // 認証されていない場合は全体統計（一時的な措置）
+                $stats = [
+                    'total_count' => ForgottenItem::count(),
+                    'category_distribution' => ForgottenItem::selectRaw('category, COUNT(*) as count')
+                        ->groupBy('category')
+                        ->get(),
+                    'difficulty_average' => ForgottenItem::avg('difficulty'),
+                    'monthly_trend' => ForgottenItem::selectRaw('DATE_FORMAT(datetime, "%Y-%m") as month, COUNT(*) as count')
+                        ->groupBy('month')
+                        ->orderBy('month', 'desc')
+                        ->limit(12)
+                        ->get(),
+                    'recent_activity' => ForgottenItem::where('created_at', '>=', now()->subDays(7))
+                        ->count(),
+                ];
+            }
 
             $response = response()->json([
                 'success' => true,
