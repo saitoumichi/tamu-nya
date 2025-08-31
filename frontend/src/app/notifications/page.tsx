@@ -237,24 +237,28 @@ export default function NotificationsPage() {
     <MainLayout>
       <div className="space-y-6">
         {/* ヘッダー */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">通知設定</h1>
-            <p className="text-gray-600">プッシュ通知とリマインダーの設定</p>
+        <div className="forest-card p-6 rounded-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-forest-primary flex items-center gap-2">
+                🔔 通知設定
+              </h1>
+              <p className="text-forest-secondary">プッシュ通知とリマインダーの設定</p>
+            </div>
           </div>
         </div>
 
         {/* 通知許可の状態 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-black">
-              <Bell className="h-5 w-5 text-primary" />
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-4">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <Bell className="h-5 w-5 text-forest-accent" />
               通知許可の状態
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-700">ブラウザの通知許可</span>
+            </h2>
+          </div>
+          <div>
+            <div className="flex items-center justify-between p-4 bg-emerald-900/20 rounded-lg border-2 border-emerald-400/30">
+              <span className="text-sm font-medium text-forest-primary">ブラウザの通知許可</span>
               <div className="flex items-center gap-2">
                 {permissionStatus.icon}
                 <span className={`text-sm ${permissionStatus.color}`}>
@@ -263,39 +267,39 @@ export default function NotificationsPage() {
               </div>
             </div>
             {permissionStatus.text === '未設定' && (
-              <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-700">
+              <div className="mt-3 p-3 bg-emerald-900/30 rounded-lg border-2 border-emerald-400/40">
+                <p className="text-sm text-forest-accent">
                   通知を有効にするには、ブラウザの通知許可を許可してください。
                 </p>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* リマインダー設定 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-black">
-              <Clock className="h-5 w-5 text-primary" />
+        <div className="forest-card p-6 rounded-xl">
+          <div className="mb-4">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-forest-primary">
+              <Clock className="h-5 w-5 text-forest-accent" />
               設定されている通知
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </h2>
+          </div>
+          <div>
             {reminderSettings.length > 0 ? (
               <div className="space-y-4">
                 {reminderSettings.map((reminder) => (
                   <div
                     key={reminder.id}
                     className={cn(
-                      "flex items-center justify-between p-4 rounded-lg border transition-colors",
-                      reminder.enabled ? "border-primary bg-primary/5" : "border-gray-200 hover:bg-gray-50"
+                      "flex items-center justify-between p-4 rounded-lg border-2 transition-colors backdrop-filter backdrop-blur-sm",
+                      reminder.enabled ? "border-emerald-400/40 bg-emerald-900/30" : "border-emerald-400/20 bg-emerald-900/10 hover:bg-emerald-900/20"
                     )}
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{reminder.categoryEmoji}</span>
                       <div>
-                        <h4 className="font-medium text-gray-900">{reminder.name}</h4>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <h4 className="font-medium text-forest-primary">{reminder.name}</h4>
+                        <div className="flex items-center gap-2 text-sm text-forest-secondary">
                           <Clock className="h-4 w-4" />
                           <span>{reminder.time}</span>
                           <span>•</span>
@@ -310,7 +314,7 @@ export default function NotificationsPage() {
                         onClick={() => handleToggleReminder(reminder.id)}
                         className={cn(
                           'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                          reminder.enabled ? 'bg-primary' : 'bg-gray-200'
+                          reminder.enabled ? 'bg-emerald-500' : 'bg-emerald-900/40'
                         )}
                         aria-label={`リマインダー${reminder.name}を${reminder.enabled ? '無効' : '有効'}にする`}
                       >
@@ -323,58 +327,55 @@ export default function NotificationsPage() {
                       </button>
                       
                       {/* 削除ボタン */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
                         onClick={() => handleDeleteReminder(reminder.id)}
-                        className="text-red-500 hover:text-red-700"
+                        className="forest-button px-3 py-1 text-sm rounded-lg bg-red-900/30 text-red-400 border-red-400/30 hover:bg-red-900/50"
                       >
                         削除
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-forest-secondary">
                 設定されたリマインダーがありません
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* 新規リマインダー追加ボタン */}
         <div className="flex justify-center">
           <Link href="/notifications/new">
-            <Button size="lg" className="px-8">
-              <Plus className="mr-2 h-5 w-5" />
+            <button className="forest-button px-8 py-3 text-lg rounded-lg flex items-center gap-2">
+              <Plus className="h-5 w-5" />
               新規登録
-            </Button>
+            </button>
           </Link>
         </div>
 
         {/* クイック設定モーダル */}
         {showQuickSetup && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold mb-4">クイック設定</h3>
-              <p className="text-gray-600 mb-6">
+            <div className="forest-card rounded-xl p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4 text-forest-primary">クイック設定</h3>
+              <p className="text-forest-secondary mb-6">
                 基本的な通知設定を自動で有効化します。鍵の確認と薬の服用のリマインダーが設定されます。
               </p>
               <div className="flex gap-3">
-                <Button
-                  variant="secondary"
+                <button
                   onClick={() => setShowQuickSetup(false)}
-                  className="flex-1"
+                  className="forest-button flex-1 px-4 py-2 rounded-lg bg-emerald-900/20 border-emerald-400/30"
                 >
                   キャンセル
-                </Button>
-                <Button
+                </button>
+                <button
                   onClick={handleQuickSetup}
-                  className="flex-1"
+                  className="forest-button flex-1 px-4 py-2 rounded-lg"
                 >
                   設定する
-                </Button>
+                </button>
               </div>
             </div>
           </div>
