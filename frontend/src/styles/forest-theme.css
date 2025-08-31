@@ -211,3 +211,48 @@
   border-color: rgba(52, 211, 153, 0.8);
   box-shadow: 0 4px 8px rgba(5, 150, 105, 0.4);
 }
+
+/* Feedページ専用背景（画像と森背景の組み合わせ） */
+.feed-background {
+  background: linear-gradient(
+    rgba(26, 26, 46, 0.7), 
+    rgba(52, 103, 81, 0.6)
+  ), url('/images/feed-background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Feed背景用の森レイヤー（既存の森効果を組み合わせ） */
+.feed-forest-layers {
+  opacity: 0.4;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+/* Feed背景用の星空効果 */
+.feed-background::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.6), transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.3), transparent),
+    radial-gradient(2px 2px at 160px 30px, rgba(255,255,255,0.6), transparent);
+  background-repeat: repeat;
+  background-size: 200px 100px;
+  animation: stars-twinkle 4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
