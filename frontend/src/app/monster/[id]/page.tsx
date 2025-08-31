@@ -2,11 +2,8 @@
 
 import React, { use } from 'react';
 import { MainLayout } from '@/components/layout/main-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Search, Clock, Calendar, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { Ravi_Prakash } from 'next/font/google';
 
@@ -44,35 +41,35 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
       console.log('IDの値:', id);
       
       // 図鑑画面で生成されたモンスターデータを取得
-      const encyclopediaMonsters = JSON.parse(localStorage.getItem('encyclopediaMonsters') || '[]');
-      console.log('図鑑画面のモンスターデータ:', encyclopediaMonsters);
+      const encyclopediaFairies = JSON.parse(localStorage.getItem('encyclopediaFairies') || '[]');
+      console.log('図鑑画面の妖精データ:', encyclopediaFairies);
       
       // 指定されたIDのモンスターを検索
       let targetMonster = null;
       
-      // 図鑑画面のモンスターデータから検索
-      if (encyclopediaMonsters.length > 0) {
-        const foundMonster = encyclopediaMonsters.find((m: { id: number | string }) => m.id.toString() === id);
-        console.log('図鑑画面から見つかったモンスター:', foundMonster);
+      // 図鑑画面の妖精データから検索
+      if (encyclopediaFairies.length > 0) {
+        const foundFairy = encyclopediaFairies.find((f: { id: number | string }) => f.id.toString() === id);
+        console.log('図鑑画面から見つかった妖精:', foundFairy);
         
-        if (foundMonster) {
-          // 図鑑画面のモンスターデータを詳細画面用に変換
+        if (foundFairy) {
+          // 図鑑画面の妖精データを詳細画面用に変換
           targetMonster = {
-            id: foundMonster.id.toString(),
-            name: foundMonster.name,
-            category: foundMonster.category,
-            categoryEmoji: foundMonster.categoryEmoji,
-            rank: foundMonster.rank,
-            firstSeen: foundMonster.lastSeenAt || '',
-            lastSeen: foundMonster.lastSeenAt || '',
+            id: foundFairy.id.toString(),
+            name: foundFairy.name,
+            category: foundFairy.category,
+            categoryEmoji: foundFairy.categoryEmoji,
+            rank: 'C', // デフォルトランク
+            firstSeen: foundFairy.lastSeenAt || '',
+            lastSeen: foundFairy.lastSeenAt || '',
             encounterCount: 1, // 図鑑画面では遭遇回数が不明なため
             intimacyLevel: 1,
-            evolutionCondition: `${foundMonster.name}を5回入力`,
+            evolutionCondition: `${foundFairy.name}を5回入力`,
             evolutionProgress: 1,
             evolutionTarget: 5,
-            lastLevelUp: foundMonster.lastSeenAt || '',
-            recommendation: `${foundMonster.name}をお忘れなく!`,
-            imageUrl: foundMonster.thumbUrl
+            lastLevelUp: foundFairy.lastSeenAt || '',
+            recommendation: `${foundFairy.name}をお忘れなく!`,
+            imageUrl: foundFairy.thumbUrl
           };
         }
       }
@@ -147,8 +144,6 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
     }
   }, [id]);
 
-
-
   const history = [
     {
       id: 1,
@@ -170,11 +165,9 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
   if (!monster) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="text-4xl mb-4">🔄</div>
-            <p className="text-gray-600">モンスター情報を読み込み中...</p>
-          </div>
+        <div className="forest-card p-8 rounded-xl text-center">
+          <div className="text-6xl mb-4">🔄</div>
+          <p className="text-forest-secondary">妖精情報を読み込み中...</p>
         </div>
       </MainLayout>
     );
@@ -184,86 +177,84 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
     <MainLayout>
       <div className="space-y-6">
         {/* ヘッダー */}
-        <div className="flex items-center gap-4 text-gray-900">
-          <Link href="/encyclopedia">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              戻る
-            </Button>
-          </Link>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{monster.name}</h1>
-            <p className="text-gray-600">入力回数 {monster.encounterCount}回</p>
+        <div className="forest-card p-6 rounded-xl">
+          <div className="flex items-center gap-4">
+            <Link href="/encyclopedia">
+              <button className="forest-button px-3 py-2 rounded-lg flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                戻る
+              </button>
+            </Link>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-forest-primary">{monster.name}</h1>
+              <p className="text-forest-secondary">入力回数 {monster.encounterCount}回</p>
+            </div>
           </div>
-          <Button variant="ghost" size="sm">
-            <Search className="h-4 w-4" />
-          </Button>
         </div>
 
         {/* 基本情報 */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-start gap-6">
-              {/* モンスターイラスト */}
-              <div className="w-32 h-32 flex-shrink-0">
-                <img 
-                  src={monster.imageUrl} 
-                  alt={monster.name}
-                  className="w-full h-full object-cover rounded-lg"
-                  onError={(e) => {
-                    // 画像読み込みエラー時は絵文字を表示
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const fallback = document.createElement('div');
-                    fallback.className = 'text-8xl flex items-center justify-center w-full h-full';
-                    fallback.textContent = monster.categoryEmoji;
-                    target.parentNode?.appendChild(fallback);
-                  }}
-                />
+        <div className="forest-card p-6 rounded-xl">
+          <div className="flex items-start gap-6">
+            {/* モンスターイラスト */}
+            <div className="w-32 h-32 flex-shrink-0">
+              <img 
+                src={monster.imageUrl} 
+                alt={monster.name}
+                className="w-full h-full object-cover rounded-lg"
+                onError={(e) => {
+                  // 画像読み込みエラー時は絵文字を表示
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = document.createElement('div');
+                  fallback.className = 'text-8xl flex items-center justify-center w-full h-full';
+                  fallback.textContent = monster.categoryEmoji;
+                  target.parentNode?.appendChild(fallback);
+                }}
+              />
+            </div>
+            
+            {/* 基本情報 */}
+            <div className="flex-1 space-y-4">
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-semibold text-forest-primary">{monster.name}</h2>
+                {/* レベル表示を追加 */}
+                <span className="px-3 py-1 bg-emerald-900/30 text-forest-accent rounded-full text-sm font-medium border border-emerald-400/40">
+                  Lv.{(() => {
+                    // feedページと同様のレベル計算ロジック
+                    const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
+                    const fedCount = feed[monster.category]?.fed || 0;
+                    return Math.min(Math.floor(fedCount / 5), 100);
+                  })()}
+                </span>
               </div>
               
-              {/* 基本情報 */}
-              <div className="flex-1 space-y-4 text-gray-900">
-                <div className="flex items-center gap-3 text-gray-900">
-                  <h2 className="text-xl font-semibold">{monster.name}</h2>
-                  {/* レベル表示を追加 */}
-                  <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">
-                    Lv.{(() => {
-                      // feedページと同様のレベル計算ロジック
-                      const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
-                      const fedCount = feed[monster.category]?.fed || 0;
-                      return Math.min(Math.floor(fedCount / 5), 100);
-                    })()}
-                  </span>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center gap-2 text-forest-secondary">
+                  <Calendar className="h-4 w-4 text-forest-accent" />
+                  <span>初出日: {monster.firstSeen}</span>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span>初出日: {monster.firstSeen}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span>最終出現日: {monster.lastSeen}</span>
-                  </div>
+                <div className="flex items-center gap-2 text-forest-secondary">
+                  <Clock className="h-4 w-4 text-forest-accent" />
+                  <span>最終出現日: {monster.lastSeen}</span>
                 </div>
-                
-                
+              </div>
+              
+              <div className="text-sm text-forest-secondary">
+                遭遇回数: {monster.encounterCount}回
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* レベル情報 */}
-        <div className="text-gray-900">
-        <Card>
-          <CardHeader>
-            <CardTitle>レベル情報</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="forest-card p-6 rounded-xl">
+          <h3 className="text-xl font-bold text-forest-primary mb-4 flex items-center gap-2">
+            ✨ レベル情報
+          </h3>
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">現在のレベル</span>
-              <span className="text-lg font-semibold text-emerald-600">
+              <span className="text-sm text-forest-secondary">現在のレベル</span>
+              <span className="text-lg font-semibold text-forest-accent">
                 Lv.{(() => {
                   const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
                   const fedCount = feed[monster.category]?.fed || 0;
@@ -271,17 +262,20 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
                 })()}
               </span>
             </div>
-            <Progress
-              value={(() => {
-                const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
-                const fedCount = feed[monster.category]?.fed || 0;
-                return (fedCount % 5) * 20; // 5個ごとにレベルアップなので、残りを20%単位で表示
-              })()}
-              max={100}
-              label="次のレベルまで"
-              showPercentage
-            />
-            <div className="flex justify-between text-sm text-gray-600">
+            <div className="w-full bg-emerald-900/30 rounded-full h-3 border border-emerald-400/40">
+              <div 
+                className="bg-gradient-to-r from-emerald-400 to-emerald-300 h-full rounded-full transition-all duration-300"
+                style={{
+                  width: `${(() => {
+                    const feed = JSON.parse(localStorage.getItem('monsterFeed') || '{}');
+                    const fedCount = feed[monster.category]?.fed || 0;
+                    return (fedCount % 5) * 20;
+                  })()}%`
+                }}
+              >
+              </div>
+            </div>
+            <div className="flex justify-between text-sm text-forest-secondary">
               <span>
                 次のレベルまであと{
                   (() => {
@@ -295,26 +289,24 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
               </span>
               <span>{monster.lastLevelUp}</span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
         </div>
 
 
 
         {/* 履歴 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>履歴</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {history.length > 0 ? (
-              <div className="space-y-3">
-                {history.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50"
-                  >
-                                      <div className="flex items-center gap-3">
+        <div className="forest-card p-6 rounded-xl">
+          <h3 className="text-xl font-bold text-forest-primary mb-4 flex items-center gap-2">
+            📜 履歴
+          </h3>
+          {history.length > 0 ? (
+            <div className="space-y-3">
+              {history.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-4 rounded-lg border-2 border-emerald-200/30 hover:bg-emerald-900/10 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
                     <div className="w-8 h-8 flex-shrink-0">
                       <img 
                         src={monster.imageUrl} 
@@ -332,24 +324,23 @@ export default function MonsterDetailPage({ params }: MonsterDetailPageProps) {
                       />
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-900">{item.title}</h4>
-                      <p className="text-sm text-gray-500">{item.location}</p>
+                      <h4 className="font-medium text-forest-primary">{item.title}</h4>
+                      <p className="text-sm text-forest-secondary">{item.location}</p>
                     </div>
                   </div>
-                    <div className="text-right text-sm text-gray-500">
-                      <div>{item.date}</div>
-                      <div>{item.time}</div>
-                    </div>
+                  <div className="text-right text-sm text-forest-secondary">
+                    <div>{item.date}</div>
+                    <div>{item.time}</div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                まだ履歴がありません
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-forest-secondary">
+              まだ履歴がありません
+            </div>
+          )}
+        </div>
 
 
       </div>
