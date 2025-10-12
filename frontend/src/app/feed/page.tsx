@@ -8,6 +8,27 @@ import { apiClient } from '@/api/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
+// 型定義
+interface ApiForgottenItem {
+  id?: string | number;
+  forgotten_item?: string;
+  title?: string;
+  category?: string;
+  difficulty?: number;
+  situation?: string[];
+  datetime?: string;
+  created_at?: string;
+}
+
+interface ThingsRecord {
+  thingId: string;
+  thingType: string;
+  didForget: boolean;
+  category?: string;
+  difficulty?: number;
+  createdAt?: string;
+}
+
 // 絵文字フォールバック用マップ
 const THING_EMOJI_MAP: { [key: string]: string } = {
   key: '🔑',
@@ -39,7 +60,7 @@ export default function FeedPage() {
     stage: number;
     fedCount: number;
   } | null>(null);
-  const [apiData, setApiData] = useState<any[]>([]);
+  const [apiData, setApiData] = useState<ApiForgottenItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasClaimedToday, setHasClaimedToday] = useState<boolean | null>(null);
 
@@ -83,20 +104,38 @@ export default function FeedPage() {
 
   const aggregateMonstersFromThingsRecords = () => {
     const existingRecords = JSON.parse(localStorage.getItem('thingsRecords') || '[]');
-    const forgetRecords = existingRecords.filter((record: any) => record.didForget === true);
+    const forgetRecords = existingRecords.filter((record: ThingsRecord) => record.didForget === true);
     
     // APIデータをthingsRecords形式に変換
-    const apiRecords = apiData.map((item: any, index: number) => ({
-      thingId: `api_${item.forgotten_item?.toLowerCase().replace(/\s+/g, '_') || 'item'}`,
-      thingType: item.forgotten_item || item.title || '忘れ物',
-      didForget: true
-    }));
+    const apiRecords = apiData.map((item: ApiForgottenItem, index: number) => {
+      const itemName = item.forgotten_item || item.title || '忘れ物';
+      // thingIdの正規化（api_プレフィックスを除去し、標準的なthingIdにマッピング）
+      const normalizedThingId = itemName.toLowerCase().replace(/\s+/g, '_');
+      const mapping: { [key: string]: string } = {
+        '鍵': 'key',
+        '傘': 'umbrella', 
+        '財布': 'wallet',
+        '薬': 'medicine',
+        'スマホ': 'smartphone',
+        '宿題': 'homework',
+        '予定': 'schedule',
+        '遅刻': 'time',
+        '時間': 'time'
+      };
+      const thingId = mapping[itemName] || normalizedThingId;
+      
+      return {
+        thingId: thingId,
+        thingType: itemName,
+        didForget: true
+      };
+    });
 
     // LocalStorageとAPIデータを統合
     const allRecords = [...forgetRecords, ...apiRecords];
     
     const monsterMap = new Map();
-    allRecords.forEach((record: any) => {
+    allRecords.forEach((record: ThingsRecord) => {
       if (record.thingId && record.thingId !== 'none') {
         if (!monsterMap.has(record.thingId)) {
           monsterMap.set(record.thingId, {
@@ -111,6 +150,7 @@ export default function FeedPage() {
     });
     
     console.log('フィード画面生成モンスター:', Array.from(monsterMap.values()));
+    console.log('生成されたモンスターのthingId一覧:', Array.from(monsterMap.values()).map(m => ({ thingId: m.thingId, thingType: m.thingType })));
     return Array.from(monsterMap.values());
   };
 

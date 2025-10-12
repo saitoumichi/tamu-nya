@@ -144,21 +144,23 @@ export default function AnalysisPage() {
     });
     
     // 新しく作成されたカードが入力で使用された場合の処理
-    const customCardsRaw = localStorage.getItem("customCards");
-    if (customCardsRaw) {
-      try {
-        const customCards = JSON.parse(customCardsRaw);
-        if (customCards.categories && Array.isArray(customCards.categories)) {
-          customCards.categories.forEach((cat: { id: string, name: string, emoji: string }) => {
-            const uniqueKey = `${cat.name}${cat.emoji}`;
-            if (!uniqueCategories.has(uniqueKey)) {
-              uniqueCategories.set(uniqueKey, cat);
-              console.log('カスタムカード（localStorage）カテゴリ追加:', { uniqueKey, cat });
-            }
-          });
+    if (typeof window !== 'undefined') {
+      const customCardsRaw = localStorage.getItem("customCards");
+      if (customCardsRaw) {
+        try {
+          const customCards = JSON.parse(customCardsRaw);
+          if (customCards.categories && Array.isArray(customCards.categories)) {
+            customCards.categories.forEach((cat: { id: string, name: string, emoji: string }) => {
+              const uniqueKey = `${cat.name}${cat.emoji}`;
+              if (!uniqueCategories.has(uniqueKey)) {
+                uniqueCategories.set(uniqueKey, cat);
+                console.log('カスタムカード（localStorage）カテゴリ追加:', { uniqueKey, cat });
+              }
+            });
+          }
+        } catch (error) {
+          console.error('カスタムカードの読み込みエラー:', error);
         }
-      } catch (error) {
-        console.error('カスタムカードの読み込みエラー:', error);
       }
     }
     
@@ -226,26 +228,28 @@ export default function AnalysisPage() {
     
     // 新しく作成されたカードが入力で使用された場合の処理
     // customCardsから直接「忘れたもの」を取得して追加
-    const customCardsRaw = localStorage.getItem("customCards");
-    if (customCardsRaw) {
-      try {
-        const customCards = JSON.parse(customCardsRaw);
-        if (customCards.things && Array.isArray(customCards.things)) {
-          customCards.things.forEach((thing: { id: string, name: string, emoji: string, categoryId: string }) => {
-            if (thing.name !== '忘れなかった' && thing.id !== 'forget_not') {
-              if (!thingMap.has(thing.id)) {
-                thingMap.set(thing.id, {
-                  id: thing.id,
-                  name: thing.name,
-                  emoji: thing.emoji || '📦',
-                  categoryId: thing.categoryId || 'forget_things'
-                });
+    if (typeof window !== 'undefined') {
+      const customCardsRaw = localStorage.getItem("customCards");
+      if (customCardsRaw) {
+        try {
+          const customCards = JSON.parse(customCardsRaw);
+          if (customCards.things && Array.isArray(customCards.things)) {
+            customCards.things.forEach((thing: { id: string, name: string, emoji: string, categoryId: string }) => {
+              if (thing.name !== '忘れなかった' && thing.id !== 'forget_not') {
+                if (!thingMap.has(thing.id)) {
+                  thingMap.set(thing.id, {
+                    id: thing.id,
+                    name: thing.name,
+                    emoji: thing.emoji || '📦',
+                    categoryId: thing.categoryId || 'forget_things'
+                  });
+                }
               }
-            }
-          });
+            });
+          }
+        } catch (error) {
+          console.error('カスタムカードの読み込みエラー:', error);
         }
-      } catch (error) {
-        console.error('カスタムカードの読み込みエラー:', error);
       }
     }
     
@@ -401,23 +405,25 @@ export default function AnalysisPage() {
     
     // 新しく作成されたカードが入力で使用された場合の処理
     // customCardsから直接「状況」を取得して追加
-    const customCardsRaw = localStorage.getItem("customCards");
-    if (customCardsRaw) {
-      try {
-        const customCards = JSON.parse(customCardsRaw);
-        if (customCards.situations && Array.isArray(customCards.situations)) {
-          customCards.situations.forEach((situation: { id: string, name: string, emoji: string }) => {
-            // 名前ベースで重複チェック
-            if (!nameMap.has(situation.name)) {
-              situationMap.set(situation.id, situation);
-              nameMap.set(situation.name, situation);
-            } else {
-              console.log('名前重複を検出（カスタムカード）:', { existing: nameMap.get(situation.name), new: situation });
-            }
-          });
+    if (typeof window !== 'undefined') {
+      const customCardsRaw = localStorage.getItem("customCards");
+      if (customCardsRaw) {
+        try {
+          const customCards = JSON.parse(customCardsRaw);
+          if (customCards.situations && Array.isArray(customCards.situations)) {
+            customCards.situations.forEach((situation: { id: string, name: string, emoji: string }) => {
+              // 名前ベースで重複チェック
+              if (!nameMap.has(situation.name)) {
+                situationMap.set(situation.id, situation);
+                nameMap.set(situation.name, situation);
+              } else {
+                console.log('名前重複を検出（カスタムカード）:', { existing: nameMap.get(situation.name), new: situation });
+              }
+            });
+          }
+        } catch (error) {
+          console.error('カスタムカードの読み込みエラー:', error);
         }
-      } catch (error) {
-        console.error('カスタムカードの読み込みエラー:', error);
       }
     }
     
