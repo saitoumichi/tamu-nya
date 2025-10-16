@@ -49,20 +49,42 @@ class ApiClient {
 
   // 忘れ物一覧の取得
   async getForgottenItems() {
-    const response = await fetch(`${this.baseURL}/rest/v1/forgotten_items`, {
-      headers: this.getAuthHeaders(),
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${this.baseURL}/rest/v1/forgotten_items`, {
+        headers: this.getAuthHeaders(),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return { success: true, data: data };
+    } catch (error) {
+      console.error('API取得エラー:', error);
+      return { success: false, data: [], error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 
   // 忘れ物の作成
   async createForgottenItem(item: ForgottenItem) {
-    const response = await fetch(`${this.baseURL}/rest/v1/forgotten_items`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(item),
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${this.baseURL}/rest/v1/forgotten_items`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(item),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return { success: true, data: data };
+    } catch (error) {
+      console.error('API保存エラー:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 
   // 忘れ物の詳細取得
@@ -137,15 +159,27 @@ class ApiClient {
 
   // ログイン
   async login(email: string, password: string) {
-    const response = await fetch(`${this.baseURL}/auth/v1/token?grant_type=password`, {
-      method: 'POST',
-      headers: {
-        'apikey': this.anonKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${this.baseURL}/auth/v1/signin`, {
+        method: 'POST',
+        headers: {
+          'apikey': this.anonKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Login failed: ${response.status} - ${errorData}`);
+      }
+      
+      const data = await response.json();
+      return { success: true, data: data };
+    } catch (error) {
+      console.error('ログインエラー:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 
   // ログアウト
