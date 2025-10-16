@@ -62,7 +62,7 @@ class ApiClient {
       return { success: true, data: data };
     } catch (error) {
       console.error('API取得エラー:', error);
-      return { success: false, data: [], error: error.message };
+      return { success: false, data: [], error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -83,7 +83,7 @@ class ApiClient {
       return { success: true, data: data };
     } catch (error) {
       console.error('API保存エラー:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -178,7 +178,7 @@ class ApiClient {
       return { success: true, data: data };
     } catch (error) {
       console.error('ログインエラー:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
