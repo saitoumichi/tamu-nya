@@ -99,6 +99,9 @@ export default function EncyclopediaPage() {
         return '📦';
     }
   };
+
+  // 画像パス（妖精の画像を使用）
+  const getImagePathByThingId = (thingId: string): string => {
     switch (thingId) {
       case 'key':
         return '/fairies/key/key1.jpg';
