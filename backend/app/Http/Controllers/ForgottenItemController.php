@@ -288,44 +288,37 @@ class ForgottenItemController extends Controller
     public function getStats(): JsonResponse
     {
         try {
-            $userId = Auth::id();
-            
-            // 認証されている場合はユーザー個人の統計、されていない場合は全体統計
-            if ($userId) {
-                $stats = [
-                    'total_count' => ForgottenItem::where('user_id', $userId)->count(),
-                    'category_distribution' => ForgottenItem::where('user_id', $userId)
-                        ->selectRaw('category, COUNT(*) as count')
-                        ->groupBy('category')
-                        ->get(),
-                    'difficulty_average' => ForgottenItem::where('user_id', $userId)->avg('difficulty'),
-                    'monthly_trend' => ForgottenItem::where('user_id', $userId)
-                        ->selectRaw('DATE_FORMAT(datetime, "%Y-%m") as month, COUNT(*) as count')
-                        ->groupBy('month')
-                        ->orderBy('month', 'desc')
-                        ->limit(12)
-                        ->get(),
-                    'recent_activity' => ForgottenItem::where('user_id', $userId)
-                        ->where('created_at', '>=', now()->subDays(7))
-                        ->count(),
-                ];
+            // データベースドライバーによって異なるSQLを使用
+            $driver = config('database.default');
+            $connection = config("database.connections.{$driver}.driver");
+
+            if ($connection === 'sqlite') {
+                // SQLite用のクエリ
+                $monthlyTrend = ForgottenItem::selectRaw('strftime("%Y-%m", datetime) as month, COUNT(*) as count')
+                    ->groupBy('month')
+                    ->orderBy('month', 'desc')
+                    ->limit(12)
+                    ->get();
             } else {
-                // 認証されていない場合は全体統計（一時的な措置）
-                $stats = [
-                    'total_count' => ForgottenItem::count(),
-                    'category_distribution' => ForgottenItem::selectRaw('category, COUNT(*) as count')
-                        ->groupBy('category')
-                        ->get(),
-                    'difficulty_average' => ForgottenItem::avg('difficulty'),
-                    'monthly_trend' => ForgottenItem::selectRaw('DATE_FORMAT(datetime, "%Y-%m") as month, COUNT(*) as count')
-                        ->groupBy('month')
-                        ->orderBy('month', 'desc')
-                        ->limit(12)
-                        ->get(),
-                    'recent_activity' => ForgottenItem::where('created_at', '>=', now()->subDays(7))
-                        ->count(),
-                ];
+                // MySQL用のクエリ
+                $monthlyTrend = ForgottenItem::selectRaw('DATE_FORMAT(datetime, "%Y-%m") as month, COUNT(*) as count')
+                    ->groupBy('month')
+                    ->orderBy('month', 'desc')
+                    ->limit(12)
+                    ->get();
             }
+
+            $stats = [
+                'total_count' => ForgottenItem::count(),
+                'category_distribution' => ForgottenItem::selectRaw('category, COUNT(*) as count')
+                    ->groupBy('category')
+                    ->get(),
+                'difficulty_average' => ForgottenItem::avg('difficulty'),
+                'monthly_trend' => $monthlyTrend,
+                'recent_activity' => ForgottenItem::where('created_at', '>=', now()->subDays(7))
+                    ->count(),
+            ];
+
 
             $response = response()->json([
                 'success' => true,

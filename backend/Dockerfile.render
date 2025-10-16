@@ -8,10 +8,11 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     zip \
-    unzip
+    unzip \
+    libpq-dev
 
 # PHP拡張をインストール
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd
 
 # Composerをインストール
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -32,6 +33,7 @@ RUN chown -R www-data:www-data /var/www/html \
 
 # Apache設定
 RUN a2enmod rewrite
+COPY .htaccess /var/www/html/public/
 
 # ポート80を公開
 EXPOSE 80
