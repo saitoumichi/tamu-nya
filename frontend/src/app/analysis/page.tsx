@@ -11,7 +11,7 @@ import {
   PieChart as PieChartIcon,
   Trophy,
 } from "lucide-react";
-import { apiClient } from '@/api/client';
+import { debugApiClient } from '@/api/debug-client';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
@@ -470,7 +470,7 @@ export default function AnalysisPage() {
 
     try {
       setLoading(true);
-      const result = await apiClient.getForgottenItems();
+      const result = await debugApiClient.getForgottenItems();
       if (result.success && result.data) {
         setApiData(result.data);
         console.log('分析画面API取得データ:', result.data);
