@@ -20,9 +20,10 @@ interface ThingsRecord {
 interface Monster {
   id: number;
   name: string;
-  category: string; // 元の thingId（例: 'wallet'）
+  category: string; // カテゴリID（例: 'forget_things'）
   categoryName: string; // 表示名
   categoryEmoji: string;
+  thingId: string; // 忘れ物のID（例: 'wallet'）
   lastSeenAt: string;
   thumbUrl: string;
 }
@@ -73,6 +74,30 @@ export default function EncyclopediaPage() {
     if (diffHours < 24) return `${diffHours}時間前`;
     if (diffDays < 7) return `${diffDays}日前`;
     return created.toLocaleDateString('ja-JP');
+  };
+
+  // 忘れ物の絵文字を取得
+  const getThingEmoji = (thingId: string): string => {
+    switch (thingId) {
+      case 'key':
+        return '🔑';
+      case 'umbrella':
+        return '☔';
+      case 'wallet':
+        return '👛';
+      case 'medicine':
+        return '💊';
+      case 'smartphone':
+        return '📱';
+      case 'homework':
+        return '📚';
+      case 'schedule':
+        return '📅';
+      case 'time':
+        return '⏰';
+      default:
+        return '📦';
+    }
   };
 
   // 画像パス（妖精の画像を使用）
@@ -325,6 +350,7 @@ export default function EncyclopediaPage() {
          category: categoryId, // カテゴリIDを使用
          categoryName: categoryName,
          categoryEmoji: categoryEmoji,
+         thingId: thingId, // 忘れ物のIDを追加
          lastSeenAt: getTimeAgo(info.latestAt),
          thumbUrl: getImagePathByThingId(thingId),
        };
@@ -623,7 +649,7 @@ export default function EncyclopediaPage() {
                               target.style.display = 'none';
                               const fallback = document.createElement('div');
                               fallback.className = 'text-4xl flex items-center justify-center w-full h-full';
-                              fallback.textContent = fairy.categoryEmoji;
+                              fallback.textContent = getThingEmoji(fairy.thingId);
                               target.parentNode?.appendChild(fallback);
                             }}
                           />

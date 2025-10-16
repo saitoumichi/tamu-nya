@@ -27,18 +27,30 @@ interface CustomCard {
   description?: string;
 }
 
-// Supabase APIクライアント
+// APIクライアント（Supabaseまたはローカルバックエンド）
 class ApiClient {
-  private baseURL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:8000/api';
+  private baseURL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
   private anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  private isSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  constructor() {
+    console.log('🔧 API Client初期化');
+    console.log('📍 Base URL:', this.baseURL);
+    console.log('🔑 Using Supabase:', this.isSupabase);
+    console.log('🌍 Environment:', process.env.NODE_ENV);
+  }
 
   // 認証ヘッダーを取得
   private getAuthHeaders(): HeadersInit {
     const token = localStorage.getItem('auth_token');
     const headers: HeadersInit = {
-      'apikey': this.anonKey,
       'Content-Type': 'application/json',
     };
+    
+    // Supabaseの場合
+    if (this.isSupabase) {
+      headers['apikey'] = this.anonKey;
+    }
     
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -50,7 +62,11 @@ class ApiClient {
   // 忘れ物一覧の取得
   async getForgottenItems() {
     try {
-      const response = await fetch(`${this.baseURL}/rest/v1/forgotten_items`, {
+      const endpoint = this.isSupabase 
+        ? `${this.baseURL}/rest/v1/forgotten_items`
+        : `${this.baseURL}/forgotten-items`;
+      
+      const response = await fetch(endpoint, {
         headers: this.getAuthHeaders(),
       });
       
@@ -59,6 +75,13 @@ class ApiClient {
       }
       
       const data = await response.json();
+      
+      // Laravelの場合は { success: true, data: [...] } 形式で返される
+      if (!this.isSupabase && data.success !== undefined) {
+        return data;
+      }
+      
+      // Supabaseの場合は直接配列が返される
       return { success: true, data: data };
     } catch (error) {
       console.error('API取得エラー:', error);
@@ -69,7 +92,11 @@ class ApiClient {
   // 忘れ物の作成
   async createForgottenItem(item: ForgottenItem) {
     try {
-      const response = await fetch(`${this.baseURL}/rest/v1/forgotten_items`, {
+      const endpoint = this.isSupabase 
+        ? `${this.baseURL}/rest/v1/forgotten_items`
+        : `${this.baseURL}/forgotten-items`;
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify(item),
@@ -80,6 +107,13 @@ class ApiClient {
       }
       
       const data = await response.json();
+      
+      // Laravelの場合はそのまま返す
+      if (!this.isSupabase && data.success !== undefined) {
+        return data;
+      }
+      
+      // Supabaseの場合
       return { success: true, data: data };
     } catch (error) {
       console.error('API保存エラー:', error);
@@ -89,7 +123,11 @@ class ApiClient {
 
   // 忘れ物の詳細取得
   async getForgottenItem(id: number) {
-    const response = await fetch(`${this.baseURL}/rest/v1/forgotten_items?id=eq.${id}`, {
+    const endpoint = this.isSupabase 
+      ? `${this.baseURL}/rest/v1/forgotten_items?id=eq.${id}`
+      : `${this.baseURL}/forgotten-items/${id}`;
+    
+    const response = await fetch(endpoint, {
       headers: this.getAuthHeaders(),
     });
     return response.json();
@@ -97,8 +135,14 @@ class ApiClient {
 
   // 忘れ物の更新
   async updateForgottenItem(id: number, item: Partial<ForgottenItem>) {
-    const response = await fetch(`${this.baseURL}/rest/v1/forgotten_items?id=eq.${id}`, {
-      method: 'PATCH',
+    const endpoint = this.isSupabase 
+      ? `${this.baseURL}/rest/v1/forgotten_items?id=eq.${id}`
+      : `${this.baseURL}/forgotten-items/${id}`;
+    
+    const method = this.isSupabase ? 'PATCH' : 'PUT';
+    
+    const response = await fetch(endpoint, {
+      method: method,
       headers: this.getAuthHeaders(),
       body: JSON.stringify(item),
     });
@@ -107,7 +151,11 @@ class ApiClient {
 
   // 忘れ物の削除
   async deleteForgottenItem(id: number) {
-    const response = await fetch(`${this.baseURL}/rest/v1/forgotten_items?id=eq.${id}`, {
+    const endpoint = this.isSupabase 
+      ? `${this.baseURL}/rest/v1/forgotten_items?id=eq.${id}`
+      : `${this.baseURL}/forgotten-items/${id}`;
+    
+    const response = await fetch(endpoint, {
       method: 'DELETE',
       headers: this.getAuthHeaders(),
     });
@@ -146,12 +194,21 @@ class ApiClient {
 
   // ユーザー登録
   async signup(userData: UserData) {
-    const response = await fetch(`${this.baseURL}/auth/v1/signup`, {
+    const endpoint = this.isSupabase 
+      ? `${this.baseURL}/auth/v1/signup`
+      : `${this.baseURL}/auth/signup`;
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (this.isSupabase) {
+      headers['apikey'] = this.anonKey;
+    }
+    
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'apikey': this.anonKey,
-        'Content-Type': 'application/json',
-      },
+      headers: headers,
       body: JSON.stringify(userData),
     });
     return response.json();
@@ -160,12 +217,21 @@ class ApiClient {
   // ログイン
   async login(email: string, password: string) {
     try {
-      const response = await fetch(`${this.baseURL}/auth/v1/signin`, {
+      const endpoint = this.isSupabase 
+        ? `${this.baseURL}/auth/v1/signin`
+        : `${this.baseURL}/auth/login`;
+      
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (this.isSupabase) {
+        headers['apikey'] = this.anonKey;
+      }
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'apikey': this.anonKey,
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify({ email, password }),
       });
       
@@ -175,6 +241,13 @@ class ApiClient {
       }
       
       const data = await response.json();
+      
+      // Laravelの場合はそのまま返す
+      if (!this.isSupabase && data.success !== undefined) {
+        return data;
+      }
+      
+      // Supabaseの場合
       return { success: true, data: data };
     } catch (error) {
       console.error('ログインエラー:', error);
@@ -184,7 +257,11 @@ class ApiClient {
 
   // ログアウト
   async logout() {
-    const response = await fetch(`${this.baseURL}/auth/v1/logout`, {
+    const endpoint = this.isSupabase 
+      ? `${this.baseURL}/auth/v1/logout`
+      : `${this.baseURL}/auth/logout`;
+    
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: this.getAuthHeaders(),
     });
@@ -193,7 +270,11 @@ class ApiClient {
 
   // カスタムカード一覧取得
   async getCustomCards() {
-    const response = await fetch(`${this.baseURL}/rest/v1/custom_cards`, {
+    const endpoint = this.isSupabase 
+      ? `${this.baseURL}/rest/v1/custom_cards`
+      : `${this.baseURL}/custom-cards`;
+    
+    const response = await fetch(endpoint, {
       headers: this.getAuthHeaders(),
     });
     return response.json();
@@ -201,7 +282,11 @@ class ApiClient {
 
   // カスタムカード作成
   async createCustomCard(card: Omit<CustomCard, 'id'>) {
-    const response = await fetch(`${this.baseURL}/rest/v1/custom_cards`, {
+    const endpoint = this.isSupabase 
+      ? `${this.baseURL}/rest/v1/custom_cards`
+      : `${this.baseURL}/custom-cards`;
+    
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(card),
@@ -211,8 +296,14 @@ class ApiClient {
 
   // カスタムカード更新
   async updateCustomCard(id: number, card: Partial<CustomCard>) {
-    const response = await fetch(`${this.baseURL}/rest/v1/custom_cards?id=eq.${id}`, {
-      method: 'PATCH',
+    const endpoint = this.isSupabase 
+      ? `${this.baseURL}/rest/v1/custom_cards?id=eq.${id}`
+      : `${this.baseURL}/custom-cards/${id}`;
+    
+    const method = this.isSupabase ? 'PATCH' : 'PUT';
+    
+    const response = await fetch(endpoint, {
+      method: method,
       headers: this.getAuthHeaders(),
       body: JSON.stringify(card),
     });
@@ -221,7 +312,11 @@ class ApiClient {
 
   // カスタムカード削除
   async deleteCustomCard(id: number) {
-    const response = await fetch(`${this.baseURL}/rest/v1/custom_cards?id=eq.${id}`, {
+    const endpoint = this.isSupabase 
+      ? `${this.baseURL}/rest/v1/custom_cards?id=eq.${id}`
+      : `${this.baseURL}/custom-cards/${id}`;
+    
+    const response = await fetch(endpoint, {
       method: 'DELETE',
       headers: this.getAuthHeaders(),
     });
