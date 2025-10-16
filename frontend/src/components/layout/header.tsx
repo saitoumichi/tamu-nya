@@ -41,7 +41,7 @@ const Header: React.FC<HeaderProps> = ({ appName = '忘れ物図鑑' }) => {
 
               {/* ユーザーメニュー */}
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-700 font-medium hidden md:block">
+                <span className="text-sm text-white font-medium hidden md:block">
                   {user.name}
                 </span>
                 <Button variant="ghost" size="sm">

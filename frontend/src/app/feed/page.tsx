@@ -212,11 +212,11 @@ export default function FeedPage() {
     // イベント発火
     window.dispatchEvent(new CustomEvent('feed:inventoryChanged'));
     
-         // 成長演出（5個ごと）
-     if (newMonsterFeed[thingId].fed % 5 === 0) {
-       // 軽い演出（アラート）
-       alert('成長！');
-     }
+    // 成長演出（5個ごと）
+    if (newMonsterFeed[thingId].fed % 5 === 0) {
+      // 軽い演出（アラート）
+      alert('成長！');
+    }
   };
 
   // APIデータを取得

@@ -157,10 +157,34 @@ export default function InputPage() {
     forgetRecords.forEach((record: { thingId?: string; thingType?: string }) => {
       if (record.thingId && record.thingId !== 'none') {
         if (!monsterMap.has(record.thingId)) {
+          // 図鑑と同じ絵文字マッピングを使用
+          const getCategoryEmoji = (thingId: string) => {
+            switch (thingId) {
+              case 'key':
+                return '🔑';
+              case 'umbrella':
+                return '☔';
+              case 'wallet':
+                return '👛';
+              case 'medicine':
+                return '💊';
+              case 'smartphone':
+                return '📱';
+              case 'homework':
+                return '📄';
+              case 'schedule':
+                return '📅';
+              case 'time':
+                return '⏰';
+              default:
+                return '😊';
+            }
+          };
+          
           monsterMap.set(record.thingId, {
             thingId: record.thingId,
             thingType: record.thingType || '不明',
-            emoji: things.find(t => t.id === record.thingId)?.emoji || '😊',
+            emoji: getCategoryEmoji(record.thingId),
             count: 0
           });
         }
@@ -408,27 +432,27 @@ export default function InputPage() {
     }));
   };
 
-  // 画像パスを生成する関数
+  // 画像パスを生成する関数（図鑑と同じ）
   const getImagePathByThingId = (thingId: string): string => {
     switch (thingId) {
       case 'key':
-        return '/monsters/key/key-monster-1.jpg';
+        return '/fairies/key/key1.jpg';
       case 'umbrella':
-        return '/monsters/umbrella/umbrella-monster-1.jpg';
+        return '/fairies/umbrella/umbrella1.jpg';
       case 'wallet':
-        return '/monsters/wallet/wallet-monster.jpg';
+        return '/fairies/wallet/wallet1.jpg';
       case 'medicine':
-        return '/monsters/medicine/medicine-monster-1.jpg';
+        return '/fairies/medicine/medicine1.jpg';
       case 'smartphone':
-        return '/monsters/phone/phone_monsters.jpg';
+        return '/fairies/phone/phone1.jpg';
       case 'homework':
-        return '/monsters/homework/homework_monsters.jpg';
+        return '/fairies/homework/homework1.jpg';
       case 'schedule':
-        return '/monsters/schedule/schedule_monsters.png';
+        return '/fairies/schedule/schedule1.jpg';
       case 'time':
-        return '/monsters/late/late_monsters.jpg';
+        return '/fairies/time/time1.jpg';
       default:
-        return '/monsters/wallet/wallet-monster.jpg';
+        return '/fairies/wallet/wallet1.jpg';
     }
   };
 

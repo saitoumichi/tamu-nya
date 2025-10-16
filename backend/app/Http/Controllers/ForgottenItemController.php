@@ -26,7 +26,17 @@ class ForgottenItemController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $items = ForgottenItem::orderBy('datetime', 'desc')->get();
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
+
+            $items = ForgottenItem::where('user_id', $userId)
+                ->orderBy('datetime', 'desc')
+                ->get();
 
             // 各アイテムに表示用の属性を追加
             $formattedItems = $items->map(function ($item) {
@@ -83,8 +93,13 @@ class ForgottenItemController extends Controller
                 'datetime' => 'required|date'
             ]);
 
-            // 認証されたユーザーのIDを取得（認証システムが実装されている場合）
-            $userId = Auth::id() ?? 1; // 一時的にデフォルトユーザーID
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
 
             $item = ForgottenItem::create(array_merge($validated, [
                 'user_id' => $userId
@@ -111,7 +126,17 @@ class ForgottenItemController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $item = ForgottenItem::findOrFail($id);
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
+
+            $item = ForgottenItem::where('id', $id)
+                ->where('user_id', $userId)
+                ->firstOrFail();
 
             $response = response()->json([
                 'success' => true,
@@ -134,6 +159,14 @@ class ForgottenItemController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         try {
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
+
             $validated = $request->validate([
                 'category' => 'sometimes|string|max:255',
                 'title' => 'sometimes|string|max:255',
@@ -146,7 +179,9 @@ class ForgottenItemController extends Controller
                 'datetime' => 'sometimes|date'
             ]);
 
-            $item = ForgottenItem::findOrFail($id);
+            $item = ForgottenItem::where('id', $id)
+                ->where('user_id', $userId)
+                ->firstOrFail();
             $item->update($validated);
 
             $response = response()->json([
@@ -170,7 +205,17 @@ class ForgottenItemController extends Controller
     public function destroy(int $id): JsonResponse
     {
         try {
-            $item = ForgottenItem::findOrFail($id);
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '認証が必要です'
+                ], 401);
+            }
+
+            $item = ForgottenItem::where('id', $id)
+                ->where('user_id', $userId)
+                ->firstOrFail();
             $item->delete();
 
             $response = response()->json([
@@ -273,6 +318,7 @@ class ForgottenItemController extends Controller
                 'recent_activity' => ForgottenItem::where('created_at', '>=', now()->subDays(7))
                     ->count(),
             ];
+
 
             $response = response()->json([
                 'success' => true,
