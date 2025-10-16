@@ -270,57 +270,129 @@ class ApiClient {
 
   // カスタムカード一覧取得
   async getCustomCards() {
-    const endpoint = this.isSupabase 
-      ? `${this.baseURL}/rest/v1/custom_cards`
-      : `${this.baseURL}/custom-cards`;
-    
-    const response = await fetch(endpoint, {
-      headers: this.getAuthHeaders(),
-    });
-    return response.json();
+    try {
+      const endpoint = this.isSupabase 
+        ? `${this.baseURL}/rest/v1/custom_cards`
+        : `${this.baseURL}/custom-cards`;
+      
+      const response = await fetch(endpoint, {
+        headers: this.getAuthHeaders(),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Laravelの場合はそのまま返す
+      if (!this.isSupabase && data.success !== undefined) {
+        return data;
+      }
+      
+      // Supabaseの場合
+      return { success: true, data: data };
+    } catch (error) {
+      console.error('カスタムカード取得エラー:', error);
+      return { success: false, data: [], error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 
   // カスタムカード作成
   async createCustomCard(card: Omit<CustomCard, 'id'>) {
-    const endpoint = this.isSupabase 
-      ? `${this.baseURL}/rest/v1/custom_cards`
-      : `${this.baseURL}/custom-cards`;
-    
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(card),
-    });
-    return response.json();
+    try {
+      const endpoint = this.isSupabase 
+        ? `${this.baseURL}/rest/v1/custom_cards`
+        : `${this.baseURL}/custom-cards`;
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(card),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Laravelの場合はそのまま返す
+      if (!this.isSupabase && data.success !== undefined) {
+        return data;
+      }
+      
+      // Supabaseの場合
+      return { success: true, data: data };
+    } catch (error) {
+      console.error('カスタムカード作成エラー:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 
   // カスタムカード更新
   async updateCustomCard(id: number, card: Partial<CustomCard>) {
-    const endpoint = this.isSupabase 
-      ? `${this.baseURL}/rest/v1/custom_cards?id=eq.${id}`
-      : `${this.baseURL}/custom-cards/${id}`;
-    
-    const method = this.isSupabase ? 'PATCH' : 'PUT';
-    
-    const response = await fetch(endpoint, {
-      method: method,
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(card),
-    });
-    return response.json();
+    try {
+      const endpoint = this.isSupabase 
+        ? `${this.baseURL}/rest/v1/custom_cards?id=eq.${id}`
+        : `${this.baseURL}/custom-cards/${id}`;
+      
+      const method = this.isSupabase ? 'PATCH' : 'PUT';
+      
+      const response = await fetch(endpoint, {
+        method: method,
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(card),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Laravelの場合はそのまま返す
+      if (!this.isSupabase && data.success !== undefined) {
+        return data;
+      }
+      
+      // Supabaseの場合
+      return { success: true, data: data };
+    } catch (error) {
+      console.error('カスタムカード更新エラー:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 
   // カスタムカード削除
   async deleteCustomCard(id: number) {
-    const endpoint = this.isSupabase 
-      ? `${this.baseURL}/rest/v1/custom_cards?id=eq.${id}`
-      : `${this.baseURL}/custom-cards/${id}`;
-    
-    const response = await fetch(endpoint, {
-      method: 'DELETE',
-      headers: this.getAuthHeaders(),
-    });
-    return response.json();
+    try {
+      const endpoint = this.isSupabase 
+        ? `${this.baseURL}/rest/v1/custom_cards?id=eq.${id}`
+        : `${this.baseURL}/custom-cards/${id}`;
+      
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders(),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Laravelの場合はそのまま返す
+      if (!this.isSupabase && data.success !== undefined) {
+        return data;
+      }
+      
+      // Supabaseの場合
+      return { success: true, data: data };
+    } catch (error) {
+      console.error('カスタムカード削除エラー:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 }
 
