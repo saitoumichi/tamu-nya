@@ -29,7 +29,7 @@ interface CustomCard {
 
 // APIクライアント
 class ApiClient {
-  private baseURL = 'http://localhost:8000/api';
+  private baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
   // 認証ヘッダーを取得
   private getAuthHeaders(): HeadersInit {

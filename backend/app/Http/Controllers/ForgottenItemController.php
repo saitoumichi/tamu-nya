@@ -243,17 +243,33 @@ class ForgottenItemController extends Controller
     public function getStats(): JsonResponse
     {
         try {
+            // データベースドライバーによって異なるSQLを使用
+            $driver = config('database.default');
+            $connection = config("database.connections.{$driver}.driver");
+
+            if ($connection === 'sqlite') {
+                // SQLite用のクエリ
+                $monthlyTrend = ForgottenItem::selectRaw('strftime("%Y-%m", datetime) as month, COUNT(*) as count')
+                    ->groupBy('month')
+                    ->orderBy('month', 'desc')
+                    ->limit(12)
+                    ->get();
+            } else {
+                // MySQL用のクエリ
+                $monthlyTrend = ForgottenItem::selectRaw('DATE_FORMAT(datetime, "%Y-%m") as month, COUNT(*) as count')
+                    ->groupBy('month')
+                    ->orderBy('month', 'desc')
+                    ->limit(12)
+                    ->get();
+            }
+
             $stats = [
                 'total_count' => ForgottenItem::count(),
                 'category_distribution' => ForgottenItem::selectRaw('category, COUNT(*) as count')
                     ->groupBy('category')
                     ->get(),
                 'difficulty_average' => ForgottenItem::avg('difficulty'),
-                'monthly_trend' => ForgottenItem::selectRaw('DATE_FORMAT(datetime, "%Y-%m") as month, COUNT(*) as count')
-                    ->groupBy('month')
-                    ->orderBy('month', 'desc')
-                    ->limit(12)
-                    ->get(),
+                'monthly_trend' => $monthlyTrend,
                 'recent_activity' => ForgottenItem::where('created_at', '>=', now()->subDays(7))
                     ->count(),
             ];
