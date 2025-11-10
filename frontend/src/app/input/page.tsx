@@ -22,7 +22,7 @@ const todayStr = () => {
 };
 
 export default function InputPage() {
-  const { user, token } = useAuth();
+  const { user, token, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     category: '',
     title: '',
@@ -219,14 +219,7 @@ export default function InputPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('handleSubmit called');
-    
-    // 認証チェック
-    if (!user || !token) {
-      alert('ログインが必要です。ログインページに移動します。');
-      window.location.href = '/login';
-      return;
-    }
-    
+
     // 関数冒頭で const isClaim = !hasClaimedFeedToday; を定義
     const isClaim = !hasClaimedFeedToday;
     
@@ -464,6 +457,51 @@ export default function InputPage() {
     console.log('Modal close called');
     setShowResultModal(false);
   };
+
+  // 認証ローディング中
+  if (authLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest-accent"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // 未認証の場合
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <div className="forest-card p-8 rounded-xl">
+            <div className="text-center">
+              <div className="text-6xl mb-4">✍️</div>
+              <h2 className="text-2xl font-bold text-forest-primary mb-4">
+                忘れ物を記録するにはログインが必要です
+              </h2>
+              <p className="text-forest-secondary mb-6">
+                忘れ物を記録してモンスターを育てましょう。<br />
+                まずはログインしてください。
+              </p>
+              <div className="flex justify-center gap-4">
+                <Link href="/login">
+                  <button className="forest-button px-6 py-3 text-lg rounded-lg">
+                    ログイン
+                  </button>
+                </Link>
+                <Link href="/register">
+                  <button className="forest-button px-6 py-3 text-lg rounded-lg">
+                    新規登録
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
